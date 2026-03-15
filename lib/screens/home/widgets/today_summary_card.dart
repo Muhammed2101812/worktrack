@@ -1,22 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme.dart';
 import '../../../providers/entries_provider.dart';
 
-class TodaySummaryCard extends ConsumerWidget {
+class TodaySummaryCard extends ConsumerStatefulWidget {
   const TodaySummaryCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final todayEntriesAsync = ref.watch(todayEntriesProvider);
+  ConsumerState<TodaySummaryCard> createState() => _TodaySummaryCardState();
+}
 
-    return todayEntriesAsync.when(
-      data: (entries) {
-        final totalHours = entries.fold<double>(
-            0, (sum, e) => sum + e.durationHours);
-        final hours   = totalHours.toInt();
+class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
+  DateTime _selectedDate = DateTime.now();
+
+  @override
+  Widget build(BuildContext context) {
+    final entriesAsync = ref.watch(entriesProvider);
+    final today = DateTime.now();
+    final isToday = _selectedDate.year == today.year &&
+        _selectedDate.month == today.month &&
+        _selectedDate.day == today.day;
+    final dateStr = DateFormat('dd.MM.yyyy').format(_selectedDate);
+
+    return entriesAsync.when(
+      data: (allEntries) {
+        final entries =
+            allEntries.where((e) => e.date == dateStr).toList();
+        final totalHours =
+            entries.fold<double>(0, (sum, e) => sum + e.durationHours);
+        final hours = totalHours.toInt();
         final minutes = ((totalHours - hours) * 60).round();
+        final hasUnsynced = entries.any((e) => !e.synced);
 
         return Container(
           padding: const EdgeInsets.all(24),
@@ -35,29 +51,51 @@ class TodaySummaryCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Bugün',
-                    style: TextStyle(
+                  Text(
+                    isToday
+                        ? 'Bugün'
+                        : DateFormat('d MMM', 'tr').format(_selectedDate),
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                       color: AppColors.textMuted,
                     ),
                   ),
-                  Icon(
-                    PhosphorIcons.calendarBlank(),
-                    color: AppColors.textMuted,
-                    size: 18,
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                        builder: (ctx, child) => Theme(
+                          data: Theme.of(ctx).copyWith(
+                            colorScheme: ColorScheme.light(
+                              primary: AppColors.primary,
+                            ),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                      if (picked != null) {
+                        setState(() => _selectedDate = picked);
+                      }
+                    },
+                    child: Icon(
+                      PhosphorIcons.calendarBlank(),
+                      color: isToday
+                          ? AppColors.textMuted
+                          : AppColors.primary,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Big hours display
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
@@ -108,30 +146,36 @@ class TodaySummaryCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 20),
-
-              // Footer row
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
+                      color: hasUnsynced
+                          ? Colors.orange.withValues(alpha: 0.1)
+                          : AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: AppColors.primary,
+                        Icon(
+                          hasUnsynced
+                              ? Icons.cloud_upload_outlined
+                              : Icons.check_circle_rounded,
+                          color: hasUnsynced
+                              ? Colors.orange
+                              : AppColors.primary,
                           size: 13,
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          'Senkronize',
+                          hasUnsynced ? 'Bekliyor' : 'Senkronize',
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: hasUnsynced
+                                ? Colors.orange
+                                : AppColors.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),

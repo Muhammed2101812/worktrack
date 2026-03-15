@@ -28,19 +28,45 @@ class SyncService {
   }
 
   Future<void> fullSync() async {
-    final result = await Connectivity().checkConnectivity();
-    if (result == ConnectivityResult.none) return;
+    try {
+      final result = await Connectivity().checkConnectivity();
+      if (result.contains(ConnectivityResult.none)) return;
 
-    final remoteEntries = await supabase.getAllEntries();
-    await localDB.clearEntries();
-    for (final e in remoteEntries) {
-      await localDB.insertEntry(e.copyWith(synced: true));
-    }
+      // 1. Fetch remote clients
+      final remoteClients = await supabase.getAllClients();
+      final remoteClientNames =
+          remoteClients.map((c) => c.name.toLowerCase()).toSet();
 
-    final remoteClients = await supabase.getAllClients();
-    await localDB.clearClients();
-    for (final c in remoteClients) {
-      await localDB.insertClient(c);
-    }
+      // 2. Push local-only clients to remote (name-based dedup)
+      final localClients = await localDB.getAllClients();
+      for (final lc in localClients) {
+        if (!remoteClientNames.contains(lc.name.toLowerCase())) {
+          try {
+            await supabase.upsertClient(lc);
+          } catch (_) {}
+        }
+      }
+
+      // 3. Re-fetch remote (includes just-pushed clients)
+      final finalRemoteClients = await supabase.getAllClients();
+
+      // 4. Deduplicate by name (keep first occurrence)
+      final seenNames = <String>{};
+      final dedupedClients = finalRemoteClients.where((c) {
+        return seenNames.add(c.name.toLowerCase());
+      }).toList();
+
+      await localDB.clearClients();
+      for (final c in dedupedClients) {
+        await localDB.insertClient(c);
+      }
+
+      // 5. Sync entries
+      final remoteEntries = await supabase.getAllEntries();
+      await localDB.clearEntries();
+      for (final e in remoteEntries) {
+        await localDB.insertEntry(e.copyWith(synced: true));
+      }
+    } catch (_) {}
   }
 }

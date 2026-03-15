@@ -161,7 +161,7 @@ class _MidnightButtonState extends State<MidnightButton>
 // ---------------------------------------------------------------------------
 // MidnightInput — clean text field, white background
 // ---------------------------------------------------------------------------
-class MidnightInput extends StatelessWidget {
+class MidnightInput extends StatefulWidget {
   final String hintText;
   final TextEditingController? controller;
   final String? initialValue;
@@ -188,10 +188,43 @@ class MidnightInput extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final ctrl =
-        controller ?? TextEditingController(text: initialValue);
+  State<MidnightInput> createState() => _MidnightInputState();
+}
 
+class _MidnightInputState extends State<MidnightInput> {
+  late TextEditingController _ctrl;
+  bool _ownsController = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controller != null) {
+      _ctrl = widget.controller!;
+      _ownsController = false;
+    } else {
+      _ctrl = TextEditingController(text: widget.initialValue);
+      _ownsController = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(MidnightInput old) {
+    super.didUpdateWidget(old);
+    if (widget.controller != null && widget.controller != old.controller) {
+      if (_ownsController) _ctrl.dispose();
+      _ctrl = widget.controller!;
+      _ownsController = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_ownsController) _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -206,22 +239,22 @@ class MidnightInput extends StatelessWidget {
         ],
       ),
       child: TextField(
-        controller: ctrl,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        onChanged: onChanged,
-        maxLines: maxLines,
-        maxLength: maxLength,
+        controller: _ctrl,
+        obscureText: widget.obscureText,
+        keyboardType: widget.keyboardType,
+        onChanged: widget.onChanged,
+        maxLines: widget.maxLines,
+        maxLength: widget.maxLength,
         style: const TextStyle(
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w500,
           fontSize: 15,
         ),
         decoration: InputDecoration(
-          hintText: hintText,
+          hintText: widget.hintText,
           hintStyle: const TextStyle(color: AppColors.textMuted),
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
+          prefixIcon: widget.prefixIcon,
+          suffixIcon: widget.suffixIcon,
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

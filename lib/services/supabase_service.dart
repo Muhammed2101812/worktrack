@@ -50,6 +50,10 @@ class SupabaseService {
     await _db.from(AppConstants.clientsTable).insert(client.toMap());
   }
 
+  Future<void> upsertClient(Client client) async {
+    await _db.from(AppConstants.clientsTable).upsert(client.toMap());
+  }
+
   Future<List<Client>> getAllClients() async {
     final data = await _db
         .from(AppConstants.clientsTable)

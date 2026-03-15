@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
+import '../../models/client.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
 import '../history/widgets/month_filter.dart';
@@ -235,7 +236,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             final index = entry.key;
                             final clientId = entry.value;
                             final hours = clientHours[clientId]!;
-                            final client = clients.firstWhere((c) => c.id == clientId);
+                            final client = clients.firstWhere(
+                              (c) => c.id == clientId,
+                              orElse: () => Client(id: clientId, name: 'Bilinmeyen', color: '#9CA3AF'),
+                            );
                             final percentage = (hours / totalHours) * 100;
                             final color = colors[index % colors.length];
 

@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/sync_provider.dart';
 import 'widgets/today_summary_card.dart';
 import 'widgets/entry_list_tile.dart';
 
@@ -174,11 +175,26 @@ class HomeShell extends ConsumerWidget {
   }
 }
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(syncProvider.notifier).fullSync().then((_) {
+        ref.read(entriesProvider.notifier).refresh();
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final entriesAsync = ref.watch(entriesProvider);
     final currentUser = ref.watch(authNotifierProvider);
     final displayName = currentUser?.email?.split('@').first ?? 'Kullanıcı';

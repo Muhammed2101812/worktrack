@@ -11,8 +11,16 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
   Future<void> addClient(Client client) async {
     final db = ref.read(localDBServiceProvider);
     final supabase = ref.read(supabaseServiceProvider);
+    // Prevent duplicate names (case-insensitive)
+    final existing = await db.getAllClients();
+    if (existing.any(
+        (c) => c.name.toLowerCase() == client.name.toLowerCase())) {
+      return;
+    }
     await db.insertClient(client);
-    try { await supabase.addClient(client); } catch (_) {}
+    try {
+      await supabase.upsertClient(client);
+    } catch (_) {}
     ref.invalidateSelf();
   }
 
