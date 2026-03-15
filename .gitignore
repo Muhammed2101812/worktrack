@@ -47,6 +47,9 @@ app.*.map.json
 # Windows reserved device names (NUL device files created accidentally)
 **/nul
 
+# Claude Code local settings
+.claude/
+
 # Temporary analysis/error output files
 analyze_out*.txt
 analyze_result*.txt
