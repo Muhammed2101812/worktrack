@@ -7,6 +7,7 @@ import 'package:worklog/services/local_db_service.dart';
 import 'package:worklog/services/supabase_service.dart';
 import 'package:worklog/models/client.dart';
 import 'package:worklog/models/work_entry.dart';
+import 'package:worklog/models/project.dart';
 
 class FakeConnectivityPlatform extends ConnectivityPlatform with MockPlatformInterfaceMixin {
   @override
@@ -66,6 +67,19 @@ class FakeLocalDBService extends Fake implements LocalDBService {
   Future<void> updateEntrySync(String id, bool synced) async {
     if (synced) updatedEntryIds.add(id);
   }
+
+  // Project support stubs
+  final List<Project> projects = [];
+
+  @override
+  Future<List<Project>> getAllProjects() async => projects;
+
+  @override
+  Future<void> clearProjects() async => projects.clear();
+
+  @override
+  Future<void> insertProjectsBatch(List<Project> projects) async =>
+      this.projects.addAll(projects);
 }
 
 class FakeSupabaseService extends Fake implements SupabaseService {
@@ -96,6 +110,18 @@ class FakeSupabaseService extends Fake implements SupabaseService {
 
   @override
   Future<List<WorkEntry>> getAllEntries() async => entries;
+
+  // Project support stubs
+  final List<Project> projects = [];
+
+  @override
+  Future<List<Project>> getAllProjects() async => projects;
+
+  @override
+  Future<void> upsertProjects(List<Project> projects) async {}
+
+  @override
+  Future<void> upsertProject(Project project) async {}
 
   @override
   Future<void> upsertEntries(List<WorkEntry> entries) async {

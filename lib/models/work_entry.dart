@@ -12,6 +12,8 @@ class WorkEntry {
   final String workType;
   final String notes;
   final bool synced;
+  final String? projectId;
+  final String? projectName;
 
   WorkEntry({
     String? id,
@@ -24,6 +26,8 @@ class WorkEntry {
     required this.workType,
     this.notes = '',
     this.synced = false,
+    this.projectId,
+    this.projectName,
   })  : id = id ?? const Uuid().v4(),
         durationHours = _calcDuration(startTime, endTime);
 
@@ -40,6 +44,8 @@ class WorkEntry {
     String? clientId, String? clientName, String? clientColor, String? date,
     String? startTime, String? endTime, String? workType,
     String? notes, bool? synced,
+    Object? projectId = _sentinel,
+    Object? projectName = _sentinel,
   }) => WorkEntry(
     id: id,
     clientId: clientId ?? this.clientId,
@@ -51,7 +57,11 @@ class WorkEntry {
     workType: workType ?? this.workType,
     notes: notes ?? this.notes,
     synced: synced ?? this.synced,
+    projectId: identical(projectId, _sentinel) ? this.projectId : projectId as String?,
+    projectName: identical(projectName, _sentinel) ? this.projectName : projectName as String?,
   );
+
+  static const _sentinel = Object();
 
   Map<String, dynamic> toMap() => {
     'id': id,
@@ -64,11 +74,15 @@ class WorkEntry {
     'duration_hours': durationHours,
     'work_type': workType,
     'notes': notes,
+    if (projectId != null) 'project_id': projectId,
+    if (projectName != null) 'project_name': projectName,
   };
 
   // SQLite için (synced sütunu var)
   Map<String, dynamic> toLocalMap() => {
     ...toMap(),
+    'project_id': projectId,
+    'project_name': projectName,
     'synced': synced ? 1 : 0,
   };
 
@@ -83,5 +97,7 @@ class WorkEntry {
     workType: m['work_type'] ?? '',
     notes: m['notes'] ?? '',
     synced: m['synced'] == 1 || m['synced'] == true,
+    projectId: m['project_id'] as String?,
+    projectName: m['project_name'] as String?,
   );
 }

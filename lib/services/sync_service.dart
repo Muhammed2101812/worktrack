@@ -23,7 +23,7 @@ class SyncService {
       if (!_isLoggedIn()) return;
       final results = await Connectivity().checkConnectivity();
       if (results.contains(ConnectivityResult.none)) return;
-      
+
       final unsynced = await localDB.getUnsyncedEntries();
       if (unsynced.isEmpty) return;
 
@@ -41,6 +41,37 @@ class SyncService {
             await localDB.updateEntrySync(entry.id, true);
           } catch (e) {
             // Tek satır başarısız olursa diğer satırları işlemeye devam et
+          }
+        }
+      }
+    } catch (_) {
+      // Genel yakalama
+    }
+  }
+
+  Future<void> syncPendingProjects() async {
+    try {
+      if (!_isLoggedIn()) return;
+      final results = await Connectivity().checkConnectivity();
+      if (results.contains(ConnectivityResult.none)) return;
+
+      final allProjects = await localDB.getAllProjects();
+      final unsynced = allProjects.where((p) => !p.synced).toList();
+      if (unsynced.isEmpty) return;
+
+      try {
+        await supabase.upsertProjects(unsynced);
+        for (final project in unsynced) {
+          await localDB.updateProject(project.copyWith(synced: true));
+        }
+      } catch (_) {
+        // Fallback to individual upserts on failure
+        for (final project in unsynced) {
+          try {
+            await supabase.upsertProject(project);
+            await localDB.updateProject(project.copyWith(synced: true));
+          } catch (_) {
+            // Tek proje başarısız olursa diğerlerini işlemeye devam et
           }
         }
       }
@@ -86,7 +117,14 @@ class SyncService {
       await localDB.clearClients();
       await localDB.insertClientsBatch(dedupedClients);
 
-      // 5. Sync entries
+      // 5. Sync projects
+      final remoteProjects = await supabase.getAllProjects();
+      await localDB.clearProjects();
+      await localDB.insertProjectsBatch(
+        remoteProjects.map((p) => p.copyWith(synced: true)).toList(),
+      );
+
+      // 6. Sync entries
       final remoteEntries = await supabase.getAllEntries();
       await localDB.clearEntries();
       await localDB.insertEntriesBatch(

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
+import '../models/project.dart';
 
 class LocalDBService {
   static Database? _db;
@@ -19,7 +20,7 @@ class LocalDBService {
       return await databaseFactoryFfiWeb.openDatabase(
         'worklog.db',
         options: OpenDatabaseOptions(
-          version: 2,
+          version: 3,
           onCreate: _onCreate,
           onUpgrade: _onUpgrade,
         ),
@@ -27,8 +28,8 @@ class LocalDBService {
     } else {
       final path = join(await getDatabasesPath(), 'worklog.db');
       return await openDatabase(
-        path, 
-        version: 2, 
+        path,
+        version: 3,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
@@ -39,6 +40,33 @@ class LocalDBService {
     if (oldVersion < 2) {
       try {
         await db.execute('ALTER TABLE work_entries ADD COLUMN client_color text not null default "#4A90D9"');
+      } catch (e) {
+        // Sütun zaten varsa oluşan hatayı görmezden gel
+      }
+    }
+    if (oldVersion < 3) {
+      try {
+        await db.execute('''
+          create table projects (
+            id text primary key,
+            client_id text,
+            name text not null,
+            description text default '',
+            status text default 'active',
+            created_at text not null,
+            synced integer default 0
+          )
+        ''');
+      } catch (e) {
+        // Tablo zaten varsa oluşan hatayı görmezden gel
+      }
+      try {
+        await db.execute('ALTER TABLE work_entries ADD COLUMN project_id text');
+      } catch (e) {
+        // Sütun zaten varsa oluşan hatayı görmezden gel
+      }
+      try {
+        await db.execute('ALTER TABLE work_entries ADD COLUMN project_name text');
       } catch (e) {
         // Sütun zaten varsa oluşan hatayı görmezden gel
       }
@@ -58,7 +86,9 @@ class LocalDBService {
         duration_hours real not null,
         work_type text not null,
         notes text default '',
-        synced integer default 0
+        synced integer default 0,
+        project_id text,
+        project_name text
       )
     ''');
     await db.execute('''
@@ -66,6 +96,17 @@ class LocalDBService {
         id text primary key,
         name text not null,
         color text not null
+      )
+    ''');
+    await db.execute('''
+      create table projects (
+        id text primary key,
+        client_id text,
+        name text not null,
+        description text default '',
+        status text default 'active',
+        created_at text not null,
+        synced integer default 0
       )
     ''');
   }
@@ -184,13 +225,72 @@ class LocalDBService {
     await db.delete('clients');
   }
 
+  // ── PROJELER ──
+
+  Future<void> insertProject(Project project) async {
+    final db = await database;
+    await db.insert('projects', project.toLocalMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> insertProjectsBatch(List<Project> projects) async {
+    if (projects.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final project in projects) {
+        batch.insert('projects', project.toLocalMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  Future<List<Project>> getAllProjects() async {
+    final db = await database;
+    final rows = await db.query('projects', orderBy: 'name');
+    return rows.map(Project.fromMap).toList();
+  }
+
+  Future<List<Project>> getProjectsByClient(String clientId) async {
+    final db = await database;
+    final rows = await db.query('projects',
+        where: 'client_id = ?',
+        whereArgs: [clientId],
+        orderBy: 'name');
+    return rows.map(Project.fromMap).toList();
+  }
+
+  Future<void> updateProject(Project project) async {
+    final db = await database;
+    await db.update(
+      'projects',
+      project.toLocalMap(),
+      where: 'id = ?',
+      whereArgs: [project.id],
+    );
+  }
+
+  Future<void> deleteProject(String id) async {
+    final db = await database;
+    await db.delete('projects', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> clearProjects() async {
+    final db = await database;
+    await db.delete('projects');
+  }
+
   // ── YEDEK GERİ YÜKLEME ──
 
-  Future<void> restoreBackupTransaction(List<Client> clients, List<WorkEntry> entries) async {
+  Future<void> restoreBackupTransaction(
+      List<Client> clients, List<WorkEntry> entries,
+      [List<Project> projects = const []]) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete('work_entries');
       await txn.delete('clients');
+      await txn.delete('projects');
 
       final batch = txn.batch();
       for (final client in clients) {
@@ -199,6 +299,10 @@ class LocalDBService {
       }
       for (final entry in entries) {
         batch.insert('work_entries', entry.toLocalMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final project in projects) {
+        batch.insert('projects', project.toLocalMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
       await batch.commit(noResult: true);

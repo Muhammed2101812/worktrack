@@ -273,6 +273,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   Widget _buildEntryCard(dynamic entry) {
     final clientColor = Color(int.parse(entry.clientColor.replaceAll('#', '0xFF')));
+    final hasProject =
+        entry.projectName != null && entry.projectName.toString().isNotEmpty;
+    final clientLabel = hasProject
+        ? '${entry.clientName} • ${entry.projectName}'
+        : entry.clientName;
 
     return MidnightCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -329,7 +334,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                entry.clientName,
+                clientLabel,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
@@ -436,6 +441,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   ),
                   const Divider(height: 32, color: MidnightColors.cardBorder),
                   _buildDetailRow(PhosphorIcons.user(), 'Müşteri', entry.clientName),
+                  if (entry.projectName != null &&
+                      entry.projectName.toString().isNotEmpty)
+                    _buildDetailRow(
+                        PhosphorIcons.folderSimple(), 'Proje', entry.projectName),
                   _buildDetailRow(PhosphorIcons.calendarBlank(), 'Tarih', entry.date),
                   _buildDetailRow(PhosphorIcons.clock(), 'Saat', '${entry.startTime} - ${entry.endTime}'),
                   _buildDetailRow(PhosphorIcons.timer(), 'Süre', '${entry.durationHours.toStringAsFixed(1)} saat'),

@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
+import '../../providers/projects_provider.dart';
 import '../../models/work_entry.dart';
 import '../../models/client.dart';
+import '../../models/project.dart';
 import '../../core/constants.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
@@ -26,6 +28,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   final _formKey = GlobalKey<FormState>();
   
   Client? _selectedClient;
+  Project? _selectedProject;
   late DateTime _selectedDate;
   late String _startTime;
   late String _endTime;
@@ -38,18 +41,25 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     if (widget.entryToEdit != null) {
       final entry = widget.entryToEdit!;
       _selectedClient = Client(id: entry.clientId, name: entry.clientName, color: entry.clientColor);
-      
+
       final dateParts = entry.date.split('.');
       if(dateParts.length == 3) {
         _selectedDate = DateTime(int.parse(dateParts[2]), int.parse(dateParts[1]), int.parse(dateParts[0]));
       } else {
          _selectedDate = DateTime.now();
       }
-      
+
       _startTime = entry.startTime;
       _endTime = entry.endTime;
       _workType = entry.workType;
       _notes = entry.notes;
+      if (entry.projectId != null && entry.projectName != null) {
+        _selectedProject = Project(
+          id: entry.projectId!,
+          clientId: entry.clientId,
+          name: entry.projectName!,
+        );
+      }
     } else {
       _selectedDate = DateTime.now();
       _startTime = '09:00';
@@ -124,10 +134,28 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             onClientSelected: (client) {
               setState(() {
                 _selectedClient = client;
+                // Müşteri değişince seçili projeyi sıfırla
+                _selectedProject = null;
               });
             },
             onAddClient: () => _showAddClientDialog(),
           ),
+          if (_selectedClient != null) ...[
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 8),
+              child: Text(
+                'PROJE',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: MidnightColors.textMuted,
+                ),
+              ),
+            ),
+            _buildProjectSelector(),
+          ],
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -222,6 +250,294 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildProjectSelector() {
+    final projectsAsync = ref.watch(projectsProvider);
+    return GestureDetector(
+      onTap: () => _showProjectSelector(projectsAsync),
+      child: MidnightCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(PhosphorIcons.folderSimple(), color: MidnightColors.textMuted, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _selectedProject?.name ?? 'Proje Seç',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: _selectedProject != null ? FontWeight.w600 : FontWeight.normal,
+                  color: _selectedProject != null ? MidnightColors.textMain : MidnightColors.textMuted,
+                ),
+              ),
+            ),
+            if (_selectedProject != null)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedProject = null;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Icon(PhosphorIcons.x(), color: MidnightColors.textMuted, size: 18),
+                ),
+              ),
+            Icon(PhosphorIcons.caretDown(), color: MidnightColors.textMuted, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showProjectSelector(AsyncValue<List<Project>> projectsAsync) {
+    projectsAsync.whenData((allProjects) {
+      final clientProjects =
+          allProjects.where((p) => p.clientId == _selectedClient!.id).toList();
+
+      showModalBottomSheet(
+        context: context,
+        useRootNavigator: true,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: MidnightColors.navBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: MidnightColors.cardBorder, width: 1),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: MidnightColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text(
+                    'PROJE SEÇİN',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: MidnightColors.textMuted,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: clientProjects.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              'Bu müşteri için henüz proje yok.\nAşağıdan yeni bir proje oluşturun.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: MidnightColors.textMuted),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: clientProjects.length,
+                          itemBuilder: (context, index) {
+                            final project = clientProjects[index];
+                            final isSelected =
+                                _selectedProject?.id == project.id;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: MidnightCard(
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  setState(() {
+                                    _selectedProject = project;
+                                  });
+                                },
+                                padding: const EdgeInsets.all(14),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: MidnightColors.primary
+                                            .withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: MidnightColors.primary
+                                              .withValues(alpha: 0.4),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Icon(PhosphorIcons.folderSimple(),
+                                            color: MidnightColors.primary,
+                                            size: 18),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Text(
+                                        project.name,
+                                        style: TextStyle(
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
+                                          fontSize: 15,
+                                          color: MidnightColors.textMain,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(
+                                        PhosphorIcons.checkCircle(
+                                            PhosphorIconsStyle.fill),
+                                        color: MidnightColors.primary,
+                                        size: 20,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  child: MidnightButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showAddProjectDialog();
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(PhosphorIcons.plus(), color: Colors.white, size: 18),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'YENİ PROJE OLUŞTUR',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Future<void> _showAddProjectDialog() async {
+    final nameController = TextEditingController();
+
+    final result = await showGeneralDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      pageBuilder: (context, anim1, anim2) => const SizedBox.shrink(),
+      transitionBuilder: (context, anim1, anim2, child) {
+        return ScaleTransition(
+          scale: anim1,
+          child: AlertDialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            content: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: MidnightColors.navBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: MidnightColors.cardBorder, width: 1),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: MidnightColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Center(
+                      child: Icon(PhosphorIcons.folderSimplePlus(),
+                          color: MidnightColors.primary, size: 24),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'YENİ PROJE',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: MidnightColors.textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  MidnightInput(
+                    controller: nameController,
+                    hintText: 'Proje Adı',
+                    prefixIcon: Icon(PhosphorIcons.folderSimple(),
+                        color: MidnightColors.primary),
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: MidnightButton(
+                          onPressed: () => Navigator.pop(context),
+                          color: MidnightColors.shimmer1.withValues(alpha: 0.5),
+                          child: const Text('İPTAL',
+                              style: TextStyle(color: MidnightColors.textMain)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: MidnightButton(
+                          onPressed: () {
+                            if (nameController.text.trim().isEmpty) return;
+                            Navigator.pop(context, nameController.text.trim());
+                          },
+                          child: const Text('OLUŞTUR',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (result != null && result.isNotEmpty) {
+      final project = Project(
+        clientId: _selectedClient!.id,
+        name: result,
+      );
+      await ref.read(projectsProvider.notifier).addProject(project);
+      setState(() {
+        _selectedProject = project;
+      });
+    }
   }
 
   Future<void> _showAddClientDialog() async {
@@ -388,6 +704,8 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       workType: _workType,
       notes: _notes,
       synced: false,
+      projectId: _selectedProject?.id,
+      projectName: _selectedProject?.name,
     );
 
     if (widget.entryToEdit == null) {

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'local_db_service.dart';
 import '../models/client.dart';
 import '../models/work_entry.dart';
+import '../models/project.dart';
 
 class BackupService {
   final LocalDBService db;
@@ -14,16 +15,18 @@ class BackupService {
 
   BackupService(this.db);
 
-  /// Triggers an automatic backup of all clients and entries.
+  /// Triggers an automatic backup of all clients, projects and entries.
   Future<void> triggerBackup() async {
     try {
       final clients = await db.getAllClients();
       final entries = await db.getAllEntries();
+      final projects = await db.getAllProjects();
 
       final backupMap = {
         'timestamp': DateTime.now().toIso8601String(),
         'clients': clients.map((c) => c.toMap()).toList(),
         'entries': entries.map((e) => e.toLocalMap()).toList(),
+        'projects': projects.map((p) => p.toLocalMap()).toList(),
       };
 
       final jsonStr = jsonEncode(backupMap);
@@ -78,6 +81,7 @@ class BackupService {
     try {
       final clientsJson = backup['clients'] as List<dynamic>? ?? [];
       final entriesJson = backup['entries'] as List<dynamic>? ?? [];
+      final projectsJson = backup['projects'] as List<dynamic>? ?? [];
 
       final List<Client> clients = clientsJson
           .map((c) => Client.fromMap(c as Map<String, dynamic>))
@@ -85,8 +89,11 @@ class BackupService {
       final List<WorkEntry> entries = entriesJson
           .map((e) => WorkEntry.fromMap(e as Map<String, dynamic>))
           .toList();
+      final List<Project> projects = projectsJson
+          .map((p) => Project.fromMap(p as Map<String, dynamic>))
+          .toList();
 
-      await db.restoreBackupTransaction(clients, entries);
+      await db.restoreBackupTransaction(clients, entries, projects);
     } catch (e) {
       debugPrint('Restore backup failed: $e');
       rethrow;

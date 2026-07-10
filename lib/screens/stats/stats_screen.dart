@@ -119,6 +119,28 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             totalHours += entry.durationHours;
                           }
 
+                          // Proje bazlı süre hesaplama
+                          final Map<String, double> projectHours = {};
+                          final Map<String, String> projectNames = {};
+                          double projectTotalHours = 0;
+                          for (var entry in monthEntries) {
+                            final pId = entry.projectId;
+                            final pName = entry.projectName;
+                            if (pId != null &&
+                                pId.isNotEmpty &&
+                                pName != null &&
+                                pName.isNotEmpty) {
+                              projectHours[pId] =
+                                  (projectHours[pId] ?? 0) +
+                                      entry.durationHours;
+                              projectNames[pId] = pName;
+                              projectTotalHours += entry.durationHours;
+                            }
+                          }
+                          final sortedProjectIds = projectHours.keys.toList()
+                            ..sort((a, b) => projectHours[b]!
+                                .compareTo(projectHours[a]!));
+
                           if (totalHours == 0)
                             return const Center(
                                 child: Text('Toplam çalışma saati 0.',
@@ -360,6 +382,159 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                   ),
                                 );
                               }).toList(),
+                              // ── PROJE BAZLI DAĞILIM ──
+                              if (sortedProjectIds.isNotEmpty) ...[
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      24, 24, 24, 8),
+                                  child: Text(
+                                    'PROJE BAZLI DAĞILIM',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                      color: MidnightColors.textMuted,
+                                    ),
+                                  ),
+                                ),
+                                // Proje bazlı pasta grafik
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 8),
+                                  child: SizedBox(
+                                    height: 200,
+                                    child: PieChart(
+                                      PieChartData(
+                                        sections: sortedProjectIds
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
+                                          final index = entry.key;
+                                          final pId = entry.value;
+                                          final hours = projectHours[pId]!;
+                                          final color = colors[
+                                              index % colors.length];
+                                          final percentage =
+                                              (hours / projectTotalHours) *
+                                                  100;
+                                          return PieChartSectionData(
+                                            color: color,
+                                            value: hours,
+                                            title:
+                                                '${percentage.toStringAsFixed(0)}%',
+                                            radius: 45,
+                                            titleStyle: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          );
+                                        }).toList(),
+                                        sectionsSpace: 3,
+                                        centerSpaceRadius: 45,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                ...sortedProjectIds.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final pId = entry.value;
+                                  final hours = projectHours[pId]!;
+                                  final name = projectNames[pId]!;
+                                  final percentage =
+                                      (hours / projectTotalHours) * 100;
+                                  final color = colors[index % colors.length];
+                                  return MidnightCard(
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                color.withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color:
+                                                  color.withValues(alpha: 0.3),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                                PhosphorIcons.folderSimple(),
+                                                color: color,
+                                                size: 16),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color:
+                                                      MidnightColors.textMain,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(2),
+                                                child:
+                                                    LinearProgressIndicator(
+                                                  value: hours /
+                                                      projectTotalHours,
+                                                  backgroundColor:
+                                                      MidnightColors.shimmer1
+                                                          .withValues(
+                                                              alpha: 0.3),
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                              Color>(
+                                                          color),
+                                                  minHeight: 4,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              '${hours.toStringAsFixed(1)} Sa',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    MidnightColors.textMain,
+                                              ),
+                                            ),
+                                            Text(
+                                              '%${percentage.toStringAsFixed(1)}',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color:
+                                                    MidnightColors.textMuted,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
                             ],
                           );
                         },

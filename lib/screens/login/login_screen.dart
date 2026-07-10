@@ -161,13 +161,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.network(
-                      'https://developers.google.com/identity/images/g-logo.png',
+                    Image.asset(
+                      'assets/images/google_logo.png',
                       height: 20,
                       width: 20,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(PhosphorIcons.googleLogo(), color: Colors.blue, size: 20);
-                      },
                     ),
                     const SizedBox(width: 12),
                     const Text(

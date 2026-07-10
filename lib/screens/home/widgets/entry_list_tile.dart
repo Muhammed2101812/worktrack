@@ -12,6 +12,11 @@ class EntryListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clientColor = _parseColor(entry.clientColor);
+    final hasProject =
+        entry.projectName != null && entry.projectName!.isNotEmpty;
+    final displayTitle = hasProject
+        ? '${entry.clientName} • ${entry.projectName}'
+        : entry.clientName;
 
     return Dismissible(
       key: Key(entry.id),
@@ -98,7 +103,7 @@ class EntryListTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.clientName,
+                    displayTitle,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

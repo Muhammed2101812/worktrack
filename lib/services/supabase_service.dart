@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
+import '../models/project.dart';
 import '../core/constants.dart';
 
 class SupabaseService {
@@ -102,5 +103,30 @@ class SupabaseService {
 
   Future<void> deleteClient(String id) async {
     await _db.from(AppConstants.clientsTable).delete().eq('id', id);
+  }
+
+  // ── PROJELER ─────────────────────────────────
+
+  Future<void> upsertProject(Project project) async {
+    await _db.from(AppConstants.projectsTable).upsert(project.toMap());
+  }
+
+  Future<void> upsertProjects(List<Project> projects) async {
+    if (projects.isEmpty) return;
+    await _db.from(AppConstants.projectsTable).upsert(
+          projects.map((p) => p.toMap()).toList(),
+        );
+  }
+
+  Future<List<Project>> getAllProjects() async {
+    final data = await _db
+        .from(AppConstants.projectsTable)
+        .select()
+        .order('name');
+    return (data as List).map((e) => Project.fromMap(e)).toList();
+  }
+
+  Future<void> deleteProject(String id) async {
+    await _db.from(AppConstants.projectsTable).delete().eq('id', id);
   }
 }

@@ -13,6 +13,7 @@ class AppConstants {
 
   static const String entriesTable = 'work_entries';
   static const String clientsTable = 'clients';
+  static const String projectsTable = 'projects';
 
   static const List<String> workTypes = ['Grafik', 'Yazılım', 'Diğer'];
 
