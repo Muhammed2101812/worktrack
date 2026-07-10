@@ -19,9 +19,8 @@ class FakeEntriesNotifier extends EntriesNotifier {
 
 class FakeLoadingEntriesNotifier extends EntriesNotifier {
   @override
-  Future<List<WorkEntry>> build() async {
-    final completer = Completer<List<WorkEntry>>();
-    return completer.future;
+  Future<List<WorkEntry>> build() {
+    return Completer<List<WorkEntry>>().future;
   }
 }
 
