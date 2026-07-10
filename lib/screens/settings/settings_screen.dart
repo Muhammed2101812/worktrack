@@ -182,7 +182,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     await FileSaver.instance.saveFile(
                       name: 'worktrack_backup',
                       bytes: bytes,
-                      ext: 'json',
+                      fileExtension: 'json',
                       mimeType: MimeType.json,
                     );
                     if (context.mounted) {
