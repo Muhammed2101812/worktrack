@@ -1,9 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:worklog/screens/home/widgets/today_summary_card.dart';
 import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/providers/entries_provider.dart';
+
+class MockEntriesNotifier extends EntriesNotifier {
+  final Future<List<WorkEntry>> Function() _buildFn;
+  MockEntriesNotifier(this._buildFn);
+
+  @override
+  Future<List<WorkEntry>> build() async {
+    return _buildFn();
+  }
+}
 
 void main() {
   group('TodaySummaryCard Widget Tests', () {
@@ -11,7 +23,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            todayEntriesProvider.overrideWith((ref) => Future.value([])),
+            entriesProvider.overrideWith(() => MockEntriesNotifier(() => Completer<List<WorkEntry>>().future)),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -26,33 +38,36 @@ void main() {
 
     testWidgets('should display summary with entries',
         (WidgetTester tester) async {
+      final todayStr = DateFormat('dd.MM.yyyy').format(DateTime.now());
       final entries = [
         WorkEntry(
           id: '1',
           clientId: 'client1',
           clientName: 'Test Client',
           clientColor: '#4A90D9',
-          date: '15.03.2026',
+          date: todayStr,
           startTime: '09:00',
           endTime: '12:00',
           workType: 'Yazılım',
+          synced: true,
         ),
         WorkEntry(
           id: '2',
           clientId: 'client1',
           clientName: 'Test Client',
           clientColor: '#4A90D9',
-          date: '15.03.2026',
+          date: todayStr,
           startTime: '13:00',
           endTime: '17:30',
           workType: 'Yazılım',
+          synced: true,
         ),
       ];
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            todayEntriesProvider.overrideWith((ref) => Future.value(entries)),
+            entriesProvider.overrideWith(() => MockEntriesNotifier(() => Future.value(entries))),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -76,7 +91,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            todayEntriesProvider.overrideWith((ref) => Future.value([])),
+            entriesProvider.overrideWith(() => MockEntriesNotifier(() => Future.value([]))),
           ],
           child: const MaterialApp(
             home: Scaffold(

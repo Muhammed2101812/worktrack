@@ -78,6 +78,16 @@ class LocalDBService {
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  Future<void> insertEntries(List<WorkEntry> entries) async {
+    final db = await database;
+    final batch = db.batch();
+    for (final entry in entries) {
+      batch.insert('work_entries', entry.toLocalMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<List<WorkEntry>> getAllEntries() async {
     final db = await database;
     final rows = await db.query('work_entries', orderBy: 'date desc, start_time desc');
@@ -130,6 +140,16 @@ class LocalDBService {
     final db = await database;
     await db.insert('clients', client.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> insertClients(List<Client> clients) async {
+    final db = await database;
+    final batch = db.batch();
+    for (final client in clients) {
+      batch.insert('clients', client.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
   }
 
   Future<List<Client>> getAllClients() async {
