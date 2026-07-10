@@ -15,7 +15,7 @@ class LocalDBService {
 
   Future<Database> _initDB() async {
     if (kIsWeb) {
-      // Web üzerinde doğrudan databaseFactoryFfiWeb (ayrı çalışanı) kullanılır, getDatabasesPath desteklenmez.
+      // Web üzerinde doğrudan databaseFactoryFfiWeb (ayrı çalışan) kullanılır, getDatabasesPath desteklenmez.
       return await databaseFactoryFfiWeb.openDatabase(
         'worklog.db',
         options: OpenDatabaseOptions(
@@ -70,7 +70,7 @@ class LocalDBService {
     ''');
   }
 
-  // ── KAYITLAR ──────────────────────────────────
+  // ── KAYITLAR ──
 
   Future<void> insertEntry(WorkEntry entry) async {
     final db = await database;
@@ -137,7 +137,7 @@ class LocalDBService {
     await db.delete('work_entries');
   }
 
-  // ── MÜŞTERİLER ───────────────────────────────
+  // ── MÜŞTERİLER ──
 
   Future<void> insertClient(Client client) async {
     final db = await database;
@@ -182,5 +182,26 @@ class LocalDBService {
   Future<void> clearClients() async {
     final db = await database;
     await db.delete('clients');
+  }
+
+  // ── YEDEK GERİ YÜKLEME ──
+
+  Future<void> restoreBackupTransaction(List<Client> clients, List<WorkEntry> entries) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('work_entries');
+      await txn.delete('clients');
+
+      final batch = txn.batch();
+      for (final client in clients) {
+        batch.insert('clients', client.toMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final entry in entries) {
+        batch.insert('work_entries', entry.toLocalMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await batch.commit(noResult: true);
+    });
   }
 }

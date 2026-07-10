@@ -277,7 +277,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final entriesAsync = ref.watch(entriesProvider);
     final currentUser = ref.watch(authNotifierProvider);
-    final displayName = currentUser?.email?.split('@').first ?? 'Kullanıcı';
+    final metadata = currentUser?.userMetadata;
+    String displayName = metadata?['full_name'] as String? ??
+        metadata?['name'] as String? ??
+        currentUser?.email?.split('@').first ??
+        'Kullanıcı';
     final avatarLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K';
 
     return Scaffold(

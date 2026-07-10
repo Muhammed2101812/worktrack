@@ -478,6 +478,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showClientManagementSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetCtx) => _ClientManagementSheet(
@@ -675,6 +676,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showImportModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _ImportSheet(),

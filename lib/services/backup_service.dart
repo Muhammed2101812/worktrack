@@ -86,13 +86,7 @@ class BackupService {
           .map((e) => WorkEntry.fromMap(e as Map<String, dynamic>))
           .toList();
 
-      // Clear existing
-      await db.clearEntries();
-      await db.clearClients();
-
-      // Insert new
-      await db.insertClientsBatch(clients);
-      await db.insertEntriesBatch(entries);
+      await db.restoreBackupTransaction(clients, entries);
     } catch (e) {
       debugPrint('Restore backup failed: $e');
       rethrow;

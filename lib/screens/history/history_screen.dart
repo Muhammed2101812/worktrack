@@ -371,6 +371,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   void _showEntryDetails(dynamic entry) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(

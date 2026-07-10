@@ -76,6 +76,7 @@ class ClientDropdown extends StatelessWidget {
   void _showClientSelector(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => DraggableScrollableSheet(
