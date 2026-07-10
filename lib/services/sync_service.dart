@@ -15,12 +15,23 @@ class SyncService {
       if (results.contains(ConnectivityResult.none)) return;
       
       final unsynced = await localDB.getUnsyncedEntries();
-      for (final entry in unsynced) {
-        try {
-          await supabase.upsertEntry(entry);
+      if (unsynced.isEmpty) return;
+
+      try {
+        // Try a single bulk upsert network request
+        await supabase.upsertEntries(unsynced);
+        for (final entry in unsynced) {
           await localDB.updateEntrySync(entry.id, true);
-        } catch (e) {
-          // Tek satır başarısız olursa diğer satırları işlemeye devam et
+        }
+      } catch (_) {
+        // Fallback to individual upserts on failure to preserve fault tolerance (single-row error handling)
+        for (final entry in unsynced) {
+          try {
+            await supabase.upsertEntry(entry);
+            await localDB.updateEntrySync(entry.id, true);
+          } catch (e) {
+            // Tek satır başarısız olursa diğer satırları işlemeye devam et
+          }
         }
       }
     } catch (_) {
@@ -62,16 +73,14 @@ class SyncService {
       }).toList();
 
       await localDB.clearClients();
-      for (final c in dedupedClients) {
-        await localDB.insertClient(c);
-      }
+      await localDB.insertClientsBatch(dedupedClients);
 
       // 5. Sync entries
       final remoteEntries = await supabase.getAllEntries();
       await localDB.clearEntries();
-      for (final e in remoteEntries) {
-        await localDB.insertEntry(e.copyWith(synced: true));
-      }
+      await localDB.insertEntriesBatch(
+        remoteEntries.map((e) => e.copyWith(synced: true)).toList(),
+      );
     } catch (_) {}
   }
 }
