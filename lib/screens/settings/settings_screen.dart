@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/core_providers.dart';
 import '../../models/client.dart';
 import '../../core/constants.dart';
 import '../../core/widgets/midnight_widgets.dart';
@@ -151,6 +157,86 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Verileri İçe Aktar (Excel)',
                 iconColor: MidnightColors.orange,
                 onTap: () => _showImportModal(context),
+                trailingIcon: PhosphorIcons.caretRight(),
+              ),
+              _divider(),
+              _buildSettingsItem(
+                context: context,
+                icon: PhosphorIcons.downloadSimple(),
+                title: 'Manuel Yedek Oluştur (JSON)',
+                iconColor: MidnightColors.primary,
+                onTap: () async {
+                  try {
+                    final clients = await ref.read(localDBServiceProvider).getAllClients();
+                    final entries = await ref.read(localDBServiceProvider).getAllEntries();
+
+                    final backupMap = {
+                      'timestamp': DateTime.now().toIso8601String(),
+                      'clients': clients.map((c) => c.toMap()).toList(),
+                      'entries': entries.map((e) => e.toLocalMap()).toList(),
+                    };
+
+                    final jsonStr = jsonEncode(backupMap);
+                    final bytes = Uint8List.fromList(utf8.encode(jsonStr));
+
+                    await FileSaver.instance.saveFile(
+                      name: 'worktrack_backup',
+                      bytes: bytes,
+                      ext: 'json',
+                      mimeType: MimeType.json,
+                    );
+                    if (context.mounted) {
+                      CustomToast.show(context, 'Yedek dosyası başarıyla indirildi.');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      CustomToast.show(context, 'Yedekleme başarısız oldu.');
+                    }
+                  }
+                },
+                trailingIcon: PhosphorIcons.download(),
+              ),
+              _divider(),
+              _buildSettingsItem(
+                context: context,
+                icon: PhosphorIcons.uploadSimple(),
+                title: 'Yedekten Geri Yükle (JSON)',
+                iconColor: MidnightColors.orange,
+                onTap: () async {
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['json'],
+                      withData: true,
+                    );
+                    if (result == null || result.files.isEmpty) return;
+
+                    Uint8List? bytes = result.files.first.bytes;
+                    if (bytes == null && result.files.first.path != null) {
+                      final file = File(result.files.first.path!);
+                      bytes = await file.readAsBytes();
+                    }
+
+                    if (bytes != null) {
+                      final jsonStr = utf8.decode(bytes);
+                      final backupMap = jsonDecode(jsonStr) as Map<String, dynamic>;
+                      
+                      final backupService = ref.read(backupServiceProvider);
+                      await backupService.restoreBackup(backupMap);
+
+                      ref.invalidate(entriesProvider);
+                      ref.invalidate(clientsProvider);
+
+                      if (context.mounted) {
+                        CustomToast.show(context, 'Veriler yedeklemeden başarıyla geri yüklendi.');
+                      }
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      CustomToast.show(context, 'Geri yükleme işlemi başarısız oldu.');
+                    }
+                  }
+                },
                 trailingIcon: PhosphorIcons.caretRight(),
               ),
             ],
