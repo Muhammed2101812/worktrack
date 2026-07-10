@@ -32,15 +32,6 @@ void main() {
         ),
       );
 
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(MidnightButton),
-              matching: find.byType(Container),
-            )
-            .last,
-      );
-
       expect(find.text('Button'), findsOneWidget);
     });
 
