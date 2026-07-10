@@ -9,14 +9,18 @@ import 'package:worklog/providers/entries_provider.dart';
 
 class FakeEntriesNotifier extends EntriesNotifier {
   final List<WorkEntry> _entries;
-  final Future<List<WorkEntry>>? _future;
-
-  FakeEntriesNotifier(this._entries, {Future<List<WorkEntry>>? future}) : _future = future;
+  FakeEntriesNotifier(this._entries);
 
   @override
   Future<List<WorkEntry>> build() async {
-    if (_future != null) return _future!;
     return _entries;
+  }
+}
+
+class FakeLoadingEntriesNotifier extends EntriesNotifier {
+  @override
+  Future<List<WorkEntry>> build() {
+    return Completer<List<WorkEntry>>().future;
   }
 }
 
@@ -26,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => FakeEntriesNotifier([], future: Completer<List<WorkEntry>>().future)),
+            entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
           ],
           child: const MaterialApp(
             home: Scaffold(
