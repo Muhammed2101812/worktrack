@@ -2,43 +2,35 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:worklog/screens/home/widgets/today_summary_card.dart';
 import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/providers/entries_provider.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 
-class MockEntriesNotifier extends EntriesNotifier {
-  final List<WorkEntry> _mockEntries;
-  MockEntriesNotifier(this._mockEntries);
+class FakeEntriesNotifier extends EntriesNotifier {
+  final List<WorkEntry> _entries;
+  FakeEntriesNotifier(this._entries);
 
   @override
   Future<List<WorkEntry>> build() async {
-    return _mockEntries;
+    return _entries;
   }
 }
 
-class LoadingEntriesNotifier extends EntriesNotifier {
-  final Completer<List<WorkEntry>> _completer = Completer<List<WorkEntry>>();
-
+class FakeLoadingEntriesNotifier extends EntriesNotifier {
   @override
-  Future<List<WorkEntry>> build() async {
-    return _completer.future;
+  Future<List<WorkEntry>> build() {
+    return Completer<List<WorkEntry>>().future;
   }
 }
 
 void main() {
-  setUpAll(() {
-    Intl.defaultLocale = 'tr_TR';
-    initializeDateFormatting();
-  });
-
   group('TodaySummaryCard Widget Tests', () {
     testWidgets('should display loading state', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => LoadingEntriesNotifier()),
+            entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -82,7 +74,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => MockEntriesNotifier(entries)),
+            entriesProvider.overrideWith(() => FakeEntriesNotifier(entries)),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -106,7 +98,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => MockEntriesNotifier([])),
+            entriesProvider.overrideWith(() => FakeEntriesNotifier([])),
           ],
           child: const MaterialApp(
             home: Scaffold(
