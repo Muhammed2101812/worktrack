@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,16 @@ class FakeEntriesNotifier extends EntriesNotifier {
   FakeEntriesNotifier(this._entries);
 
   @override
-  Future<List<WorkEntry>> build() async => _entries;
+  Future<List<WorkEntry>> build() async {
+    return _entries;
+  }
+}
+
+class FakeLoadingEntriesNotifier extends EntriesNotifier {
+  @override
+  Future<List<WorkEntry>> build() {
+    return Completer<List<WorkEntry>>().future;
+  }
 }
 
 void main() {
@@ -20,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => FakeEntriesNotifier([])),
+            entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
           ],
           child: const MaterialApp(
             home: Scaffold(
