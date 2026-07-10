@@ -1,6 +1,7 @@
 import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
 import '../providers/core_providers.dart';
@@ -23,6 +24,7 @@ class ImportService {
     return importBytes(bytes, ref);
   }
 
+  @visibleForTesting
   static Future<int> importBytes(List<int> bytes, WidgetRef ref) async {
     final excel = Excel.decodeBytes(bytes);
     final sheet = excel.tables.values.first;
