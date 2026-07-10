@@ -33,13 +33,11 @@ void main() {
       test('should call signInWithPassword and succeed on happy path', () async {
         final mockAuthResponse = MockAuthResponse();
 
-        // Stub signInWithPassword to succeed
         when(() => mockGoTrueClient.signInWithPassword(
               email: email,
               password: password,
             )).thenAnswer((_) async => mockAuthResponse);
 
-        // Act & Assert
         await expectLater(
           authService.signIn(email, password),
           completes,
@@ -54,13 +52,11 @@ void main() {
       test('should rethrow exceptions caught during signInWithPassword', () async {
         final expectedException = AuthException('Invalid login credentials');
 
-        // Stub signInWithPassword to throw an AuthException
         when(() => mockGoTrueClient.signInWithPassword(
               email: email,
               password: password,
             )).thenThrow(expectedException);
 
-        // Act & Assert
         await expectLater(
           authService.signIn(email, password),
           throwsA(isA<AuthException>().having(
@@ -71,6 +67,53 @@ void main() {
         );
 
         verify(() => mockGoTrueClient.signInWithPassword(
+              email: email,
+              password: password,
+            )).called(1);
+      });
+    });
+
+    group('signUp', () {
+      const email = 'test@example.com';
+      const password = 'password123';
+
+      test('should call signUp and succeed on happy path', () async {
+        final mockAuthResponse = MockAuthResponse();
+
+        when(() => mockGoTrueClient.signUp(
+              email: email,
+              password: password,
+            )).thenAnswer((_) async => mockAuthResponse);
+
+        await expectLater(
+          authService.signUp(email, password),
+          completes,
+        );
+
+        verify(() => mockGoTrueClient.signUp(
+              email: email,
+              password: password,
+            )).called(1);
+      });
+
+      test('should rethrow exceptions caught during signUp', () async {
+        final expectedException = AuthException('Sign up failed');
+
+        when(() => mockGoTrueClient.signUp(
+              email: email,
+              password: password,
+            )).thenThrow(expectedException);
+
+        await expectLater(
+          authService.signUp(email, password),
+          throwsA(isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'Sign up failed',
+          )),
+        );
+
+        verify(() => mockGoTrueClient.signUp(
               email: email,
               password: password,
             )).called(1);

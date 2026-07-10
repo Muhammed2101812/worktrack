@@ -14,7 +14,11 @@ class AuthService {
   }
 
   Future<void> signUp(String email, String password) async {
-    await _client.auth.signUp(email: email, password: password);
+    try {
+      await _client.auth.signUp(email: email, password: password);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> signOut() async => await _client.auth.signOut();
