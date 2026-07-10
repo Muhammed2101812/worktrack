@@ -1,70 +1,123 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:worklog/services/auth_service.dart';
 
-class MockSupabaseClient implements SupabaseClient {
-  @override
-  final GoTrueClient auth;
-
-  MockSupabaseClient({required this.auth});
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class MockGoTrueClient implements GoTrueClient {
-  final Future<AuthResponse> Function(String email, String password) onSignUp;
-
-  MockGoTrueClient({required this.onSignUp});
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {
-    if (invocation.memberName == #signUp) {
-      final email = invocation.namedArguments[#email] as String;
-      final password = invocation.namedArguments[#password] as String;
-      return onSignUp(email, password);
-    }
-    return super.noSuchMethod(invocation);
-  }
-}
+class MockSupabaseClient extends Mock implements SupabaseClient {}
+class MockGoTrueClient extends Mock implements GoTrueClient {}
+class MockAuthResponse extends Mock implements AuthResponse {}
 
 void main() {
   group('AuthService Tests', () {
-    test('signUp should rethrow error when Supabase client throws an exception', () async {
-      // Arrange
-      final mockAuth = MockGoTrueClient(
-        onSignUp: (email, password) async {
-          throw const AuthException('Sign up failed');
-        },
-      );
-      final mockClient = MockSupabaseClient(auth: mockAuth);
-      final authService = AuthService(client: mockClient);
+    late MockSupabaseClient mockSupabaseClient;
+    late MockGoTrueClient mockGoTrueClient;
+    late AuthService authService;
 
-      // Act & Assert
-      expect(
-        () => authService.signUp('test@example.com', 'password123'),
-        throwsA(isA<AuthException>().having((e) => e.message, 'message', 'Sign up failed')),
-      );
+    setUp(() {
+      mockSupabaseClient = MockSupabaseClient();
+      mockGoTrueClient = MockGoTrueClient();
+      authService = AuthService(client: mockSupabaseClient);
+
+      // Default stub for auth getter
+      when(() => mockSupabaseClient.auth).thenReturn(mockGoTrueClient);
     });
 
-    test('signUp should complete successfully when client succeeds', () async {
-      // Arrange
-      final mockAuth = MockGoTrueClient(
-        onSignUp: (email, password) async {
-          return AuthResponse(
-            session: null,
-            user: null,
-          );
-        },
-      );
-      final mockClient = MockSupabaseClient(auth: mockAuth);
-      final authService = AuthService(client: mockClient);
+    test('should have AuthService class', () {
+      expect(() => AuthService(client: mockSupabaseClient), returnsNormally);
+    });
 
-      // Act & Assert
-      expect(
-        authService.signUp('test@example.com', 'password123'),
-        completes,
-      );
+    group('signIn', () {
+      const email = 'test@example.com';
+      const password = 'password123';
+
+      test('should call signInWithPassword and succeed on happy path', () async {
+        final mockAuthResponse = MockAuthResponse();
+
+        when(() => mockGoTrueClient.signInWithPassword(
+              email: email,
+              password: password,
+            )).thenAnswer((_) async => mockAuthResponse);
+
+        await expectLater(
+          authService.signIn(email, password),
+          completes,
+        );
+
+        verify(() => mockGoTrueClient.signInWithPassword(
+              email: email,
+              password: password,
+            )).called(1);
+      });
+
+      test('should rethrow exceptions caught during signInWithPassword', () async {
+        final expectedException = AuthException('Invalid login credentials');
+
+        when(() => mockGoTrueClient.signInWithPassword(
+              email: email,
+              password: password,
+            )).thenThrow(expectedException);
+
+        await expectLater(
+          authService.signIn(email, password),
+          throwsA(isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'Invalid login credentials',
+          )),
+        );
+
+        verify(() => mockGoTrueClient.signInWithPassword(
+              email: email,
+              password: password,
+            )).called(1);
+      });
+    });
+
+    group('signUp', () {
+      const email = 'test@example.com';
+      const password = 'password123';
+
+      test('should call signUp and succeed on happy path', () async {
+        final mockAuthResponse = MockAuthResponse();
+
+        when(() => mockGoTrueClient.signUp(
+              email: email,
+              password: password,
+            )).thenAnswer((_) async => mockAuthResponse);
+
+        await expectLater(
+          authService.signUp(email, password),
+          completes,
+        );
+
+        verify(() => mockGoTrueClient.signUp(
+              email: email,
+              password: password,
+            )).called(1);
+      });
+
+      test('should rethrow exceptions caught during signUp', () async {
+        final expectedException = AuthException('Sign up failed');
+
+        when(() => mockGoTrueClient.signUp(
+              email: email,
+              password: password,
+            )).thenThrow(expectedException);
+
+        await expectLater(
+          authService.signUp(email, password),
+          throwsA(isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'Sign up failed',
+          )),
+        );
+
+        verify(() => mockGoTrueClient.signUp(
+              email: email,
+              password: password,
+            )).called(1);
+      });
     });
   });
 }
