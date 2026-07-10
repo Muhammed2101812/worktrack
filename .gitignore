@@ -58,3 +58,7 @@ analyze_output.txt
 errors.txt
 errors_utf8.txt
 test_out.txt
+
+# Local Environment Variables
+.env
+.env.*
