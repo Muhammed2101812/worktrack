@@ -1,25 +1,26 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:worklog/screens/home/widgets/today_summary_card.dart';
 import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/providers/entries_provider.dart';
-import 'package:intl/intl.dart';
-import 'dart:async';
 
-class TestEntriesNotifier extends EntriesNotifier {
+class FakeEntriesNotifier extends EntriesNotifier {
   final List<WorkEntry> _entries;
-  final bool _loading;
-
-  TestEntriesNotifier(this._entries, {bool loading = false}) : _loading = loading;
+  FakeEntriesNotifier(this._entries);
 
   @override
   Future<List<WorkEntry>> build() async {
-    if (_loading) {
-      // Return a future that never completes during the test to simulate loading state
-      return Completer<List<WorkEntry>>().future;
-    }
     return _entries;
+  }
+}
+
+class FakeLoadingEntriesNotifier extends EntriesNotifier {
+  @override
+  Future<List<WorkEntry>> build() {
+    return Completer<List<WorkEntry>>().future;
   }
 }
 
@@ -29,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => TestEntriesNotifier([], loading: true)),
+            entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -73,7 +74,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => TestEntriesNotifier(entries)),
+            entriesProvider.overrideWith(() => FakeEntriesNotifier(entries)),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -97,7 +98,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => TestEntriesNotifier([])),
+            entriesProvider.overrideWith(() => FakeEntriesNotifier([])),
           ],
           child: const MaterialApp(
             home: Scaffold(
