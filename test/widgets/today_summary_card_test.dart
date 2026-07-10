@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,12 +8,19 @@ import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/providers/entries_provider.dart';
 
 class FakeEntriesNotifier extends EntriesNotifier {
-  final List<WorkEntry> initialEntries;
-  FakeEntriesNotifier(this.initialEntries);
+  final List<WorkEntry> _entries;
+  FakeEntriesNotifier(this._entries);
 
   @override
   Future<List<WorkEntry>> build() async {
-    return initialEntries;
+    return _entries;
+  }
+}
+
+class FakeLoadingEntriesNotifier extends EntriesNotifier {
+  @override
+  Future<List<WorkEntry>> build() {
+    return Completer<List<WorkEntry>>().future;
   }
 }
 
@@ -21,6 +29,9 @@ void main() {
     testWidgets('should display loading state', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
+          ],
           child: const MaterialApp(
             home: Scaffold(
               body: TodaySummaryCard(),

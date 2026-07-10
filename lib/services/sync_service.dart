@@ -68,16 +68,14 @@ class SyncService {
       }).toList();
 
       await localDB.clearClients();
-      for (final c in dedupedClients) {
-        await localDB.insertClient(c);
-      }
+      await localDB.insertClientsBatch(dedupedClients);
 
       // 5. Sync entries
       final remoteEntries = await supabase.getAllEntries();
       await localDB.clearEntries();
-      for (final e in remoteEntries) {
-        await localDB.insertEntry(e.copyWith(synced: true));
-      }
+      await localDB.insertEntriesBatch(
+        remoteEntries.map((e) => e.copyWith(synced: true)).toList(),
+      );
     } catch (_) {}
   }
 }
