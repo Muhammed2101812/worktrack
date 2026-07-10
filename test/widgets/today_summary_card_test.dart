@@ -19,8 +19,7 @@ class FakeEntriesNotifier extends EntriesNotifier {
 
 class FakeLoadingEntriesNotifier extends EntriesNotifier {
   @override
-  Future<List<WorkEntry>> build() async {
-    // Return a future that never completes to simulate loading state
+  Future<List<WorkEntry>> build() {
     return Completer<List<WorkEntry>>().future;
   }
 }
