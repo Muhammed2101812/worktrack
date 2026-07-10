@@ -14,12 +14,23 @@ class SyncService {
       if (results.contains(ConnectivityResult.none)) return;
       
       final unsynced = await localDB.getUnsyncedEntries();
-      for (final entry in unsynced) {
-        try {
-          await supabase.upsertEntry(entry);
+      if (unsynced.isEmpty) return;
+
+      try {
+        // Try a single bulk upsert network request
+        await supabase.upsertEntries(unsynced);
+        for (final entry in unsynced) {
           await localDB.updateEntrySync(entry.id, true);
-        } catch (e) {
-          // Tek satır başarısız olursa diğer satırları işlemeye devam et
+        }
+      } catch (_) {
+        // Fallback to individual upserts on failure to preserve fault tolerance (single-row error handling)
+        for (final entry in unsynced) {
+          try {
+            await supabase.upsertEntry(entry);
+            await localDB.updateEntrySync(entry.id, true);
+          } catch (e) {
+            // Tek satır başarısız olursa diğer satırları işlemeye devam et
+          }
         }
       }
     } catch (_) {

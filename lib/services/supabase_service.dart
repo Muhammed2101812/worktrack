@@ -32,6 +32,30 @@ class SupabaseService {
     }
   }
 
+  Future<void> upsertEntries(List<WorkEntry> entries) async {
+    if (entries.isEmpty) return;
+    final maps = entries.map((e) => e.toMap()).toList();
+    try {
+      await _db.from(AppConstants.entriesTable).upsert(maps);
+    } on PostgrestException catch (e) {
+      if (e.message.contains('client_color')) {
+        for (final map in maps) {
+          map.remove('client_color');
+        }
+        await _db.from(AppConstants.entriesTable).upsert(maps);
+      } else {
+        for (final map in maps) {
+          map.remove('client_color');
+        }
+        try {
+          await _db.from(AppConstants.entriesTable).upsert(maps);
+        } catch (_) {
+          rethrow;
+        }
+      }
+    }
+  }
+
   Future<List<WorkEntry>> getAllEntries() async {
     final data = await _db
         .from(AppConstants.entriesTable)
