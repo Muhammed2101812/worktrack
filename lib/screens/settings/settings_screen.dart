@@ -58,7 +58,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: ListView(
                 padding: const EdgeInsets.only(bottom: 100),
                 children: [
-                  _buildDataSyncSection(context, syncAsync, unsyncedAsync, syncEnabled),
+                  _buildDataSyncSection(context, syncAsync, unsyncedAsync, syncEnabled, currentUser),
                   _buildAccountSection(context, currentUser),
                   _buildAboutSection(context),
                 ],
@@ -75,7 +75,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     AsyncValue syncAsync,
     AsyncValue unsyncedAsync,
     bool syncEnabled,
+    dynamic currentUser,
   ) {
+    final isLoggedIn = currentUser != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -102,8 +104,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Bulut Senkronizasyonu',
                 iconColor: MidnightColors.primary,
                 hasToggle: true,
-                toggleValue: syncEnabled,
-                onTap: () => ref.read(syncEnabledProvider.notifier).toggle(),
+                toggleValue: isLoggedIn && syncEnabled,
+                onTap: () {
+                  if (!isLoggedIn) {
+                    CustomToast.show(context, 'Bulut senkronizasyonu için lütfen giriş yapın.');
+                  } else {
+                    ref.read(syncEnabledProvider.notifier).toggle();
+                  }
+                },
               ),
               _divider(),
               _buildSettingsItem(
@@ -153,6 +161,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildAccountSection(BuildContext context, dynamic currentUser) {
+    final isLoggedIn = currentUser != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -182,43 +191,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 trailingIcon: PhosphorIcons.caretRight(),
               ),
               _divider(),
-              _buildSettingsItem(
-                context: context,
-                icon: PhosphorIcons.signOut(),
-                title: 'Çıkış Yap',
-                iconColor: MidnightColors.error,
-                onTap: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: MidnightColors.navBg,
-                      title: const Text('Çıkış Yap',
-                          style: TextStyle(color: MidnightColors.textMain)),
-                      content: const Text(
-                          'Çıkış yapmak istediğinize emin misiniz?',
-                          style: TextStyle(color: MidnightColors.textMuted)),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('İptal',
-                              style:
-                                  TextStyle(color: MidnightColors.primary)),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          style: TextButton.styleFrom(
-                              foregroundColor: MidnightColors.error),
-                          child: const Text('Çıkış Yap'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true && context.mounted) {
-                    await ref.read(authNotifierProvider.notifier).signOut();
-                    if (context.mounted) context.go('/login');
-                  }
-                },
-              ),
+              if (isLoggedIn)
+                _buildSettingsItem(
+                  context: context,
+                  icon: PhosphorIcons.signOut(),
+                  title: 'Çıkış Yap (${currentUser.email})',
+                  iconColor: MidnightColors.error,
+                  onTap: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: MidnightColors.navBg,
+                        title: const Text('Çıkış Yap',
+                            style: TextStyle(color: MidnightColors.textMain)),
+                        content: const Text(
+                            'Çıkış yapmak istediğinize emin misiniz?',
+                            style: TextStyle(color: MidnightColors.textMuted)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('İptal',
+                                style:
+                                    TextStyle(color: MidnightColors.primary)),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: TextButton.styleFrom(
+                                foregroundColor: MidnightColors.error),
+                            child: const Text('Çıkış Yap'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true && context.mounted) {
+                      await ref.read(authNotifierProvider.notifier).signOut();
+                      if (context.mounted) context.go('/login');
+                    }
+                  },
+                )
+              else
+                _buildSettingsItem(
+                  context: context,
+                  icon: PhosphorIcons.signIn(),
+                  title: 'Giriş Yap / Kayıt Ol',
+                  iconColor: MidnightColors.primary,
+                  onTap: () {
+                    context.go('/login');
+                  },
+                  trailingIcon: PhosphorIcons.caretRight(),
+                ),
             ],
           ),
         ),

@@ -135,6 +135,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () => context.go('/home'),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text(
+                    'Giriş Yapmadan Devam Et',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMuted,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

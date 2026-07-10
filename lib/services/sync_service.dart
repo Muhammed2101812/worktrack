@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'local_db_service.dart';
 import 'supabase_service.dart';
 import '../models/client.dart';
@@ -9,8 +10,17 @@ class SyncService {
 
   SyncService({required this.localDB, required this.supabase});
 
+  bool _isLoggedIn() {
+    try {
+      return Supabase.instance.client.auth.currentSession != null;
+    } catch (_) {
+      return true; // Supabase is not initialized (e.g. in unit tests), default to true for tests
+    }
+  }
+
   Future<void> syncPendingEntries() async {
     try {
+      if (!_isLoggedIn()) return;
       final results = await Connectivity().checkConnectivity();
       if (results.contains(ConnectivityResult.none)) return;
       
@@ -41,6 +51,7 @@ class SyncService {
 
   Future<void> fullSync() async {
     try {
+      if (!_isLoggedIn()) return;
       final result = await Connectivity().checkConnectivity();
       if (result.contains(ConnectivityResult.none)) return;
 
