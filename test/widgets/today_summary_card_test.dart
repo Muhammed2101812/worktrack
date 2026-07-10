@@ -7,15 +7,17 @@ import 'package:worklog/screens/home/widgets/today_summary_card.dart';
 import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/providers/entries_provider.dart';
 
-class MockEntriesNotifier extends EntriesNotifier {
+class FakeEntriesNotifier extends EntriesNotifier {
   final List<WorkEntry> _entries;
-  MockEntriesNotifier(this._entries);
+  FakeEntriesNotifier(this._entries);
 
   @override
-  Future<List<WorkEntry>> build() async => _entries;
+  Future<List<WorkEntry>> build() async {
+    return _entries;
+  }
 }
 
-class LoadingEntriesNotifier extends EntriesNotifier {
+class FakeLoadingEntriesNotifier extends EntriesNotifier {
   @override
   Future<List<WorkEntry>> build() {
     return Completer<List<WorkEntry>>().future;
@@ -28,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => LoadingEntriesNotifier()),
+            entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -72,7 +74,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => MockEntriesNotifier(entries)),
+            entriesProvider.overrideWith(() => FakeEntriesNotifier(entries)),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -96,7 +98,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => MockEntriesNotifier([])),
+            entriesProvider.overrideWith(() => FakeEntriesNotifier([])),
           ],
           child: const MaterialApp(
             home: Scaffold(
