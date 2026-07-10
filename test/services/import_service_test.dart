@@ -1,35 +1,44 @@
-import 'dart:typed_data';
-import 'package:excel/excel.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:worklog/models/client.dart';
-import 'package:worklog/models/work_entry.dart';
-import 'package:worklog/providers/clients_provider.dart';
-import 'package:worklog/providers/core_providers.dart';
-import 'package:worklog/providers/entries_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:excel/excel.dart';
 import 'package:worklog/services/import_service.dart';
 import 'package:worklog/services/local_db_service.dart';
+import 'package:worklog/providers/core_providers.dart';
+import 'package:worklog/providers/clients_provider.dart';
+import 'package:worklog/providers/entries_provider.dart';
+import 'package:worklog/models/client.dart';
+import 'package:worklog/models/work_entry.dart';
 
-class MockLocalDBService implements LocalDBService {
+// --- Integration Test Mock ---
+class MockWidgetRefIntegration implements WidgetRef {
+  final ProviderContainer container;
+  MockWidgetRefIntegration(this.container);
+
+  @override
+  T read<T>(ProviderListenable<T> provider) => container.read(provider);
+
+  @override
+  void invalidate(ProviderOrFamily provider) => container.invalidate(provider);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+// --- Unit Test Mocks ---
+class MockLocalDBServiceUnit extends Fake implements LocalDBService {
   final List<Client> mockClients = [];
-  final List<WorkEntry> insertedEntries = [];
   final List<Client> insertedClients = [];
-  bool shouldThrowOnClients = false;
+  final List<WorkEntry> insertedEntries = [];
   bool shouldThrowOnInsertEntry = false;
 
   @override
   Future<List<Client>> getAllClients() async {
-    if (shouldThrowOnClients) {
-      throw Exception('Database Error getting clients');
-    }
     return mockClients;
   }
 
   @override
   Future<void> insertClient(Client client) async {
-    if (shouldThrowOnClients) {
-      throw Exception('Database Error inserting client');
-    }
     insertedClients.add(client);
   }
 
@@ -45,11 +54,11 @@ class MockLocalDBService implements LocalDBService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockWidgetRef implements WidgetRef {
+class MockWidgetRefUnit implements WidgetRef {
   final Map<ProviderListenable<dynamic>, dynamic> _providerValues;
   final List<ProviderOrFamily> invalidatedProviders = [];
 
-  MockWidgetRef(this._providerValues);
+  MockWidgetRefUnit(this._providerValues);
 
   @override
   T read<T>(ProviderListenable<T> provider) {
@@ -69,13 +78,16 @@ class MockWidgetRef implements WidgetRef {
 }
 
 void main() {
-  group('ImportService Tests', () {
-    late MockLocalDBService mockDB;
-    late MockWidgetRef mockRef;
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  group('ImportService Unit Tests', () {
+    late MockLocalDBServiceUnit mockDB;
+    late MockWidgetRefUnit mockRef;
 
     setUp(() {
-      mockDB = MockLocalDBService();
-      mockRef = MockWidgetRef({
+      mockDB = MockLocalDBServiceUnit();
+      mockRef = MockWidgetRefUnit({
         localDBServiceProvider: mockDB,
       });
     });
@@ -217,6 +229,79 @@ void main() {
       expect(count, equals(0));
       expect(mockDB.insertedEntries.isEmpty, isTrue);
       expect(mockRef.invalidatedProviders, isNot(contains(entriesProvider)));
+    });
+  });
+
+  group('ImportService Integration & Benchmark', () {
+    late ProviderContainer container;
+    late MockWidgetRefIntegration mockRef;
+
+    setUp(() async {
+      container = ProviderContainer();
+      mockRef = MockWidgetRefIntegration(container);
+
+      // Clear database before each test
+      final db = container.read(localDBServiceProvider);
+      await db.clearClients();
+      await db.clearEntries();
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    List<int> createMockExcelBytes(int rowCount) {
+      final excel = Excel.createExcel();
+      final sheet = excel.tables.values.first;
+
+      // Header
+      sheet.appendRow([
+        TextCellValue('Tarih'),
+        TextCellValue('Müşteri'),
+        TextCellValue('Başlangıç'),
+        TextCellValue('Bitiş'),
+        TextCellValue('İş Tipi'),
+        TextCellValue('Notlar'),
+      ]);
+
+      // We will use 5 distinct client names repeated in round-robin fashion
+      for (int i = 0; i < rowCount; i++) {
+        final clientNum = i % 5;
+        sheet.appendRow([
+          TextCellValue('15.03.2026'),
+          TextCellValue('Client_$clientNum'),
+          TextCellValue('09:00'),
+          TextCellValue('17:00'),
+          TextCellValue('Yazılım'),
+          TextCellValue('Note $i'),
+        ]);
+      }
+
+      final bytes = excel.encode();
+      return bytes ?? [];
+    }
+
+    test('should import Excel rows and measure performance', () async {
+      final rowCount = 50; // Use 50 rows for testing
+      final bytes = createMockExcelBytes(rowCount);
+      expect(bytes.isNotEmpty, isTrue);
+
+      final stopwatch = Stopwatch()..start();
+      final result = await ImportService.importBytes(bytes, mockRef);
+      stopwatch.stop();
+
+      print(
+          'Benchmark - Imported $result rows in ${stopwatch.elapsedMilliseconds} ms');
+      expect(result, equals(rowCount));
+
+      // Verify that 5 clients were actually created in database
+      final db = container.read(localDBServiceProvider);
+      final clients = await db.getAllClients();
+      expect(clients.length, equals(5));
+
+      // Verify work entries count
+      final entries = await db.getAllEntries();
+      expect(entries.length, equals(rowCount));
     });
   });
 }

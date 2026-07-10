@@ -34,6 +34,12 @@ class ImportService {
     final db = ref.read(localDBServiceProvider);
     int count = 0;
 
+    // Fetch existing clients once before the loop to prevent N+1 DB queries
+    final existingClients = await db.getAllClients();
+    final Map<String, Client> clientMap = {
+      for (final client in existingClients) client.name.toLowerCase(): client,
+    };
+
     for (final row in rows.skip(1)) {
       try {
         if (row.length < 5) continue;
@@ -44,21 +50,22 @@ class ImportService {
         final workType = _cellStr(row[4]);
         final notes = row.length > 5 ? _cellStr(row[5]) : '';
 
-        if (date.isEmpty || clientName.isEmpty || startTime.isEmpty ||
-            endTime.isEmpty || workType.isEmpty) continue;
+        if (date.isEmpty ||
+            clientName.isEmpty ||
+            startTime.isEmpty ||
+            endTime.isEmpty ||
+            workType.isEmpty) continue;
 
-        // Find or create client
-        final existingClients = await db.getAllClients();
+        // Find or create client using local Map
+        final lowercaseClientName = clientName.toLowerCase();
         Client client;
-        final match = existingClients.where(
-          (c) => c.name.toLowerCase() == clientName.toLowerCase(),
-        );
-        if (match.isNotEmpty) {
-          client = match.first;
+        if (clientMap.containsKey(lowercaseClientName)) {
+          client = clientMap[lowercaseClientName]!;
         } else {
           client = Client(name: clientName, color: '#4A90D9');
           await db.insertClient(client);
           ref.invalidate(clientsProvider);
+          clientMap[lowercaseClientName] = client;
         }
 
         final entry = WorkEntry(
