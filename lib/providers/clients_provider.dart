@@ -22,6 +22,7 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
       await supabase.upsertClient(client);
     } catch (_) {}
     ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
   }
 
   Future<void> updateClient(Client client) async {
@@ -30,6 +31,7 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
     await db.updateClient(client);
     try { await supabase.updateClient(client); } catch (_) {}
     ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
   }
 
   Future<void> deleteClient(String id) async {
@@ -38,6 +40,7 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
     await db.deleteClient(id);
     try { await supabase.deleteClient(id); } catch (_) {}
     ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
   }
 }
 

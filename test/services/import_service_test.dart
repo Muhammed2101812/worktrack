@@ -4,6 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:excel/excel.dart';
 import 'package:worklog/services/import_service.dart';
 import 'package:worklog/services/local_db_service.dart';
+import 'package:worklog/services/backup_service.dart';
 import 'package:worklog/providers/core_providers.dart';
 import 'package:worklog/providers/clients_provider.dart';
 import 'package:worklog/providers/entries_provider.dart';
@@ -54,6 +55,13 @@ class MockLocalDBServiceUnit extends Fake implements LocalDBService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class MockBackupService extends Fake implements BackupService {
+  @override
+  Future<void> triggerBackup() async {
+    // do nothing
+  }
+}
+
 class MockWidgetRefUnit implements WidgetRef {
   final Map<ProviderListenable<dynamic>, dynamic> _providerValues;
   final List<ProviderOrFamily> invalidatedProviders = [];
@@ -65,7 +73,7 @@ class MockWidgetRefUnit implements WidgetRef {
     if (_providerValues.containsKey(provider)) {
       return _providerValues[provider] as T;
     }
-    throw UnimplementedError('Provider not mocked');
+    throw UnimplementedError('Provider not mocked: $provider');
   }
 
   @override
@@ -87,8 +95,10 @@ void main() {
 
     setUp(() {
       mockDB = MockLocalDBServiceUnit();
+      final mockBackup = MockBackupService();
       mockRef = MockWidgetRefUnit({
         localDBServiceProvider: mockDB,
+        backupServiceProvider: mockBackup,
       });
     });
 

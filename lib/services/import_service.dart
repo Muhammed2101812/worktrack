@@ -88,6 +88,7 @@ class ImportService {
 
     if (count > 0) {
       ref.invalidate(entriesProvider);
+      await ref.read(backupServiceProvider).triggerBackup();
     }
     return count;
   }

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/entries_provider.dart';
+import '../../providers/clients_provider.dart';
+import '../../providers/core_providers.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sync_provider.dart';
 import 'widgets/today_summary_card.dart';
@@ -186,11 +188,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(syncProvider.notifier).fullSync().then((_) {
-        ref.read(entriesProvider.notifier).refresh();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(syncProvider.notifier).fullSync();
+      ref.read(entriesProvider.notifier).refresh();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _checkAndRestoreBackup();
+        }
       });
     });
+  }
+
+  Future<void> _checkAndRestoreBackup() async {
+    final entriesVal = ref.read(entriesProvider);
+    final clientsVal = ref.read(clientsProvider);
+
+    if (entriesVal.value != null && entriesVal.value!.isEmpty &&
+        clientsVal.value != null && clientsVal.value!.isEmpty) {
+      final backupService = ref.read(backupServiceProvider);
+      final backup = await backupService.checkBackup();
+      if (backup != null) {
+        final timestampStr = backup['timestamp'] as String?;
+        String displayTime = '';
+        if (timestampStr != null) {
+          try {
+            final dt = DateTime.parse(timestampStr);
+            displayTime = '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+          } catch (_) {
+            displayTime = timestampStr;
+          }
+        }
+
+        if (mounted) {
+          final shouldRestore = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.surface,
+              title: const Row(
+                children: [
+                  Icon(Icons.backup_outlined, color: AppColors.primary),
+                  SizedBox(width: 12),
+                  Text('Veri Kurtarma', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                ],
+              ),
+              content: Text(
+                'Uygulamada kayıtlı veri bulunamadı ancak yerel bir yedek tespit edildi ($displayTime).\n\nVerilerinizi bu yedeklemeden geri yüklemek ister misiniz?',
+                style: const TextStyle(height: 1.4, color: AppColors.textSecondary),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Hayır, Yeni Başla', style: TextStyle(color: AppColors.textMuted)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  child: const Text('Evet, Geri Yükle', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldRestore == true && mounted) {
+            try {
+              await backupService.restoreBackup(backup);
+              ref.invalidate(entriesProvider);
+              ref.invalidate(clientsProvider);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Verileriniz başarıyla yedeklemeden geri yüklendi!')),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Geri yükleme başarısız: $e')),
+                );
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   @override

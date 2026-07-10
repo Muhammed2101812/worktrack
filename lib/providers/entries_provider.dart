@@ -15,6 +15,7 @@ class EntriesNotifier extends AsyncNotifier<List<WorkEntry>> {
     await db.insertEntry(entry);
     await sync.syncPendingEntries();
     ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
   }
 
   Future<void> updateEntry(WorkEntry entry) async {
@@ -23,6 +24,7 @@ class EntriesNotifier extends AsyncNotifier<List<WorkEntry>> {
     await db.updateEntry(entry);
     await sync.syncPendingEntries();
     ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
   }
 
   Future<void> deleteEntry(String id) async {
@@ -31,6 +33,7 @@ class EntriesNotifier extends AsyncNotifier<List<WorkEntry>> {
     await db.deleteEntry(id);
     try { await supabase.deleteEntry(id); } catch (_) {}
     ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
   }
 
   Future<void> refresh() => Future(() => ref.invalidateSelf());
