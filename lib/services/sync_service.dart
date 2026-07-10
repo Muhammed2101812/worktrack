@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'local_db_service.dart';
 import 'supabase_service.dart';
+import '../models/client.dart';
 
 class SyncService {
   final LocalDBService localDB;
@@ -39,12 +40,16 @@ class SyncService {
 
       // 2. Push local-only clients to remote (name-based dedup)
       final localClients = await localDB.getAllClients();
+      final clientsToUpsert = <Client>[];
       for (final lc in localClients) {
         if (!remoteClientNames.contains(lc.name.toLowerCase())) {
-          try {
-            await supabase.upsertClient(lc);
-          } catch (_) {}
+          clientsToUpsert.add(lc);
         }
+      }
+      if (clientsToUpsert.isNotEmpty) {
+        try {
+          await supabase.upsertClients(clientsToUpsert);
+        } catch (_) {}
       }
 
       // 3. Re-fetch remote (includes just-pushed clients)

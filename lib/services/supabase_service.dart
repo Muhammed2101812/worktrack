@@ -54,6 +54,13 @@ class SupabaseService {
     await _db.from(AppConstants.clientsTable).upsert(client.toMap());
   }
 
+  Future<void> upsertClients(List<Client> clients) async {
+    if (clients.isEmpty) return;
+    await _db.from(AppConstants.clientsTable).upsert(
+          clients.map((c) => c.toMap()).toList(),
+        );
+  }
+
   Future<List<Client>> getAllClients() async {
     final data = await _db
         .from(AppConstants.clientsTable)
