@@ -44,6 +44,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _loading = true);
+    try {
+      final notifier = ref.read(authNotifierProvider.notifier);
+      await notifier.signInWithGoogle();
+      if (mounted) {
+        await ref.read(syncProvider.notifier).fullSync();
+        if (mounted) context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) CustomToast.show(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,6 +134,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           color: Colors.white,
                         ),
                       ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: Divider(color: AppColors.border.withOpacity(0.5))),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('veya', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  ),
+                  Expanded(child: Divider(color: AppColors.border.withOpacity(0.5))),
+                ],
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: _loading ? null : _signInWithGoogle,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: AppColors.surface,
+                  foregroundColor: AppColors.textPrimary,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.network(
+                      'https://developers.google.com/identity/images/g-logo.png',
+                      height: 20,
+                      width: 20,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(PhosphorIcons.googleLogo(), color: Colors.blue, size: 20);
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Google ile Giriş Yap',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               GestureDetector(

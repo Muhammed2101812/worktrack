@@ -22,6 +22,11 @@ class AuthNotifier extends Notifier<User?> {
     state = Supabase.instance.client.auth.currentUser;
   }
 
+  Future<void> signInWithGoogle() async {
+    await ref.read(authServiceProvider).signInWithGoogle();
+    state = Supabase.instance.client.auth.currentUser;
+  }
+
   Future<void> signOut() async {
     await ref.read(authServiceProvider).signOut();
     state = null;
