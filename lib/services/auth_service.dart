@@ -25,6 +25,7 @@ class AuthService {
   Future<void> signInWithGoogle() async {
     try {
       final googleSignIn = GoogleSignIn(
+        serverClientId: '430614470319-al4ugk9ub67kkisacq59dbjqbv9mm6u6.apps.googleusercontent.com',
         scopes: ['email'],
       );
       final googleUser = await googleSignIn.signIn();
