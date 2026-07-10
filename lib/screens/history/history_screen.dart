@@ -23,6 +23,76 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final entriesAsync = ref.watch(entriesProvider);
+    final isWide = MediaQuery.of(context).size.width >= 768;
+
+    Widget mainContent = Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              MidnightInput(
+                hintText: 'Müşteri veya iş ara...',
+                prefixIcon: Icon(PhosphorIcons.magnifyingGlass(), color: MidnightColors.primary),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _buildFilterChip('Tümü', 'Tümü'),
+                    _buildFilterChip('Bu Ay', 'Bu Ay'),
+                    _buildFilterChip('Geçen Ay', 'Geçen Ay'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              MonthFilter(
+                selectedMonth: _selectedMonth ?? DateTime.now(),
+                onMonthChanged: (month) {
+                  setState(() {
+                    _selectedMonth = month;
+                    _selectedFilter = 'Tümü';
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: entriesAsync.when(
+            data: (entries) => _buildHistoryList(entries, isWide),
+            loading: () => const Center(child: CircularProgressIndicator(color: MidnightColors.primary)),
+            error: (error, _) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(PhosphorIcons.warningCircle(), size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Hata: $error', style: TextStyle(color: MidnightColors.textMain)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (isWide) {
+      mainContent = Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: mainContent,
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -32,13 +102,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => context.go('/home'),
-                    child: Icon(PhosphorIcons.x(), color: MidnightColors.textMain, size: 24),
-                  ),
-                  const SizedBox(width: 16),
+                  if (!isWide) ...[
+                    GestureDetector(
+                      onTap: () => context.go('/home'),
+                      child: Icon(PhosphorIcons.x(), color: MidnightColors.textMain, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                   Text(
-                    'İş Geçmişi',
+                    '🕰️ Geçmişi',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -48,61 +120,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  MidnightInput(
-                    hintText: 'Müşteri veya iş ara...',
-                    prefixIcon: Icon(PhosphorIcons.magnifyingGlass(), color: MidnightColors.primary),
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 40,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        _buildFilterChip('Tümü', 'Tümü'),
-                        _buildFilterChip('Bu Ay', 'Bu Ay'),
-                        _buildFilterChip('Geçen Ay', 'Geçen Ay'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  MonthFilter(
-                    selectedMonth: _selectedMonth ?? DateTime.now(),
-                    onMonthChanged: (month) {
-                      setState(() {
-                        _selectedMonth = month;
-                        _selectedFilter = 'Tümü';
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: entriesAsync.when(
-                data: (entries) => _buildHistoryList(entries),
-                loading: () => const Center(child: CircularProgressIndicator(color: MidnightColors.primary)),
-                error: (error, _) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(PhosphorIcons.warningCircle(), size: 64, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Hata: $error', style: TextStyle(color: MidnightColors.textMain)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            Expanded(child: mainContent),
           ],
         ),
       ),
@@ -154,7 +172,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
-  Widget _buildHistoryList(List entries) {
+  Widget _buildHistoryList(List entries, bool isWide) {
     List filteredEntries = entries;
     
     if (_searchQuery.isNotEmpty) {
@@ -206,7 +224,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final groupedEntries = _groupByDate(filteredEntries);
 
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 100),
+      padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
       itemCount: groupedEntries.length,
       itemBuilder: (context, index) {
         final date = groupedEntries.keys.elementAt(index);

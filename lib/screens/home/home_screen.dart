@@ -29,48 +29,276 @@ class HomeShell extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Content Area
-          child,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 768;
 
-          // Custom Floating Navbar
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 30,
-            child: _buildCustomNavbar(context, currentIndex),
-          ),
+          if (isWide) {
+            return Row(
+              children: [
+                _buildSidebar(context, ref, currentIndex),
+                Expanded(child: child),
+              ],
+            );
+          }
 
-          // Central FAB — rendered after navbar so it sits on top
-          Positioned(
-            bottom: 55,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () => context.go('/home/add'),
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.35),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
+          return Stack(
+            children: [
+              child,
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 30,
+                child: _buildCustomNavbar(context, currentIndex),
+              ),
+              Positioned(
+                bottom: 55,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => context.go('/home/add'),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.35),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: const Icon(Icons.add, color: Colors.white, size: 28),
+                    ),
                   ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 28),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSidebar(BuildContext context, WidgetRef ref, int currentIndex) {
+    final currentUser = ref.watch(authNotifierProvider);
+    final metadata = currentUser?.userMetadata;
+    String displayName = metadata?['full_name'] as String? ??
+        metadata?['name'] as String? ??
+        currentUser?.email?.split('@').first ??
+        'Kullanıcı';
+    final avatarLetter =
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K';
+
+    final navItems = <_NavItemData>[
+      _NavItemData(
+        label: 'Ana Sayfa',
+        icon: PhosphorIcons.house(),
+        activeIcon: PhosphorIcons.house(PhosphorIconsStyle.fill),
+        index: 0,
+        route: '/home',
+      ),
+      _NavItemData(
+        label: 'İş Geçmişi',
+        icon: PhosphorIcons.clockCounterClockwise(),
+        activeIcon:
+            PhosphorIcons.clockCounterClockwise(PhosphorIconsStyle.fill),
+        index: 1,
+        route: '/home/history',
+      ),
+      _NavItemData(
+        label: 'Raporlar',
+        icon: PhosphorIcons.chartPie(),
+        activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
+        index: 2,
+        route: '/home/stats',
+      ),
+      _NavItemData(
+        label: 'Ayarlar',
+        icon: PhosphorIcons.gear(),
+        activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
+        index: 3,
+        route: '/home/settings',
+      ),
+    ];
+
+    return Container(
+      width: 260,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          right: BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    PhosphorIcons.timer(),
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'WorkTrack',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: AppColors.border, height: 1),
+
+          // New record button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => context.go('/home/add'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.add, size: 20),
+                label: const Text(
+                  'Yeni Kayıt',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
               ),
             ),
           ),
+
+          // Navigation list
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              children: navItems
+                  .map((item) => _buildSidebarNavItem(
+                        context,
+                        item: item,
+                        isActive: currentIndex == item.index,
+                      ))
+                  .toList(),
+            ),
+          ),
+
+          const Divider(color: AppColors.border, height: 1),
+
+          // Footer: user profile
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 20),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      avatarLetter,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    displayName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () =>
+                      ref.read(authNotifierProvider.notifier).signOut(),
+                  icon: Icon(
+                    PhosphorIcons.signOut(),
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
+                  tooltip: 'Çıkış Yap',
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarNavItem(
+    BuildContext context, {
+    required _NavItemData item,
+    required bool isActive,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(item.route),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primaryLight : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isActive ? item.activeIcon : item.icon,
+                color: isActive ? AppColors.primary : AppColors.textMuted,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: isActive ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -175,6 +403,22 @@ class HomeShell extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _NavItemData {
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
+  final int index;
+  final String route;
+
+  const _NavItemData({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+    required this.index,
+    required this.route,
+  });
 }
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -284,100 +528,117 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         'Kullanıcı';
     final avatarLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K';
 
-    return Scaffold(
-      backgroundColor: Colors.transparent, // Let HomeShell handle bg
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Merhaba,',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-            Text(
-              displayName,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 24),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  avatarLetter,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: entriesAsync.when(
-            data: (entries) => ListView(
-              padding: const EdgeInsets.fromLTRB(24, 120, 24, 150), // Extra bottom padding for floating nav
-              children: [
-                const TodaySummaryCard(),
-                const SizedBox(height: 35),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Son Kayıtlar',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => context.go('/home/history'),
-                      child: const Text(
-                        'Tümünü Gör',
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 768;
+
+        return Scaffold(
+          backgroundColor: Colors.transparent, // Let HomeShell handle bg
+          extendBodyBehindAppBar: true,
+          appBar: isWide
+              ? null
+              : AppBar(
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Merhaba,',
                         style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 24),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            avatarLetter,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                if (entries.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Text('Henüz kayıt bulunmuyor'),
+          body: entriesAsync.when(
+            data: (entries) => Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    isWide ? 40 : 120,
+                    24,
+                    isWide ? 40 : 150,
+                  ),
+                  children: [
+                    const TodaySummaryCard(),
+                    const SizedBox(height: 35),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Son Kayıtlar',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => context.go('/home/history'),
+                          child: const Text(
+                            'Tümünü Gör',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                else
-                  ...entries.take(5).map((entry) => EntryListTile(entry: entry)).toList(),
-              ],
+                    const SizedBox(height: 10),
+                    if (entries.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Text('Henüz kayıt bulunmuyor'),
+                        ),
+                      )
+                    else
+                      ...entries.take(5).map((entry) => EntryListTile(entry: entry)).toList(),
+                  ],
+                ),
+              ),
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, s) => Center(child: Text('Hata: $e')),
-      ),
+          ),
+        );
+      },
     );
   }
 }
-

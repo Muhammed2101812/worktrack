@@ -34,44 +34,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final syncAsync = ref.watch(syncProvider);
     final unsyncedAsync = ref.watch(unsyncedEntriesProvider);
     final syncEnabled = ref.watch(syncEnabledProvider).valueOrNull ?? true;
+    final isWide = MediaQuery.of(context).size.width >= 768;
+
+    Widget content = Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          child: Row(
+            children: [
+              if (!isWide)
+                GestureDetector(
+                  onTap: () => context.go('/home'),
+                  child: Icon(PhosphorIcons.x(),
+                      color: MidnightColors.textMain, size: 24),
+                ),
+              if (!isWide) const SizedBox(width: 16),
+              Text(
+                'Ayarlar',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: MidnightColors.textMain,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
+            children: [
+              _buildDataSyncSection(context, syncAsync, unsyncedAsync, syncEnabled, currentUser),
+              _buildAccountSection(context, currentUser),
+              _buildAboutSection(context),
+            ],
+          ),
+        ),
+      ],
+    );
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.go('/home'),
-                    child: Icon(PhosphorIcons.x(),
-                        color: MidnightColors.textMain, size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Ayarlar',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: MidnightColors.textMain,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: 100),
-                children: [
-                  _buildDataSyncSection(context, syncAsync, unsyncedAsync, syncEnabled, currentUser),
-                  _buildAccountSection(context, currentUser),
-                  _buildAboutSection(context),
-                ],
-              ),
-            ),
-          ],
-        ),
+        child: isWide
+            ? Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: content,
+                ),
+              )
+            : content,
       ),
     );
   }
