@@ -5,14 +5,12 @@ import 'package:worklog/screens/add_entry/widgets/work_type_selector.dart';
 void main() {
   group('WorkTypeSelector Widget Tests', () {
     testWidgets('should display all work types', (WidgetTester tester) async {
-      String? selectedType;
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: WorkTypeSelector(
               selectedWorkType: 'Yazılım',
-              onWorkTypeSelected: (type) => selectedType = type,
+              onWorkTypeSelected: (type) {},
             ),
           ),
         ),
