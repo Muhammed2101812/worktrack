@@ -1,9 +1,14 @@
 class AppConstants {
   static const String appName = 'WorkLog';
 
-  // Supabase URL ve Anon Key (ADIM 1'DE MCP'DEN ALINDI)
-  static const String supabaseUrl = 'https://eclvmlwnjtiulrthzjxx.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjbHZtbHduanRpdWxydGh6anh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNDc5MzIsImV4cCI6MjA4ODkyMzkzMn0.Tt2bUaOWJrb25CyIVO6p1uRbAX96WcKVnXVeOqm7c6Y';
+  // Supabase URL ve Anon Key (Loaded securely from environment variables)
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://eclvmlwnjtiulrthzjxx.supabase.co',
+  );
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+  );
 
   static const String entriesTable = 'work_entries';
   static const String clientsTable = 'clients';

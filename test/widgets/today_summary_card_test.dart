@@ -17,7 +17,7 @@ class FakeEntriesNotifier extends EntriesNotifier {
   }
 }
 
-class FakePendingEntriesNotifier extends EntriesNotifier {
+class FakeLoadingEntriesNotifier extends EntriesNotifier {
   @override
   Future<List<WorkEntry>> build() {
     return Completer<List<WorkEntry>>().future;
@@ -30,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            entriesProvider.overrideWith(() => FakePendingEntriesNotifier()),
+            entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
           ],
           child: const MaterialApp(
             home: Scaffold(

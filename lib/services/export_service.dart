@@ -2,13 +2,14 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
+import 'package:meta/meta.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
 
 class ExportService {
   static Future<void> exportToExcel(
       List<WorkEntry> entries, List<Client> clients) async {
-    final bytes = _buildExcelBytes(entries, clients);
+    final bytes = buildExcelBytes(entries, clients);
     final fileName =
         'WorkLog_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}';
     await FileSaver.instance.saveFile(
@@ -22,7 +23,7 @@ class ExportService {
   static Future<void> generateSampleExcel() async {
     final sample = <WorkEntry>[];
     final sampleClients = <Client>[];
-    final bytes = _buildExcelBytes(sample, sampleClients, isSample: true);
+    final bytes = buildExcelBytes(sample, sampleClients, isSample: true);
     await FileSaver.instance.saveFile(
       name: 'WorkLog_Ornek',
       bytes: bytes,
@@ -31,7 +32,8 @@ class ExportService {
     );
   }
 
-  static Uint8List _buildExcelBytes(
+  @visibleForTesting
+  static Uint8List buildExcelBytes(
     List<WorkEntry> entries,
     List<Client> clients, {
     bool isSample = false,
