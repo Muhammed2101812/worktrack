@@ -157,6 +157,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             MidnightColors.purple,
                           ];
 
+                          // Optimize client lookup by creating a Map
+                          final clientMap = {for (var c in clients) c.id: c};
+
                           return ListView(
                             padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
                             children: [
@@ -288,12 +291,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                 final index = entry.key;
                                 final clientId = entry.value;
                                 final hours = clientHours[clientId]!;
-                                final client = clients.firstWhere(
-                                  (c) => c.id == clientId,
-                                  orElse: () => Client(
+                                final client = clientMap[clientId] ?? Client(
                                       id: clientId,
                                       name: 'Bilinmeyen',
-                                      color: '#9CA3AF'),
+                                      color: '#9CA3AF',
                                 );
                                 final percentage = (hours / totalHours) * 100;
                                 final color = colors[index % colors.length];
