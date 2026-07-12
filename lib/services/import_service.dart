@@ -40,6 +40,8 @@ class ImportService {
       for (final client in existingClients) client.name.toLowerCase(): client,
     };
 
+    final List<WorkEntry> entriesToInsert = [];
+
     for (final row in rows.skip(1)) {
       try {
         if (row.length < 5) continue;
@@ -79,10 +81,18 @@ class ImportService {
           notes: notes,
           synced: false,
         );
-        await db.insertEntry(entry);
-        count++;
+        entriesToInsert.add(entry);
       } catch (_) {
         continue;
+      }
+    }
+
+    if (entriesToInsert.isNotEmpty) {
+      try {
+        await db.insertEntriesBatch(entriesToInsert);
+        count = entriesToInsert.length;
+      } catch (_) {
+        // Fallback or ignore if database exceptions are thrown
       }
     }
 

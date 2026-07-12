@@ -52,6 +52,14 @@ class MockLocalDBServiceUnit extends Fake implements LocalDBService {
   }
 
   @override
+  Future<void> insertEntriesBatch(List<WorkEntry> entries) async {
+    if (shouldThrowOnInsertEntry) {
+      throw Exception('Database Error inserting entry');
+    }
+    insertedEntries.addAll(entries);
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
