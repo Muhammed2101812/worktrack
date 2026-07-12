@@ -4,11 +4,11 @@ class AppConstants {
   // Supabase URL ve Anon Key (Loaded securely from environment variables)
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://qattsgpayyklmtgwygtu.supabase.co',
+    defaultValue: '',
   );
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhdHRzZ3BheXlrbG10Z3d5Z3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2OTMyMDEsImV4cCI6MjA5OTI2OTIwMX0.uvFOo6YHz9mDUMEhAGlEFktMEugxYuUmmmjnCBE93pw',
+    defaultValue: '',
   );
 
   static const String entriesTable = 'work_entries';

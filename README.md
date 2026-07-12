@@ -45,11 +45,29 @@ flutter pub get
 
 ### 3. Supabase yapılandırması
 
-`lib/core/constants.dart` dosyasına Supabase URL ve Anon Key'i gir:
+Supabase URL ve Anon Key, derleme ve çalıştırma sırasında çevre değişkenleri (environment variables) kullanılarak güvenli bir şekilde sağlanır.
 
-```dart
-static const supabaseUrl = 'https://<project>.supabase.co';
-static const supabaseAnonKey = '<anon-key>';
+Uygulamayı çalıştırırken `--dart-define` parametrelerini kullanın:
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://<project>.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=<anon-key>
+```
+
+Alternatif olarak, bir `config.json` dosyası oluşturup `--dart-define-from-file` ile yükleyebilirsiniz:
+
+```json
+{
+  "SUPABASE_URL": "https://<project>.supabase.co",
+  "SUPABASE_ANON_KEY": "<anon-key>"
+}
+```
+
+Ardından:
+
+```bash
+flutter run --dart-define-from-file=config.json
 ```
 
 Supabase'de aşağıdaki tabloları oluştur:
