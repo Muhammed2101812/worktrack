@@ -8,7 +8,6 @@ import '../../core/widgets/midnight_widgets.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../models/client.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
 import '../history/widgets/month_filter.dart';
 

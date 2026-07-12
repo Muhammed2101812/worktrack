@@ -759,7 +759,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     if (result == null || result.isEmpty) return null;
 
     if (isEditing) {
-      final updated = project!.copyWith(
+      final updated = project.copyWith(
         name: result,
         updatedAt: DateTime.now().toIso8601String(),
       );
