@@ -20,3 +20,47 @@ class SyncEnabledNotifier extends AsyncNotifier<bool> {
     state = AsyncData(!current);
   }
 }
+
+final defaultHourlyRateProvider =
+    AsyncNotifierProvider<DefaultHourlyRateNotifier, double>(DefaultHourlyRateNotifier.new);
+
+class DefaultHourlyRateNotifier extends AsyncNotifier<double> {
+  static const _key = 'default_hourly_rate';
+
+  @override
+  Future<double> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_key) ?? 0.0;
+  }
+
+  Future<void> updateRate(double rate) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_key, rate);
+    state = AsyncData(rate);
+  }
+}
+
+/// Whether the user has purchased the premium upgrade (currently: removes ads).
+/// Persisted in SharedPreferences and toggled by [IapService] on a successful
+/// purchase / restore.
+final isPremiumProvider =
+    AsyncNotifierProvider<IsPremiumNotifier, bool>(IsPremiumNotifier.new);
+
+class IsPremiumNotifier extends AsyncNotifier<bool> {
+  static const _key = 'is_premium';
+
+  @override
+  Future<bool> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> setPremium(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_key, value);
+    state = AsyncData(value);
+  }
+
+  Future<void> enablePremium() => setPremium(true);
+  Future<void> disablePremium() => setPremium(false);
+}

@@ -23,15 +23,16 @@ class MidnightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: margin,
         padding: padding,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: c.cardBg,
           borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(color: AppColors.border, width: 1),
+          border: Border.all(color: c.cardBorder, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -62,7 +63,7 @@ class MidnightButton extends StatefulWidget {
     super.key,
     required this.onPressed,
     required this.child,
-    this.borderRadius = 14,
+    this.borderRadius = 16,
     this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
     this.width,
     this.height,
@@ -109,8 +110,9 @@ class _MidnightButtonState extends State<MidnightButton>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final enabled = widget.onPressed != null;
-    final bg = widget.color ?? MidnightColors.primary;
+    final bg = widget.color ?? c.primary;
 
     return Listener(
       onPointerDown: enabled ? _down : null,
@@ -135,7 +137,7 @@ class _MidnightButtonState extends State<MidnightButton>
                 color: _isPressed
                     ? (widget.color != null
                         ? widget.color!.withValues(alpha: 0.85)
-                        : AppColors.primaryDark)
+                        : c.primaryHover)
                     : bg,
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 boxShadow: enabled
@@ -225,11 +227,12 @@ class _MidnightInputState extends State<MidnightInput> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
+        color: c.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -245,14 +248,14 @@ class _MidnightInputState extends State<MidnightInput> {
         onChanged: widget.onChanged,
         maxLines: widget.maxLines,
         maxLength: widget.maxLength,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
+        style: TextStyle(
+          color: c.textMain,
           fontWeight: FontWeight.w500,
           fontSize: 15,
         ),
         decoration: InputDecoration(
           hintText: widget.hintText,
-          hintStyle: const TextStyle(color: AppColors.textMuted),
+          hintStyle: TextStyle(color: c.textMuted),
           prefixIcon: widget.prefixIcon,
           suffixIcon: widget.suffixIcon,
           border: InputBorder.none,
@@ -326,6 +329,7 @@ class _CustomToastState extends State<CustomToast>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Positioned(
       bottom: 100,
       left: 24,
@@ -341,7 +345,7 @@ class _CustomToastState extends State<CustomToast>
             padding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.textPrimary,
+              color: c.textMain,
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
@@ -357,19 +361,19 @@ class _CustomToastState extends State<CustomToast>
                 Container(
                   width: 20,
                   height: 20,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
+                  decoration: BoxDecoration(
+                    color: c.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check,
-                      size: 12, color: Colors.white),
+                  child: Icon(Icons.check,
+                      size: 12, color: c.bgColor),
                 ),
                 const SizedBox(width: 10),
                 Flexible(
                   child: Text(
                     widget.message,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: c.bgColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),

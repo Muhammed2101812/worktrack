@@ -38,11 +38,11 @@ dependencies:
   uuid: ^4.3.3
   intl: ^0.19.0
   shared_preferences: ^2.5.4
+  flutter_dotenv: ^5.1.0
   
   # UI
   cupertino_icons: ^1.0.6
   sqflite_common_ffi_web: ^1.1.1
-  csv: ^7.2.0
   file_saver: ^0.3.1
   google_fonts: ^6.2.1
   flutter_inset_shadow: ^2.0.1
@@ -50,6 +50,14 @@ dependencies:
   excel: ^4.0.6
   file_picker: ^8.1.7
   google_sign_in: ^6.2.1
+  archive: ^3.6.1
+
+  # Ads & Monetization
+  google_mobile_ads: ^5.3.0
+  in_app_purchase: ^3.2.0
+
+  # PDF export
+  pdf: ^3.11.1
 
 dev_dependencies:
   flutter_test:
@@ -60,6 +68,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/images/
+    - .env

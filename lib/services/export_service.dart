@@ -49,7 +49,10 @@ class ExportService {
       'Başlangıç',
       'Bitiş',
       'İş Türü',
+      'Proje',
       'Notlar',
+      'Ücret Tipi',
+      'Ücret',
     ];
     sheet.appendRow(headers.map((h) => TextCellValue(h)).toList());
 
@@ -61,7 +64,10 @@ class ExportService {
         TextCellValue('09:00'),
         TextCellValue('17:00'),
         TextCellValue('Arayüz tasarımı'),
+        TextCellValue('Kartvizit Tasarımı'),
         TextCellValue('Örnek not'),
+        TextCellValue('Saatlik'),
+        TextCellValue('150'),
       ]);
     } else {
       for (final entry in entries) {
@@ -76,7 +82,12 @@ class ExportService {
           TextCellValue(entry.startTime),
           TextCellValue(entry.endTime),
           TextCellValue(entry.workType),
+          TextCellValue(entry.projectName ?? ''),
           TextCellValue(entry.notes),
+          TextCellValue(entry.billingType == 'fixed' ? 'Sabit' : 'Saatlik'),
+          TextCellValue(entry.billingType == 'fixed'
+              ? entry.totalPrice.toStringAsFixed(1)
+              : entry.hourlyRate.toStringAsFixed(1)),
         ]);
       }
     }

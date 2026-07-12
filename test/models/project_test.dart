@@ -15,7 +15,9 @@ void main() {
       expect(project.description, '');
       expect(project.status, 'active');
       expect(project.createdAt, isNotEmpty);
+      expect(project.updatedAt, isNotEmpty);
       expect(project.synced, isFalse);
+      expect(project.isDeleted, isFalse);
     });
 
     test('should create Project with custom id and optional parameters', () {
@@ -26,7 +28,9 @@ void main() {
         description: 'Creating a custom website design',
         status: 'completed',
         createdAt: '2026-03-24T12:00:00Z',
+        updatedAt: '2026-03-24T12:10:00Z',
         synced: true,
+        isDeleted: true,
       );
 
       expect(project.id, 'custom-project-id');
@@ -35,7 +39,9 @@ void main() {
       expect(project.description, 'Creating a custom website design');
       expect(project.status, 'completed');
       expect(project.createdAt, '2026-03-24T12:00:00Z');
+      expect(project.updatedAt, '2026-03-24T12:10:00Z');
       expect(project.synced, isTrue);
+      expect(project.isDeleted, isTrue);
     });
 
     test('should copyWith updated values', () {
@@ -44,7 +50,10 @@ void main() {
         name: 'New Website Design',
         description: 'Initial desc',
         status: 'active',
+        createdAt: '2026-03-24T12:00:00Z',
+        updatedAt: '2026-03-24T12:10:00Z',
         synced: false,
+        isDeleted: false,
       );
 
       final updated = project.copyWith(
@@ -52,7 +61,10 @@ void main() {
         name: 'Updated Website Design',
         description: 'Updated desc',
         status: 'on-hold',
+        createdAt: '2026-03-24T13:00:00Z',
+        updatedAt: '2026-03-24T13:10:00Z',
         synced: true,
+        isDeleted: true,
       );
 
       // ID should remain the same
@@ -61,7 +73,10 @@ void main() {
       expect(updated.name, 'Updated Website Design');
       expect(updated.description, 'Updated desc');
       expect(updated.status, 'on-hold');
+      expect(updated.createdAt, '2026-03-24T13:00:00Z');
+      expect(updated.updatedAt, '2026-03-24T13:10:00Z');
       expect(updated.synced, isTrue);
+      expect(updated.isDeleted, isTrue);
     });
 
     test('should convert to map correctly (toMap)', () {
@@ -72,7 +87,9 @@ void main() {
         description: 'A test project description',
         status: 'active',
         createdAt: '2026-03-24T12:00:00Z',
+        updatedAt: '2026-03-24T12:10:00Z',
         synced: true,
+        isDeleted: false,
       );
 
       final map = project.toMap();
@@ -85,7 +102,7 @@ void main() {
         'status': 'active',
         'created_at': '2026-03-24T12:00:00Z',
       });
-      // toMap shouldn't contain the 'synced' field, since it is used for Remote DB
+      // toMap shouldn't contain local-only sync/conflict fields (synced, is_deleted, updated_at), since it is used for Remote DB
     });
 
     test('should convert to local map correctly (toLocalMap)', () {
@@ -96,7 +113,9 @@ void main() {
         description: 'A test project description',
         status: 'active',
         createdAt: '2026-03-24T12:00:00Z',
+        updatedAt: '2026-03-24T12:10:00Z',
         synced: true,
+        isDeleted: true,
       );
 
       final localMap = project.toLocalMap();
@@ -108,7 +127,9 @@ void main() {
         'description': 'A test project description',
         'status': 'active',
         'created_at': '2026-03-24T12:00:00Z',
+        'updated_at': '2026-03-24T12:10:00Z',
         'synced': 1,
+        'is_deleted': 1,
       });
     });
 
@@ -120,7 +141,9 @@ void main() {
         'description': 'A test project description',
         'status': 'active',
         'created_at': '2026-03-24T12:00:00Z',
+        'updated_at': '2026-03-24T12:10:00Z',
         'synced': 1,
+        'is_deleted': 1,
       };
 
       final project = Project.fromMap(map);
@@ -131,7 +154,9 @@ void main() {
       expect(project.description, 'A test project description');
       expect(project.status, 'active');
       expect(project.createdAt, '2026-03-24T12:00:00Z');
+      expect(project.updatedAt, '2026-03-24T12:10:00Z');
       expect(project.synced, isTrue);
+      expect(project.isDeleted, isTrue);
     });
 
     test('should create Project fromMap with default/missing values', () {
@@ -147,7 +172,9 @@ void main() {
       expect(project.description, '');
       expect(project.status, 'active');
       expect(project.createdAt, '');
+      expect(project.updatedAt, isNotEmpty); // falls back to DateTime.now().toIso8601String() in constructor
       expect(project.synced, isFalse);
+      expect(project.isDeleted, isFalse);
     });
   });
 }

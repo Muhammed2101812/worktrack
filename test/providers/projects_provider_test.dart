@@ -137,6 +137,92 @@ void main() {
       expect(finalProjects, [project]);
     });
 
+    test('updateProject should save changes with updated timestamp, sync, and trigger backup', () async {
+      final originalProject = Project(id: 'p-1', clientId: 'c1', name: 'Original Name');
+      final initialProjects = [originalProject];
+
+      when(() => mockLocalDBService.getAllProjects())
+          .thenAnswer((_) async => initialProjects);
+      when(() => mockLocalDBService.updateProject(any()))
+          .thenAnswer((_) async => {});
+      when(() => mockSyncService.syncPendingProjects())
+          .thenAnswer((_) async => {});
+      when(() => mockBackupService.triggerBackup())
+          .thenAnswer((_) async => {});
+
+      final container = ProviderContainer(
+        overrides: [
+          localDBServiceProvider.overrideWithValue(mockLocalDBService),
+          syncServiceProvider.overrideWithValue(mockSyncService),
+          backupServiceProvider.overrideWithValue(mockBackupService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Trigger initial load
+      await container.read(projectsProvider.future);
+
+      // Prepare updated DB response for reload after updating
+      final updatedProjectFromDB = originalProject.copyWith(name: 'Updated Name', synced: false);
+      when(() => mockLocalDBService.getAllProjects())
+          .thenAnswer((_) async => [updatedProjectFromDB]);
+
+      await container.read(projectsProvider.notifier).updateProject(originalProject.copyWith(name: 'Updated Name'));
+
+      // Verify that updateProject was called on the database with a non-synced project
+      final capturedProject = verify(() => mockLocalDBService.updateProject(captureAny())).captured.single as Project;
+      expect(capturedProject.id, originalProject.id);
+      expect(capturedProject.name, 'Updated Name');
+      expect(capturedProject.synced, isFalse);
+
+      verify(() => mockSyncService.syncPendingProjects()).called(1);
+      verify(() => mockBackupService.triggerBackup()).called(1);
+
+      // Verify re-evaluation fetched the updated projects list
+      final finalProjects = await container.read(projectsProvider.future);
+      expect(finalProjects, [updatedProjectFromDB]);
+    });
+
+    test('deleteProject should soft delete locally, sync, and trigger backup', () async {
+      final project = Project(id: 'p-delete', clientId: 'c1', name: 'To Delete');
+      final initialProjects = [project];
+
+      when(() => mockLocalDBService.getAllProjects())
+          .thenAnswer((_) async => initialProjects);
+      when(() => mockLocalDBService.softDeleteProject(any()))
+          .thenAnswer((_) async => {});
+      when(() => mockSyncService.syncPendingProjects())
+          .thenAnswer((_) async => {});
+      when(() => mockBackupService.triggerBackup())
+          .thenAnswer((_) async => {});
+
+      final container = ProviderContainer(
+        overrides: [
+          localDBServiceProvider.overrideWithValue(mockLocalDBService),
+          syncServiceProvider.overrideWithValue(mockSyncService),
+          backupServiceProvider.overrideWithValue(mockBackupService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Trigger initial load
+      await container.read(projectsProvider.future);
+
+      // Prepare updated DB response for reload (empty list since project is deleted)
+      when(() => mockLocalDBService.getAllProjects())
+          .thenAnswer((_) async => <Project>[]);
+
+      await container.read(projectsProvider.notifier).deleteProject('p-delete');
+
+      verify(() => mockLocalDBService.softDeleteProject('p-delete')).called(1);
+      verify(() => mockSyncService.syncPendingProjects()).called(1);
+      verify(() => mockBackupService.triggerBackup()).called(1);
+
+      // Verify re-evaluation fetched the updated projects list
+      final finalProjects = await container.read(projectsProvider.future);
+      expect(finalProjects, isEmpty);
+    });
+
     test('refresh should invalidate the provider and reload data from DB', () async {
       final initialProjects = <Project>[];
       final refreshedProjects = [Project(id: 'refreshed-id', clientId: 'c1', name: 'Refreshed')];
