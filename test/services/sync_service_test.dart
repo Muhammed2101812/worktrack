@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:connectivity_plus_platform_interface/connectivity_plus_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:worklog/services/sync_service.dart';
@@ -8,6 +7,7 @@ import 'package:worklog/services/supabase_service.dart';
 import 'package:worklog/models/client.dart';
 import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/models/project.dart';
+import 'package:worklog/models/payment.dart';
 
 class FakeConnectivityPlatform extends ConnectivityPlatform with MockPlatformInterfaceMixin {
   @override
@@ -29,6 +29,29 @@ class FakeLocalDBService extends Fake implements LocalDBService {
 
   @override
   Future<List<Client>> getAllClients() async => clients;
+
+  @override
+  Future<List<Client>> getAllClientsIncludingDeleted() async => clients;
+
+  // Payment support stubs
+  final List<Payment> payments = [];
+  final List<Payment> unsyncedPayments = const [];
+
+  @override
+  Future<List<Payment>> getAllPayments() async => payments;
+
+  @override
+  Future<List<Payment>> getUnsyncedPayments() async => unsyncedPayments;
+
+  @override
+  Future<void> clearPayments() async => payments.clear();
+
+  @override
+  Future<void> insertPaymentsBatch(List<Payment> payments) async =>
+      this.payments.addAll(payments);
+
+  @override
+  Future<void> updatePaymentSync(String id, bool synced) async {}
 
   @override
   Future<void> clearClients() async {
@@ -138,6 +161,18 @@ class FakeSupabaseService extends Fake implements SupabaseService {
   Future<void> upsertEntry(WorkEntry entry) async {
     upsertedIndividually.add(entry);
   }
+
+  // Payment support stubs
+  final List<Payment> payments = [];
+
+  @override
+  Future<List<Payment>> getAllPayments() async => payments;
+
+  @override
+  Future<void> upsertPayments(List<Payment> payments) async {}
+
+  @override
+  Future<void> upsertPayment(Payment payment) async {}
 }
 
 void main() {

@@ -29,9 +29,11 @@ class EntriesNotifier extends AsyncNotifier<List<WorkEntry>> {
 
   Future<void> deleteEntry(String id) async {
     final db = ref.read(localDBServiceProvider);
-    final supabase = ref.read(supabaseServiceProvider);
-    await db.deleteEntry(id);
-    try { await supabase.deleteEntry(id); } catch (_) {}
+    final sync = ref.read(syncServiceProvider);
+    // Soft-delete locally so the deletion propagates to remote on next sync,
+    // instead of being resurrected by fullSync's remote pull.
+    await db.softDeleteEntry(id);
+    await sync.syncPendingEntries();
     ref.invalidateSelf();
     await ref.read(backupServiceProvider).triggerBackup();
   }

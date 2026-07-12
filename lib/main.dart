@@ -18,11 +18,14 @@ void main() async {
   // Locale verilerini başlat
   await initializeDateFormatting();
 
+  // Load environment configuration from the bundled .env asset.
+  await AppConstants.load();
+
   // Platformlara göre sqflite başlatma
   if (kIsWeb) {
     databaseFactory = databaseFactoryFfiWeb;
-  } else if (defaultTargetPlatform == TargetPlatform.windows || 
-             defaultTargetPlatform == TargetPlatform.linux || 
+  } else if (defaultTargetPlatform == TargetPlatform.windows ||
+             defaultTargetPlatform == TargetPlatform.linux ||
              defaultTargetPlatform == TargetPlatform.macOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;

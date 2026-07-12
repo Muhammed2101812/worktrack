@@ -18,6 +18,9 @@ class WorkEntry {
   final String billingType;
   final double hourlyRate;
   final double totalPrice;
+  final String createdAt;
+  final String updatedAt;
+  final bool isDeleted;
 
   WorkEntry({
     String? id,
@@ -35,18 +38,36 @@ class WorkEntry {
     this.billingType = 'hourly',
     this.hourlyRate = 0.0,
     double? totalPrice,
-  })  : id = id ?? const Uuid().v4(),
+    String? createdAt,
+    String? updatedAt,
+    this.isDeleted = false,
+  })  : assert(hourlyRate >= 0, 'hourlyRate cannot be negative'),
+        assert(
+            totalPrice == null || totalPrice >= 0, 'totalPrice cannot be negative'),
+        id = id ?? const Uuid().v4(),
+        createdAt = createdAt ?? DateTime.now().toIso8601String(),
+        updatedAt = updatedAt ?? DateTime.now().toIso8601String(),
         durationHours = _calcDuration(startTime, endTime),
         totalPrice = totalPrice ??
             (billingType == 'hourly'
                 ? (_calcDuration(startTime, endTime) * hourlyRate)
                 : 0.0);
 
+  /// Parses "HH:mm" into minutes-since-midnight, returning null on bad input.
+  static int? _toMinutes(String s) {
+    final parts = s.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+    return h * 60 + m;
+  }
+
   static double _calcDuration(String start, String end) {
-    final s = start.split(':');
-    final e = end.split(':');
-    final startMin = int.parse(s[0]) * 60 + int.parse(s[1]);
-    final endMin = int.parse(e[0]) * 60 + int.parse(e[1]);
+    final startMin = _toMinutes(start);
+    final endMin = _toMinutes(end);
+    if (startMin == null || endMin == null) return 0.0;
     final diff = endMin - startMin;
     return diff > 0 ? diff / 60.0 : 0.0;
   }
@@ -66,6 +87,9 @@ class WorkEntry {
     String? billingType,
     double? hourlyRate,
     double? totalPrice,
+    String? createdAt,
+    String? updatedAt,
+    bool? isDeleted,
   }) =>
       WorkEntry(
         id: id,
@@ -87,10 +111,14 @@ class WorkEntry {
         billingType: billingType ?? this.billingType,
         hourlyRate: hourlyRate ?? this.hourlyRate,
         totalPrice: totalPrice ?? this.totalPrice,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        isDeleted: isDeleted ?? this.isDeleted,
       );
 
   static const _sentinel = Object();
 
+  /// Minimal map sent to Supabase (no local-only sync/conflict fields).
   Map<String, dynamic> toMap() => {
         'id': id,
         'client_id': clientId,
@@ -109,12 +137,15 @@ class WorkEntry {
         'total_price': totalPrice,
       };
 
-  // SQLite için (synced sütunu var)
+  // SQLite için (synced + is_deleted sütunu var)
   Map<String, dynamic> toLocalMap() => {
         ...toMap(),
         'project_id': projectId,
         'project_name': projectName,
+        'created_at': createdAt,
+        'updated_at': updatedAt,
         'synced': synced ? 1 : 0,
+        'is_deleted': isDeleted ? 1 : 0,
       };
 
   factory WorkEntry.fromMap(Map<String, dynamic> m) => WorkEntry(
@@ -135,5 +166,8 @@ class WorkEntry {
         billingType: m['billing_type'] ?? 'hourly',
         hourlyRate: (m['hourly_rate'] as num?)?.toDouble() ?? 0.0,
         totalPrice: (m['total_price'] as num?)?.toDouble() ?? 0.0,
+        createdAt: m['created_at'],
+        updatedAt: m['updated_at'],
+        isDeleted: (m['is_deleted'] == 1) || (m['is_deleted'] == true),
       );
 }

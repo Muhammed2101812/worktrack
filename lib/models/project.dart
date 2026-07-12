@@ -8,7 +8,9 @@ class Project {
   final String description;
   final String status;
   final String createdAt;
+  final String updatedAt;
   final bool synced;
+  final bool isDeleted;
 
   Project({
     String? id,
@@ -17,9 +19,12 @@ class Project {
     this.description = '',
     this.status = 'active',
     String? createdAt,
+    String? updatedAt,
     this.synced = false,
+    this.isDeleted = false,
   })  : id = id ?? const Uuid().v4(),
-        createdAt = createdAt ?? DateTime.now().toIso8601String();
+        createdAt = createdAt ?? DateTime.now().toIso8601String(),
+        updatedAt = updatedAt ?? DateTime.now().toIso8601String();
 
   Project copyWith({
     String? clientId,
@@ -27,7 +32,9 @@ class Project {
     String? description,
     String? status,
     String? createdAt,
+    String? updatedAt,
     bool? synced,
+    bool? isDeleted,
   }) =>
       Project(
         id: id,
@@ -36,9 +43,12 @@ class Project {
         description: description ?? this.description,
         status: status ?? this.status,
         createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
         synced: synced ?? this.synced,
+        isDeleted: isDeleted ?? this.isDeleted,
       );
 
+  /// Minimal map sent to Supabase (no local-only sync/conflict fields).
   Map<String, dynamic> toMap() => {
         'id': id,
         'client_id': clientId,
@@ -48,10 +58,12 @@ class Project {
         'created_at': createdAt,
       };
 
-  // SQLite için (synced sütunu var)
+  // SQLite için (synced + is_deleted sütunları var)
   Map<String, dynamic> toLocalMap() => {
         ...toMap(),
+        'updated_at': updatedAt,
         'synced': synced ? 1 : 0,
+        'is_deleted': isDeleted ? 1 : 0,
       };
 
   factory Project.fromMap(Map<String, dynamic> m) => Project(
@@ -61,6 +73,8 @@ class Project {
         description: decodeHtmlEntities(m['description'] ?? ''),
         status: m['status'] ?? 'active',
         createdAt: m['created_at'] ?? '',
+        updatedAt: m['updated_at'],
         synced: m['synced'] == 1 || m['synced'] == true,
+        isDeleted: (m['is_deleted'] == 1) || (m['is_deleted'] == true),
       );
 }

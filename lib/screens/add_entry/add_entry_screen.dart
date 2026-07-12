@@ -893,6 +893,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       billingType: _billingType,
       hourlyRate: _billingType == 'hourly' ? _hourlyRate : 0.0,
       totalPrice: finalTotalPrice,
+      createdAt: widget.entryToEdit?.createdAt,
     );
 
     if (widget.entryToEdit == null) {

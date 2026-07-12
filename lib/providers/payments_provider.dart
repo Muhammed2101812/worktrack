@@ -19,11 +19,11 @@ class PaymentsNotifier extends AsyncNotifier<List<Payment>> {
 
   Future<void> deletePayment(String id) async {
     final db = ref.read(localDBServiceProvider);
-    final supabase = ref.read(supabaseServiceProvider);
-    await db.deletePayment(id);
-    try {
-      await supabase.deletePayment(id);
-    } catch (_) {}
+    final sync = ref.read(syncServiceProvider);
+    // Soft-delete locally so the deletion propagates to remote on next sync,
+    // instead of being resurrected by fullSync's remote pull.
+    await db.softDeletePayment(id);
+    await sync.syncPendingPayments();
     ref.invalidateSelf();
     await ref.read(backupServiceProvider).triggerBackup();
   }

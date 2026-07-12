@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../core/constants.dart';
 
 class AuthService {
   final SupabaseClient _client;
@@ -8,19 +9,11 @@ class AuthService {
   AuthService({SupabaseClient? client}) : _client = client ?? Supabase.instance.client;
 
   Future<void> signIn(String email, String password) async {
-    try {
-      await _client.auth.signInWithPassword(email: email, password: password);
-    } catch (e) {
-      rethrow;
-    }
+    await _client.auth.signInWithPassword(email: email, password: password);
   }
 
   Future<void> signUp(String email, String password) async {
-    try {
-      await _client.auth.signUp(email: email, password: password);
-    } catch (e) {
-      rethrow;
-    }
+    await _client.auth.signUp(email: email, password: password);
   }
 
   Future<void> signInWithGoogle() async {
@@ -32,30 +25,26 @@ class AuthService {
       return;
     }
 
-    try {
-      final googleSignIn = GoogleSignIn(
-        serverClientId: '430614470319-al4ugk9ub67kkisacq59dbjqbv9mm6u6.apps.googleusercontent.com',
-        scopes: ['email'],
-      );
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return;
+    final googleSignIn = GoogleSignIn(
+      serverClientId: AppConstants.googleServerClientId,
+      scopes: ['email'],
+    );
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser == null) return;
 
-      final googleAuth = await googleUser.authentication;
-      final accessToken = googleAuth.accessToken;
-      final idToken = googleAuth.idToken;
+    final googleAuth = await googleUser.authentication;
+    final accessToken = googleAuth.accessToken;
+    final idToken = googleAuth.idToken;
 
-      if (idToken == null) {
-        throw Exception('No ID Token found.');
-      }
-
-      await _client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
-    } catch (e) {
-      rethrow;
+    if (idToken == null) {
+      throw Exception('No ID Token found.');
     }
+
+    await _client.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
   }
 
   Future<void> signOut() async => await _client.auth.signOut();

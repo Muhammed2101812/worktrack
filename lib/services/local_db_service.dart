@@ -23,7 +23,7 @@ class LocalDBService {
       return await databaseFactoryFfiWeb.openDatabase(
         dbName,
         options: OpenDatabaseOptions(
-          version: 8,
+          version: 9,
           onCreate: _onCreate,
           onUpgrade: _onUpgrade,
         ),
@@ -32,7 +32,7 @@ class LocalDBService {
       final path = dbName == ':memory:' ? inMemoryDatabasePath : join(await getDatabasesPath(), dbName);
       return await openDatabase(
         path,
-        version: 8,
+        version: 9,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
@@ -122,6 +122,43 @@ class LocalDBService {
         ''');
       } catch (_) {}
     }
+    if (oldVersion < 9) {
+      // Conflict resolution & soft-delete support columns
+      await _addColumn(db, 'clients', 'created_at', "text DEFAULT ''");
+      await _addColumn(db, 'clients', 'updated_at', "text DEFAULT ''");
+      await _addColumn(db, 'clients', 'is_deleted', 'integer DEFAULT 0');
+      await _addColumn(db, 'work_entries', 'created_at', "text DEFAULT ''");
+      await _addColumn(db, 'work_entries', 'updated_at', "text DEFAULT ''");
+      await _addColumn(db, 'work_entries', 'is_deleted', 'integer DEFAULT 0');
+      await _addColumn(db, 'projects', 'updated_at', "text DEFAULT ''");
+      await _addColumn(db, 'projects', 'is_deleted', 'integer DEFAULT 0');
+      await _addColumn(db, 'payments', 'updated_at', "text DEFAULT ''");
+      await _addColumn(db, 'payments', 'is_deleted', 'integer DEFAULT 0');
+      // Performance: indexes for frequently filtered/sorted columns
+      await _createIndex(db, 'idx_work_entries_client_id', 'work_entries', 'client_id');
+      await _createIndex(db, 'idx_work_entries_date', 'work_entries', 'date');
+      await _createIndex(db, 'idx_work_entries_synced', 'work_entries', 'synced');
+      await _createIndex(db, 'idx_work_entries_deleted', 'work_entries', 'is_deleted');
+      await _createIndex(db, 'idx_payments_client_id', 'payments', 'client_id');
+      await _createIndex(db, 'idx_payments_date', 'payments', 'date');
+      await _createIndex(db, 'idx_payments_synced', 'payments', 'synced');
+      await _createIndex(db, 'idx_payments_deleted', 'payments', 'is_deleted');
+      await _createIndex(db, 'idx_projects_client_id', 'projects', 'client_id');
+      await _createIndex(db, 'idx_projects_synced', 'projects', 'synced');
+      await _createIndex(db, 'idx_projects_deleted', 'projects', 'is_deleted');
+    }
+  }
+
+  Future<void> _addColumn(Database db, String table, String column, String type) async {
+    try {
+      await db.execute('ALTER TABLE $table ADD COLUMN $column $type');
+    } catch (_) {}
+  }
+
+  Future<void> _createIndex(Database db, String indexName, String table, String column) async {
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS $indexName ON $table ($column)');
+    } catch (_) {}
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -142,14 +179,20 @@ class LocalDBService {
         project_name text,
         billing_type text default 'hourly',
         hourly_rate real default 0.0,
-        total_price real default 0.0
+        total_price real default 0.0,
+        created_at text default '',
+        updated_at text default '',
+        is_deleted integer default 0
       )
     ''');
     await db.execute('''
       create table clients (
         id text primary key,
         name text not null,
-        color text not null
+        color text not null,
+        created_at text default '',
+        updated_at text default '',
+        is_deleted integer default 0
       )
     ''');
     await db.execute('''
@@ -160,7 +203,9 @@ class LocalDBService {
         description text default '',
         status text default 'active',
         created_at text not null,
-        synced integer default 0
+        updated_at text default '',
+        synced integer default 0,
+        is_deleted integer default 0
       )
     ''');
     await db.execute('''
@@ -173,9 +218,23 @@ class LocalDBService {
         date text not null,
         notes text default '',
         synced integer default 0,
-        created_at text not null
+        created_at text not null,
+        updated_at text default '',
+        is_deleted integer default 0
       )
     ''');
+    // Performance indexes
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_client_id ON work_entries (client_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_date ON work_entries (date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_synced ON work_entries (synced)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_deleted ON work_entries (is_deleted)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments (client_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_date ON payments (date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_synced ON payments (synced)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_deleted ON payments (is_deleted)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_projects_client_id ON projects (client_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_projects_synced ON projects (synced)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_projects_deleted ON projects (is_deleted)');
   }
 
   // ── KAYITLAR ──
@@ -201,14 +260,24 @@ class LocalDBService {
 
   Future<List<WorkEntry>> getAllEntries() async {
     final db = await database;
-    final rows = await db.query('work_entries', orderBy: 'date desc, start_time desc');
+    // date is stored in display format "dd.MM.yyyy" which does not sort
+    // correctly as a string, so we order by a sortable expression instead.
+    final rows = await db.rawQuery('''
+      SELECT * FROM work_entries
+      WHERE is_deleted = 0
+      ORDER BY
+        substr(date, 7, 4) DESC,
+        substr(date, 4, 2) DESC,
+        substr(date, 1, 2) DESC,
+        start_time DESC
+    ''');
     return rows.map(WorkEntry.fromMap).toList();
   }
 
   Future<List<WorkEntry>> getTodayEntries(String today) async {
     final db = await database;
     final rows = await db.query('work_entries',
-        where: 'date = ?', whereArgs: [today]);
+        where: 'date = ? AND is_deleted = 0', whereArgs: [today]);
     return rows.map(WorkEntry.fromMap).toList();
   }
 
@@ -235,6 +304,14 @@ class LocalDBService {
     );
   }
 
+  /// Soft-deletes an entry so the deletion can propagate to remote on sync.
+  Future<void> softDeleteEntry(String id) async {
+    final db = await database;
+    await db.update('work_entries',
+        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<void> deleteEntry(String id) async {
     final db = await database;
     await db.delete('work_entries', where: 'id = ?', whereArgs: [id]);
@@ -249,7 +326,7 @@ class LocalDBService {
 
   Future<void> insertClient(Client client) async {
     final db = await database;
-    await db.insert('clients', client.toMap(),
+    await db.insert('clients', client.toLocalMap(),
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -259,7 +336,7 @@ class LocalDBService {
     await db.transaction((txn) async {
       final batch = txn.batch();
       for (final client in clients) {
-        batch.insert('clients', client.toMap(),
+        batch.insert('clients', client.toLocalMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
       await batch.commit(noResult: true);
@@ -268,8 +345,23 @@ class LocalDBService {
 
   Future<List<Client>> getAllClients() async {
     final db = await database;
+    final rows = await db.query('clients',
+        where: 'is_deleted = 0', orderBy: 'name');
+    return rows.map(Client.fromMap).toList();
+  }
+
+  Future<List<Client>> getAllClientsIncludingDeleted() async {
+    final db = await database;
     final rows = await db.query('clients', orderBy: 'name');
     return rows.map(Client.fromMap).toList();
+  }
+
+  /// Soft-deletes a client so the deletion can propagate to remote on sync.
+  Future<void> softDeleteClient(String id) async {
+    final db = await database;
+    await db.update('clients',
+        {'is_deleted': 1, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> updateClient(Client client) async {
@@ -315,14 +407,15 @@ class LocalDBService {
 
   Future<List<Project>> getAllProjects() async {
     final db = await database;
-    final rows = await db.query('projects', orderBy: 'name');
+    final rows = await db.query('projects',
+        where: 'is_deleted = 0', orderBy: 'name');
     return rows.map(Project.fromMap).toList();
   }
 
   Future<List<Project>> getProjectsByClient(String clientId) async {
     final db = await database;
     final rows = await db.query('projects',
-        where: 'client_id = ?',
+        where: 'client_id = ? AND is_deleted = 0',
         whereArgs: [clientId],
         orderBy: 'name');
     return rows.map(Project.fromMap).toList();
@@ -336,6 +429,14 @@ class LocalDBService {
       where: 'id = ?',
       whereArgs: [project.id],
     );
+  }
+
+  /// Soft-deletes a project so the deletion can propagate to remote on sync.
+  Future<void> softDeleteProject(String id) async {
+    final db = await database;
+    await db.update('projects',
+        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> deleteProject(String id) async {
@@ -371,7 +472,16 @@ class LocalDBService {
 
   Future<List<Payment>> getAllPayments() async {
     final db = await database;
-    final rows = await db.query('payments', orderBy: 'date desc, created_at desc');
+    // date is "dd.MM.yyyy" — sort by sortable expression.
+    final rows = await db.rawQuery('''
+      SELECT * FROM payments
+      WHERE is_deleted = 0
+      ORDER BY
+        substr(date, 7, 4) DESC,
+        substr(date, 4, 2) DESC,
+        substr(date, 1, 2) DESC,
+        created_at DESC
+    ''');
     return rows.map(Payment.fromMap).toList();
   }
 
@@ -395,6 +505,14 @@ class LocalDBService {
       where: 'id = ?',
       whereArgs: [payment.id],
     );
+  }
+
+  /// Soft-deletes a payment so the deletion can propagate to remote on sync.
+  Future<void> softDeletePayment(String id) async {
+    final db = await database;
+    await db.update('payments',
+        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> deletePayment(String id) async {
@@ -421,7 +539,7 @@ class LocalDBService {
 
       final batch = txn.batch();
       for (final client in clients) {
-        batch.insert('clients', client.toMap(),
+        batch.insert('clients', client.toLocalMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
       for (final entry in entries) {

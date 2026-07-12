@@ -257,22 +257,25 @@ void main() {
       expect(mockDB.insertedEntries.first.projectName, equals('Genel'));
     });
 
-    test('should handle malformed row values (catch block triggered) and continue with other valid rows', () async {
+    test('should handle malformed row values gracefully and continue with other valid rows', () async {
       final bytes = createExcelBytes([
-        ['15.03.2026', 'Hatalı Zaman', '09:00', 'invalid-time', 'Yazılım', 'Proje'], // triggers FormatException in duration calc
+        ['15.03.2026', 'Hatalı Zaman', '09:00', 'invalid-time', 'Yazılım', 'Proje'], // invalid end-time -> duration 0, still imported
         ['16.03.2026', 'Düzgün Müşteri', '10:00', '11:00', 'Tasarım', 'Proje'], // valid row
       ]);
 
       final count = await ImportService.importBytes(bytes, mockRef);
 
-      // The first malformed row triggers the catch block, but the second row should be successfully parsed
-      expect(count, equals(1));
+      // Both rows are imported; the malformed-time row yields a 0-duration entry
+      // instead of crashing, so it no longer falls into the catch block.
+      expect(count, equals(2));
       expect(mockDB.insertedClients.length, equals(2));
       expect(mockDB.insertedClients[0].name, equals('Hatalı Zaman'));
       expect(mockDB.insertedClients[1].name, equals('Düzgün Müşteri'));
-      expect(mockDB.insertedEntries.length, equals(1));
-      expect(mockDB.insertedEntries.first.clientName, equals('Düzgün Müşteri'));
-      expect(mockDB.insertedEntries.first.date, equals('16.03.2026'));
+      expect(mockDB.insertedEntries.length, equals(2));
+      // The valid row's entry is present
+      expect(mockDB.insertedEntries.any((e) => e.clientName == 'Düzgün Müşteri' && e.date == '16.03.2026'), isTrue);
+      // The malformed-time row is also present but with 0 duration
+      expect(mockDB.insertedEntries.any((e) => e.clientName == 'Hatalı Zaman' && e.durationHours == 0.0), isTrue);
       expect(mockRef.invalidatedProviders, contains(entriesProvider));
     });
 

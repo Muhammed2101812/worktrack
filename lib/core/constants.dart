@@ -1,15 +1,33 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConstants {
   static const String appName = 'WorkLog';
 
-  // Supabase URL ve Anon Key (Loaded securely from environment variables)
-  static const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://qattsgpayyklmtgwygtu.supabase.co',
-  );
-  static const String supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhdHRzZ3BheXlrbG10Z3d5Z3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2OTMyMDEsImV4cCI6MjA5OTI2OTIwMX0.uvFOo6YHz9mDUMEhAGlEFktMEugxYuUmmmjnCBE93pw',
-  );
+  /// Loads configuration values from the bundled `.env` asset.
+  /// Must be called once at startup (see `main.dart`) before reading any value.
+  static Future<void> load() async {
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e) {
+      // The .env asset is optional in test/CI environments. When it is missing
+      // we fall back to compile-time environment overrides (or empty strings),
+      // so the app never crashes on config; callers should validate presence.
+      debugPrint('AppConstants.load: .env not loaded ($e)');
+    }
+  }
+
+  static String get supabaseUrl =>
+      dotenv.maybeGet('SUPABASE_URL') ??
+      const String.fromEnvironment('SUPABASE_URL');
+
+  static String get supabaseAnonKey =>
+      dotenv.maybeGet('SUPABASE_ANON_KEY') ??
+      const String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  static String get googleServerClientId =>
+      dotenv.maybeGet('GOOGLE_SERVER_CLIENT_ID') ??
+      const String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
   static const String entriesTable = 'work_entries';
   static const String clientsTable = 'clients';
