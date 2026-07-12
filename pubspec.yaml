@@ -52,6 +52,13 @@ dependencies:
   google_sign_in: ^6.2.1
   archive: ^3.6.1
 
+  # Ads & Monetization
+  google_mobile_ads: ^5.3.0
+  in_app_purchase: ^3.2.0
+
+  # PDF export
+  pdf: ^3.11.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

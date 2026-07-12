@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/constants.dart';
 import 'app.dart';
+import 'services/ad_service.dart';
 
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
@@ -35,6 +36,9 @@ void main() async {
     url: AppConstants.supabaseUrl,
     anonKey: AppConstants.supabaseAnonKey,
   );
+
+  // Initialise ads. Runs only on mobile; no-op on web/desktop.
+  await AdService.instance.init();
 
   runApp(const ProviderScope(child: App()));
 }

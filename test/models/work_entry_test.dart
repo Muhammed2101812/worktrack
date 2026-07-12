@@ -212,5 +212,67 @@ void main() {
       final entry = WorkEntry.fromMap(mapWithBool);
       expect(entry.synced, true);
     });
+
+    group('effectivePrice', () {
+      test('hourly entry uses durationHours * hourlyRate', () {
+        final entry = WorkEntry(
+          clientId: 'c1',
+          clientName: 'Client',
+          clientColor: '#000000',
+          date: '01.01.2026',
+          startTime: '09:00',
+          endTime: '17:00', // 8 hours
+          workType: 'Yazılım',
+          billingType: 'hourly',
+          hourlyRate: 150.0,
+        );
+        // 8h * 150 = 1200
+        expect(entry.effectivePrice, 1200.0);
+      });
+
+      test('fixed entry uses totalPrice when > 0', () {
+        final entry = WorkEntry(
+          clientId: 'c1',
+          clientName: 'Client',
+          clientColor: '#000000',
+          date: '01.01.2026',
+          startTime: '09:00',
+          endTime: '17:00',
+          workType: 'Yazılım',
+          billingType: 'fixed',
+          totalPrice: 5000.0,
+        );
+        expect(entry.effectivePrice, 5000.0);
+      });
+
+      test('hourly entry with zero rate returns 0', () {
+        final entry = WorkEntry(
+          clientId: 'c1',
+          clientName: 'Client',
+          clientColor: '#000000',
+          date: '01.01.2026',
+          startTime: '09:00',
+          endTime: '12:00',
+          workType: 'Yazılım',
+          billingType: 'hourly',
+          hourlyRate: 0.0,
+        );
+        expect(entry.effectivePrice, 0.0);
+      });
+
+      test('fixed entry without totalPrice returns 0', () {
+        final entry = WorkEntry(
+          clientId: 'c1',
+          clientName: 'Client',
+          clientColor: '#000000',
+          date: '01.01.2026',
+          startTime: '09:00',
+          endTime: '12:00',
+          workType: 'Yazılım',
+          billingType: 'fixed',
+        );
+        expect(entry.effectivePrice, 0.0);
+      });
+    });
   });
 }

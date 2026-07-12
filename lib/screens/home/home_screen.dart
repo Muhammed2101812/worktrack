@@ -10,6 +10,8 @@ import '../../providers/clients_provider.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sync_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../services/ad_service.dart';
 import 'widgets/today_summary_card.dart';
 import 'widgets/entry_list_tile.dart';
 
@@ -32,33 +34,49 @@ class HomeShell extends ConsumerWidget {
       currentIndex = 4;
     }
 
+    final isPremium = ref.watch(isPremiumProvider).valueOrNull ?? false;
+    final showBanner = !isPremium;
+
     return Scaffold(
       backgroundColor: c.bgColor,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 768;
+      body: Column(
+        children: [
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 768;
 
-          if (isWide) {
-            return Row(
-              children: [
-                _buildSidebar(context, ref, currentIndex),
-                Expanded(child: child),
-              ],
-            );
-          }
+                if (isWide) {
+                  return Row(
+                    children: [
+                      _buildSidebar(context, ref, currentIndex),
+                      Expanded(child: child),
+                    ],
+                  );
+                }
 
-          return Stack(
-            children: [
-              child,
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: 30,
-                child: _buildCustomNavbar(context, currentIndex),
-              ),
-            ],
-          );
-        },
+                return Stack(
+                  children: [
+                    child,
+                    Positioned(
+                      left: 24,
+                      right: 24,
+                      bottom: 30,
+                      child: _buildCustomNavbar(context, currentIndex),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          // AdMob banner (mobile-only, hidden for premium users).
+          // Wrapped in SafeArea so it sits cleanly above the system nav bar.
+          if (showBanner)
+            SafeArea(
+              top: false,
+              child: AdBannerWidget(shouldShow: showBanner),
+            ),
+        ],
       ),
     );
   }

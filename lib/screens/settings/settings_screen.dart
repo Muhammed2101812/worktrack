@@ -15,6 +15,7 @@ import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
 import '../../services/export_service.dart';
 import '../../services/import_service.dart';
+import '../../services/iap_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -55,6 +56,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ListView(
             padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
             children: [
+              _buildPremiumSection(context),
               _buildThemeSection(context),
               _buildDataSyncSection(context, syncAsync, unsyncedEntriesAsync, unsyncedPaymentsAsync, syncEnabled, currentUser),
               _buildAccountSection(context, currentUser),
@@ -78,6 +80,217 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             : content,
       ),
     );
+  }
+
+  // ── PREMIUM ──────────────────────────────────────────────────────────────
+  Widget _buildPremiumSection(BuildContext context) {
+    final c = AppColors.of(context);
+    final isPremium = ref.watch(isPremiumProvider).valueOrNull ?? false;
+
+    if (isPremium) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: MidnightCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: c.emerald.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: c.emerald.withValues(alpha: 0.3)),
+                ),
+                child: Icon(PhosphorIcons.crown(PhosphorIconsStyle.fill), color: c.emerald, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Premium Aktif',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15, color: c.textMain)),
+                    const SizedBox(height: 2),
+                    Text('Reklamlar kaldırıldı. Teşekkürler!',
+                        style: TextStyle(fontSize: 12, color: c.textMuted)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: MidnightCard(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: c.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(PhosphorIcons.crown(), color: c.primary, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Reklamları Kaldır',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 17, color: c.textMain)),
+                      const SizedBox(height: 2),
+                      Text('Tek seferlik ödeme ile reklamsız kullanım',
+                          style: TextStyle(fontSize: 12, color: c.textMuted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.check_circle, color: c.emerald, size: 16),
+                const SizedBox(width: 8),
+                Text('Tüm reklamlar kaldırılır', style: TextStyle(fontSize: 13, color: c.textMain)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.check_circle, color: c.emerald, size: 16),
+                const SizedBox(width: 8),
+                Text('Tüm cihazlarda geçerli', style: TextStyle(fontSize: 13, color: c.textMain)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.check_circle, color: c.emerald, size: 16),
+                const SizedBox(width: 8),
+                Text('Ömür boyu (tek seferlik)', style: TextStyle(fontSize: 13, color: c.textMain)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            MidnightButton(
+              onPressed: () => _showPaywallDialog(context),
+              width: double.infinity,
+              child: Text('ŞİMDİ YÜKSELTT',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary)),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: GestureDetector(
+                onTap: () async {
+                  try {
+                    await ref.read(iapServiceProvider).restorePurchases();
+                    if (context.mounted) {
+                      CustomToast.show(context, 'Satın almalar geri yüklendi');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      CustomToast.show(context, 'Geri yükleme başarısız: $e');
+                    }
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text('Satın almayı geri yükle',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: c.textMuted,
+                          decoration: TextDecoration.underline)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showPaywallDialog(BuildContext context) async {
+    final iap = ref.read(iapServiceProvider);
+    final product = iap.removeAdsProduct;
+    final price = product?.price ?? 'Fiyat bilgisi yükleniyor...';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: dc.cardBorder, width: 1),
+          ),
+          title: Row(
+            children: [
+              Icon(PhosphorIcons.crown(PhosphorIconsStyle.fill), color: dc.primary),
+              const SizedBox(width: 10),
+              Text('Premium\'a Yükselt', style: TextStyle(color: dc.textMain)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Tüm reklamları kalıcı olarak kaldır.',
+                  style: TextStyle(color: dc.textMuted)),
+              const SizedBox(height: 16),
+              Text(price,
+                  style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: dc.primary)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Vazgeç', style: TextStyle(color: dc.textMuted)),
+            ),
+            MidnightButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Satın Al',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: dc.onPrimary)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    CustomToast.show(context, 'Satın alma başlatılıyor...');
+    final result = await iap.buyRemoveAds();
+    if (!mounted) return;
+    switch (result) {
+      case IapResult.success:
+        CustomToast.show(context, 'Premium etkinleştirildi! Reklamlar kaldırıldı.');
+        break;
+      case IapResult.cancelled:
+        // User cancelled — no toast needed.
+        break;
+      case IapResult.error:
+        CustomToast.show(context, 'Satın alma başarısız. Tekrar deneyin.');
+        break;
+      case IapResult.notAvailable:
+        CustomToast.show(context, 'Mağaza kullanılamıyor (yalnızca mobil cihazlarda).');
+        break;
+    }
   }
 
   // ── GÖRÜNÜM (Tema) ──────────────────────────────────────────────────────

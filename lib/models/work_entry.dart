@@ -72,6 +72,16 @@ class WorkEntry {
     return diff > 0 ? diff / 60.0 : 0.0;
   }
 
+  /// Effective monetary value of this entry. Fixed-price entries use
+  /// [totalPrice] when set; hourly entries use `durationHours * hourlyRate`.
+  /// This is the single source of truth for income calculation across
+  /// finance, stats and PDF export.
+  double get effectivePrice {
+    if (totalPrice > 0.0) return totalPrice;
+    if (billingType == 'hourly') return durationHours * hourlyRate;
+    return 0.0;
+  }
+
   WorkEntry copyWith({
     String? clientId,
     String? clientName,

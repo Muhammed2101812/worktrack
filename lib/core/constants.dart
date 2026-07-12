@@ -40,4 +40,26 @@ class AppConstants {
     '#4A90D9', '#50C878', '#FF6B6B', '#FFB347',
     '#9B59B6', '#1ABC9C', '#E67E22', '#E91E63',
   ];
+
+  // ── Advertising (AdMob) ──────────────────────────────────────────────────
+  //
+  // These use Google's official test ad unit IDs by default so the app is
+  // fully functional during development. Override them at build time with
+  // production IDs:
+  //   flutter build appbundle \
+  //     --dart-define=ADMOB_APP_ID=ca-app-pub-... \
+  //     --dart-define=ADMOB_BANNER_ID=ca-app-pub-... \
+  //     --dart-define=ADMOB_INTERSTITIAL_ID=ca-app-pub-...
+  static const String admobAppId =
+      String.fromEnvironment('ADMOB_APP_ID', defaultValue: 'ca-app-pub-3940256099942544~3347511713');
+  static const String admobBannerUnitId =
+      String.fromEnvironment('ADMOB_BANNER_ID', defaultValue: 'ca-app-pub-3940256099942544/6300978111');
+  static const String admobInterstitialUnitId =
+      String.fromEnvironment('ADMOB_INTERSTITIAL_ID', defaultValue: 'ca-app-pub-3940256099942544/1033173712');
+
+  // ── In-App Purchase ──────────────────────────────────────────────────────
+  /// Product id for the one-time "remove ads" purchase. Must match the
+  /// product created in the Play Console / App Store Connect.
+  static const String iapRemoveAdsProductId = 'worktrack_remove_ads';
+  static const List<String> iapProductIds = [iapRemoveAdsProductId];
 }
