@@ -30,9 +30,8 @@ class SyncService {
       try {
         // Try a single bulk upsert network request
         await supabase.upsertEntries(unsynced);
-        for (final entry in unsynced) {
-          await localDB.updateEntrySync(entry.id, true);
-        }
+        final entryIds = unsynced.map((e) => e.id).toList();
+        await localDB.updateEntriesSyncBatch(entryIds, true);
       } catch (_) {
         // Fallback to individual upserts on failure to preserve fault tolerance (single-row error handling)
         for (final entry in unsynced) {

@@ -158,6 +158,19 @@ class LocalDBService {
         where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<void> updateEntriesSyncBatch(List<String> ids, bool synced) async {
+    if (ids.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in ids) {
+        batch.update('work_entries', {'synced': synced ? 1 : 0},
+            where: 'id = ?', whereArgs: [id]);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<void> updateEntry(WorkEntry entry) async {
     final db = await database;
     await db.update(

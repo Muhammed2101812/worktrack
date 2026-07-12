@@ -128,6 +128,59 @@ void main() {
         expect(entries.first.synced, true);
       });
 
+      test('updateEntriesSyncBatch', () async {
+        final entry1 = WorkEntry(
+          id: 'entry-1',
+          clientId: 'client-1',
+          clientName: 'Client A',
+          clientColor: '#FF0000',
+          date: '15.03.2026',
+          startTime: '09:00',
+          endTime: '12:00',
+          workType: 'Software',
+          notes: 'Developing unit tests',
+          synced: false,
+        );
+        final entry2 = WorkEntry(
+          id: 'entry-2',
+          clientId: 'client-1',
+          clientName: 'Client A',
+          clientColor: '#FF0000',
+          date: '15.03.2026',
+          startTime: '09:00',
+          endTime: '12:00',
+          workType: 'Software',
+          notes: 'Developing unit tests',
+          synced: false,
+        );
+        final entry3 = WorkEntry(
+          id: 'entry-3',
+          clientId: 'client-1',
+          clientName: 'Client A',
+          clientColor: '#FF0000',
+          date: '15.03.2026',
+          startTime: '09:00',
+          endTime: '12:00',
+          workType: 'Software',
+          notes: 'Developing unit tests',
+          synced: false,
+        );
+        await dbService.insertEntry(entry1);
+        await dbService.insertEntry(entry2);
+        await dbService.insertEntry(entry3);
+
+        await dbService.updateEntriesSyncBatch(['entry-1', 'entry-3'], true);
+
+        final entries = await dbService.getAllEntries();
+        final Map<String, bool> syncedStatus = {
+          for (var e in entries) e.id: e.synced
+        };
+
+        expect(syncedStatus['entry-1'], isTrue);
+        expect(syncedStatus['entry-2'], isFalse);
+        expect(syncedStatus['entry-3'], isTrue);
+      });
+
       test('updateEntry', () async {
         await dbService.insertEntry(sampleEntry);
         final updatedEntry = sampleEntry.copyWith(notes: 'Updated description', synced: true);

@@ -68,6 +68,11 @@ class FakeLocalDBService extends Fake implements LocalDBService {
     if (synced) updatedEntryIds.add(id);
   }
 
+  @override
+  Future<void> updateEntriesSyncBatch(List<String> ids, bool synced) async {
+    if (synced) updatedEntryIds.addAll(ids);
+  }
+
   // Project support stubs
   final List<Project> projects = [];
 
