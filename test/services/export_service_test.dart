@@ -159,5 +159,30 @@ void main() {
         '0.0',
       ]));
     });
+
+    test('buildExcelBytes performance benchmark', () {
+      final clients = List.generate(1000, (i) => Client(id: 'client-$i', name: 'Client $i', color: '#112233'));
+      final entries = List.generate(5000, (i) {
+        final clientId = 'client-${i % 1000}';
+        return WorkEntry(
+          id: 'entry-$i',
+          clientId: clientId,
+          clientName: 'Client ${i % 1000}',
+          clientColor: '#112233',
+          date: '10.10.2025',
+          startTime: '08:00',
+          endTime: '12:00',
+          workType: 'Software Development',
+          notes: 'Writing unit tests',
+        );
+      });
+
+      final stopwatch = Stopwatch()..start();
+      final bytes = ExportService.buildExcelBytes(entries, clients);
+      stopwatch.stop();
+
+      print('Export benchmark: built Excel bytes for ${entries.length} entries and ${clients.length} clients in ${stopwatch.elapsedMilliseconds} ms');
+      expect(bytes, isNotEmpty);
+    });
   });
 }
