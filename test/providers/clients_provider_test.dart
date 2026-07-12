@@ -186,15 +186,22 @@ void main() {
     });
 
     group('deleteClient', () {
-      test('deletes client successfully and triggers backup', () async {
+      test('soft-deletes client successfully and triggers backup', () async {
         final container = createContainer();
+
+        // After soft-delete, getAllClients should no longer return the client
+        // (the real DB filters is_deleted = 0).
+        when(() => mockLocalDB.softDeleteClient(any()))
+            .thenAnswer((inv) async {
+          when(() => mockLocalDB.getAllClients()).thenAnswer((_) async =>
+              [Client(id: 'c2', name: 'Client 2', color: '#222222')]);
+        });
 
         container.listen<AsyncValue<List<Client>>>(clientsProvider, (_, __) {});
 
         await container.read(clientsProvider.notifier).deleteClient('c1');
 
-        verify(() => mockLocalDB.deleteClient('c1')).called(1);
-        verify(() => mockSupabase.deleteClient('c1')).called(1);
+        verify(() => mockLocalDB.softDeleteClient('c1')).called(1);
         verify(() => mockBackup.triggerBackup()).called(1);
 
         final updatedClients = await container.read(clientsProvider.future);
@@ -202,24 +209,20 @@ void main() {
         expect(updatedClients.length, equals(1));
       });
 
-      test('handles Supabase exception gracefully during deleteClient', () async {
+      test('handles exception gracefully during deleteClient', () async {
         final container = createContainer();
 
-        when(() => mockSupabase.deleteClient(any())).thenThrow(Exception('Network error'));
+        when(() => mockLocalDB.softDeleteClient(any()))
+            .thenThrow(Exception('DB error'));
 
         container.listen<AsyncValue<List<Client>>>(clientsProvider, (_, __) {});
 
         await expectLater(
           container.read(clientsProvider.notifier).deleteClient('c1'),
-          completes,
+          throwsA(isA<Exception>()),
         );
 
-        verify(() => mockLocalDB.deleteClient('c1')).called(1);
-        verify(() => mockSupabase.deleteClient('c1')).called(1);
-        verify(() => mockBackup.triggerBackup()).called(1);
-
-        final updatedClients = await container.read(clientsProvider.future);
-        expect(updatedClients.any((c) => c.id == 'c1'), isFalse);
+        verify(() => mockLocalDB.softDeleteClient('c1')).called(1);
       });
     });
   });
