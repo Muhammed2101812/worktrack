@@ -271,6 +271,23 @@ class LocalDBService {
     );
   }
 
+  Future<void> updateProjectsBatch(List<Project> projects) async {
+    if (projects.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final project in projects) {
+        batch.update(
+          'projects',
+          project.toLocalMap(),
+          where: 'id = ?',
+          whereArgs: [project.id],
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<void> deleteProject(String id) async {
     final db = await database;
     await db.delete('projects', where: 'id = ?', whereArgs: [id]);

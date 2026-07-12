@@ -3,6 +3,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:worklog/services/local_db_service.dart';
 import 'package:worklog/models/client.dart';
 import 'package:worklog/models/work_entry.dart';
+import 'package:worklog/models/project.dart';
 
 void main() {
   setUpAll(() {
@@ -18,6 +19,7 @@ void main() {
       try {
         await dbService.clearEntries();
         await dbService.clearClients();
+        await dbService.clearProjects();
       } catch (_) {}
     });
 
@@ -25,6 +27,7 @@ void main() {
       try {
         await dbService.clearEntries();
         await dbService.clearClients();
+        await dbService.clearProjects();
       } catch (_) {}
     });
 
@@ -271,6 +274,76 @@ void main() {
 
       test('insertEntriesBatch should handle empty list gracefully', () async {
         await expectLater(dbService.insertEntriesBatch([]), completes);
+      });
+
+      test('should update projects in batch successfully', () async {
+        final projects = [
+          Project(id: 'p1', clientId: 'c1', name: 'Proj 1', synced: false),
+          Project(id: 'p2', clientId: 'c1', name: 'Proj 2', synced: false),
+        ];
+
+        await dbService.insertProjectsBatch(projects);
+
+        // Update synced to true and change name
+        final updatedProjects = [
+          projects[0].copyWith(name: 'Proj 1 Updated', synced: true),
+          projects[1].copyWith(name: 'Proj 2 Updated', synced: true),
+        ];
+
+        await dbService.updateProjectsBatch(updatedProjects);
+
+        final retrieved = await dbService.getAllProjects();
+        expect(retrieved.length, equals(2));
+        expect(retrieved.any((p) => p.id == 'p1' && p.name == 'Proj 1 Updated' && p.synced), isTrue);
+        expect(retrieved.any((p) => p.id == 'p2' && p.name == 'Proj 2 Updated' && p.synced), isTrue);
+      });
+
+      test('updateProjectsBatch should handle empty list gracefully', () async {
+        await expectLater(dbService.updateProjectsBatch([]), completes);
+      });
+
+      test('benchmark update projects batch vs individual updates', () async {
+        final count = 100;
+        final projects = List.generate(count, (i) => Project(
+          id: 'bench_proj_$i',
+          clientId: 'c1',
+          name: 'Bench Project $i',
+          synced: false,
+        ));
+
+        // Insert baseline projects
+        await dbService.clearProjects();
+        await dbService.insertProjectsBatch(projects);
+
+        // Measure individual updates
+        final individualStopwatch = Stopwatch()..start();
+        for (final p in projects) {
+          await dbService.updateProject(p.copyWith(synced: true));
+        }
+        individualStopwatch.stop();
+        final individualTime = individualStopwatch.elapsedMilliseconds;
+
+        // Reset and insert projects again for batch run
+        await dbService.clearProjects();
+        await dbService.insertProjectsBatch(projects);
+
+        // Measure batch updates
+        final batchStopwatch = Stopwatch()..start();
+        final updatedList = projects.map((p) => p.copyWith(synced: true)).toList();
+        await dbService.updateProjectsBatch(updatedList);
+        batchStopwatch.stop();
+        final batchTime = batchStopwatch.elapsedMilliseconds;
+
+        print('--- Performance Benchmark ---');
+        print('Updated $count projects individually in: $individualTime ms');
+        print('Updated $count projects in batch in:       $batchTime ms');
+        final speedup = individualTime / (batchTime > 0 ? batchTime : 1);
+        print('Speedup factor: ${speedup.toStringAsFixed(2)}x');
+        print('-----------------------------');
+
+        // Verify that they were actually synced
+        final retrieved = await dbService.getAllProjects();
+        expect(retrieved.every((p) => p.synced), isTrue);
       });
     });
   });

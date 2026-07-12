@@ -70,6 +70,8 @@ class FakeLocalDBService extends Fake implements LocalDBService {
 
   // Project support stubs
   final List<Project> projects = [];
+  final List<Project> updatedProjectsBatchCalls = [];
+  final List<Project> updatedProjectCalls = [];
 
   @override
   Future<List<Project>> getAllProjects() async => projects;
@@ -80,6 +82,30 @@ class FakeLocalDBService extends Fake implements LocalDBService {
   @override
   Future<void> insertProjectsBatch(List<Project> projects) async =>
       this.projects.addAll(projects);
+
+  @override
+  Future<void> updateProjectsBatch(List<Project> projects) async {
+    updatedProjectsBatchCalls.addAll(projects);
+    for (final p in projects) {
+      final idx = this.projects.indexWhere((tp) => tp.id == p.id);
+      if (idx != -1) {
+        this.projects[idx] = p;
+      } else {
+        this.projects.add(p);
+      }
+    }
+  }
+
+  @override
+  Future<void> updateProject(Project project) async {
+    updatedProjectCalls.add(project);
+    final idx = this.projects.indexWhere((tp) => tp.id == project.id);
+    if (idx != -1) {
+      this.projects[idx] = project;
+    } else {
+      this.projects.add(project);
+    }
+  }
 }
 
 class FakeSupabaseService extends Fake implements SupabaseService {
@@ -89,6 +115,8 @@ class FakeSupabaseService extends Fake implements SupabaseService {
   final bool failBulk;
   final List<WorkEntry> upsertedInBulk = [];
   final List<WorkEntry> upsertedIndividually = [];
+  final List<Project> upsertedProjectsInBulk = [];
+  final List<Project> upsertedProjectsIndividually = [];
 
   FakeSupabaseService({this.failBulk = false});
 
@@ -118,10 +146,15 @@ class FakeSupabaseService extends Fake implements SupabaseService {
   Future<List<Project>> getAllProjects() async => projects;
 
   @override
-  Future<void> upsertProjects(List<Project> projects) async {}
+  Future<void> upsertProjects(List<Project> projects) async {
+    if (failBulk) throw Exception('Bulk failed');
+    upsertedProjectsInBulk.addAll(projects);
+  }
 
   @override
-  Future<void> upsertProject(Project project) async {}
+  Future<void> upsertProject(Project project) async {
+    upsertedProjectsIndividually.add(project);
+  }
 
   @override
   Future<void> upsertEntries(List<WorkEntry> entries) async {
@@ -287,6 +320,52 @@ void main() {
       expect(supabase.upsertedInBulk, isEmpty);
       expect(supabase.upsertedIndividually, isEmpty);
       expect(localDB.updatedEntryIds, isEmpty);
+    });
+
+    test('should sync multiple projects in bulk and update local DB with updateProjectsBatch when successful', () async {
+      final projects = [
+        Project(id: 'p1', clientId: 'c1', name: 'Project 1', synced: false),
+        Project(id: 'p2', clientId: 'c1', name: 'Project 2', synced: false),
+      ];
+
+      final localDB = FakeLocalDBService();
+      localDB.projects.addAll(projects);
+      final supabase = FakeSupabaseService(failBulk: false);
+      final syncService = SyncService(localDB: localDB, supabase: supabase);
+
+      await syncService.syncPendingProjects();
+
+      expect(supabase.upsertedProjectsInBulk, hasLength(2));
+      expect(supabase.upsertedProjectsInBulk[0].id, 'p1');
+      expect(supabase.upsertedProjectsInBulk[1].id, 'p2');
+      expect(supabase.upsertedProjectsIndividually, isEmpty);
+      expect(localDB.updatedProjectsBatchCalls, hasLength(2));
+      expect(localDB.updatedProjectsBatchCalls.any((p) => p.id == 'p1' && p.synced), isTrue);
+      expect(localDB.updatedProjectsBatchCalls.any((p) => p.id == 'p2' && p.synced), isTrue);
+      expect(localDB.updatedProjectCalls, isEmpty);
+    });
+
+    test('should fallback to individual upserts for projects if bulk upsert fails', () async {
+      final projects = [
+        Project(id: 'p3', clientId: 'c1', name: 'Project 3', synced: false),
+        Project(id: 'p4', clientId: 'c1', name: 'Project 4', synced: false),
+      ];
+
+      final localDB = FakeLocalDBService();
+      localDB.projects.addAll(projects);
+      final supabase = FakeSupabaseService(failBulk: true);
+      final syncService = SyncService(localDB: localDB, supabase: supabase);
+
+      await syncService.syncPendingProjects();
+
+      expect(supabase.upsertedProjectsInBulk, isEmpty);
+      expect(supabase.upsertedProjectsIndividually, hasLength(2));
+      expect(supabase.upsertedProjectsIndividually[0].id, 'p3');
+      expect(supabase.upsertedProjectsIndividually[1].id, 'p4');
+      expect(localDB.updatedProjectsBatchCalls, isEmpty);
+      expect(localDB.updatedProjectCalls, hasLength(2));
+      expect(localDB.updatedProjectCalls.any((p) => p.id == 'p3' && p.synced), isTrue);
+      expect(localDB.updatedProjectCalls.any((p) => p.id == 'p4' && p.synced), isTrue);
     });
   });
 }

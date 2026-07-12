@@ -61,9 +61,8 @@ class SyncService {
 
       try {
         await supabase.upsertProjects(unsynced);
-        for (final project in unsynced) {
-          await localDB.updateProject(project.copyWith(synced: true));
-        }
+        final syncedProjects = unsynced.map((p) => p.copyWith(synced: true)).toList();
+        await localDB.updateProjectsBatch(syncedProjects);
       } catch (_) {
         // Fallback to individual upserts on failure
         for (final project in unsynced) {
