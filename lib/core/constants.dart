@@ -12,8 +12,8 @@ class AppConstants {
   );
 
   // Google OAuth Client ID (Loaded securely from environment variables)
-  static const String googleClientId = String.fromEnvironment(
-    'GOOGLE_CLIENT_ID',
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
     defaultValue: '430614470319-al4ugk9ub67kkisacq59dbjqbv9mm6u6.apps.googleusercontent.com',
   );
 

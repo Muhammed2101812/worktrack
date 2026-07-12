@@ -35,7 +35,7 @@ class AuthService {
 
     try {
       final googleSignIn = GoogleSignIn(
-        serverClientId: AppConstants.googleClientId.isEmpty ? null : AppConstants.googleClientId,
+        serverClientId: AppConstants.googleServerClientId.isEmpty ? null : AppConstants.googleServerClientId,
         scopes: ['email'],
       );
       final googleUser = await googleSignIn.signIn();
