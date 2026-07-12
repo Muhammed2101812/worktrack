@@ -112,34 +112,32 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                           final Map<String, double> clientHours = {};
                           double totalHours = 0;
 
+                          // Proje bazlı süre hesaplama
+                          final Map<String, double> projectHours = {};
+                          final Map<String, String> projectNames = {};
+                          double projectTotalHours = 0;
+
                           for (var entry in monthEntries) {
                             clientHours[entry.clientId] =
                                 (clientHours[entry.clientId] ?? 0) +
                                     entry.durationHours;
                             totalHours += entry.durationHours;
-                          }
 
-                          // Proje bazlı süre hesaplama
-                          final Map<String, double> projectHours = {};
-                          final Map<String, String> projectNames = {};
-                          double projectTotalHours = 0;
-                          for (var entry in monthEntries) {
                             final pId = entry.projectId;
                             final pName = entry.projectName;
                             if (pId != null &&
                                 pId.isNotEmpty &&
                                 pName != null &&
                                 pName.isNotEmpty) {
-                              projectHours[pId] =
-                                  (projectHours[pId] ?? 0) +
-                                      entry.durationHours;
+                              projectHours[pId] = (projectHours[pId] ?? 0) +
+                                  entry.durationHours;
                               projectNames[pId] = pName;
                               projectTotalHours += entry.durationHours;
                             }
                           }
                           final sortedProjectIds = projectHours.keys.toList()
-                            ..sort((a, b) => projectHours[b]!
-                                .compareTo(projectHours[a]!));
+                            ..sort((a, b) =>
+                                projectHours[b]!.compareTo(projectHours[a]!));
 
                           if (totalHours == 0)
                             return const Center(
@@ -385,8 +383,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                               // ── PROJE BAZLI DAĞILIM ──
                               if (sortedProjectIds.isNotEmpty) ...[
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                      24, 24, 24, 8),
+                                  padding:
+                                      const EdgeInsets.fromLTRB(24, 24, 24, 8),
                                   child: Text(
                                     'PROJE BAZLI DAĞILIM',
                                     style: TextStyle(
@@ -412,11 +410,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                           final index = entry.key;
                                           final pId = entry.value;
                                           final hours = projectHours[pId]!;
-                                          final color = colors[
-                                              index % colors.length];
+                                          final color =
+                                              colors[index % colors.length];
                                           final percentage =
-                                              (hours / projectTotalHours) *
-                                                  100;
+                                              (hours / projectTotalHours) * 100;
                                           return PieChartSectionData(
                                             color: color,
                                             value: hours,
@@ -436,7 +433,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                     ),
                                   ),
                                 ),
-                                ...sortedProjectIds.asMap().entries.map((entry) {
+                                ...sortedProjectIds
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
                                   final index = entry.key;
                                   final pId = entry.value;
                                   final hours = projectHours[pId]!;
@@ -454,8 +454,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                           width: 32,
                                           height: 32,
                                           decoration: BoxDecoration(
-                                            color:
-                                                color.withValues(alpha: 0.1),
+                                            color: color.withValues(alpha: 0.1),
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                             border: Border.all(
@@ -489,18 +488,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                               ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(2),
-                                                child:
-                                                    LinearProgressIndicator(
-                                                  value: hours /
-                                                      projectTotalHours,
+                                                child: LinearProgressIndicator(
+                                                  value:
+                                                      hours / projectTotalHours,
                                                   backgroundColor:
                                                       MidnightColors.shimmer1
                                                           .withValues(
                                                               alpha: 0.3),
                                                   valueColor:
                                                       AlwaysStoppedAnimation<
-                                                              Color>(
-                                                          color),
+                                                          Color>(color),
                                                   minHeight: 4,
                                                 ),
                                               ),
@@ -516,16 +513,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                               '${hours.toStringAsFixed(1)} Sa',
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                color:
-                                                    MidnightColors.textMain,
+                                                color: MidnightColors.textMain,
                                               ),
                                             ),
                                             Text(
                                               '%${percentage.toStringAsFixed(1)}',
                                               style: TextStyle(
                                                 fontSize: 11,
-                                                color:
-                                                    MidnightColors.textMuted,
+                                                color: MidnightColors.textMuted,
                                               ),
                                             ),
                                           ],
