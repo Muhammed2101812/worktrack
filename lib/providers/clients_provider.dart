@@ -36,9 +36,8 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
 
   Future<void> deleteClient(String id) async {
     final db = ref.read(localDBServiceProvider);
-    final supabase = ref.read(supabaseServiceProvider);
-    await db.deleteClient(id);
-    try { await supabase.deleteClient(id); } catch (_) {}
+    // Soft-delete so the deletion survives a remote pull / fullSync.
+    await db.softDeleteClient(id);
     ref.invalidateSelf();
     await ref.read(backupServiceProvider).triggerBackup();
   }

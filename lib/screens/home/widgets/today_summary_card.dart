@@ -17,6 +17,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final entriesAsync = ref.watch(entriesProvider);
     final today = DateTime.now();
     final isToday = _selectedDate.year == today.year &&
@@ -37,9 +38,9 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: c.cardBg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: c.cardBorder),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -58,11 +59,11 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                     isToday
                         ? 'Bugün'
                         : DateFormat('d MMM', 'tr').format(_selectedDate),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
-                      color: AppColors.textMuted,
+                      color: c.textMuted,
                     ),
                   ),
                   GestureDetector(
@@ -74,8 +75,9 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                         lastDate: DateTime.now(),
                         builder: (ctx, child) => Theme(
                           data: Theme.of(ctx).copyWith(
-                            colorScheme: ColorScheme.light(
-                              primary: AppColors.primary,
+                            colorScheme: ColorScheme.fromSeed(
+                              seedColor: c.primary,
+                              brightness: Theme.of(ctx).brightness,
                             ),
                           ),
                           child: child!,
@@ -87,9 +89,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                     },
                     child: Icon(
                       PhosphorIcons.calendarBlank(),
-                      color: isToday
-                          ? AppColors.textMuted
-                          : AppColors.primary,
+                      color: isToday ? c.textMuted : c.primary,
                       size: 18,
                     ),
                   ),
@@ -102,44 +102,44 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                 children: [
                   Text(
                     '$hours',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 52,
                       fontWeight: FontWeight.w300,
-                      color: AppColors.primary,
+                      color: c.primary,
                       letterSpacing: -2,
                       height: 1,
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       'sa',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textMuted,
+                        color: c.textMuted,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
                     '$minutes',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 52,
                       fontWeight: FontWeight.w300,
-                      color: AppColors.primary,
+                      color: c.primary,
                       letterSpacing: -2,
                       height: 1,
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       'dk',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textMuted,
+                        color: c.textMuted,
                       ),
                     ),
                   ),
@@ -153,8 +153,8 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                         horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: hasUnsynced
-                          ? Colors.orange.withValues(alpha: 0.1)
-                          : AppColors.primaryLight,
+                          ? c.orange.withValues(alpha: 0.1)
+                          : c.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -164,18 +164,14 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                           hasUnsynced
                               ? Icons.cloud_upload_outlined
                               : Icons.check_circle_rounded,
-                          color: hasUnsynced
-                              ? Colors.orange
-                              : AppColors.primary,
+                          color: hasUnsynced ? c.orange : c.primary,
                           size: 13,
                         ),
                         const SizedBox(width: 5),
                         Text(
                           hasUnsynced ? 'Bekliyor' : 'Senkronize',
                           style: TextStyle(
-                            color: hasUnsynced
-                                ? Colors.orange
-                                : AppColors.primary,
+                            color: hasUnsynced ? c.orange : c.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -186,9 +182,9 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                   const SizedBox(width: 10),
                   Text(
                     '${entries.length} Çalışma',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textMuted,
+                      color: c.textMuted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -198,12 +194,12 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
           ),
         );
       },
-      loading: () => const SizedBox(
+      loading: () => SizedBox(
         height: 140,
         child: Center(
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: AppColors.primary,
+            color: c.primary,
           ),
         ),
       ),

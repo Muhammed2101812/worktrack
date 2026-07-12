@@ -19,9 +19,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   DateTime? _selectedMonth = DateTime.now();
   String _searchQuery = '';
   String _selectedFilter = 'Tümü';
+  String _selectedSort = 'Tarih (En Yeni)';
+
+  /// Safely parse a `#RRGGBB` / `#AARRGGBB` hex color. Falls back to [fallback]
+  /// (typically the theme primary) on any parse error — prevents crashes when
+  /// an entry has a malformed stored color.
+  Color _parseColor(String hex, Color fallback) {
+    try {
+      return Color(int.parse(hex.replaceAll('#', '0xFF')));
+    } catch (_) {
+      return fallback;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final entriesAsync = ref.watch(entriesProvider);
     final isWide = MediaQuery.of(context).size.width >= 768;
 
@@ -34,7 +47,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               const SizedBox(height: 16),
               MidnightInput(
                 hintText: 'Müşteri veya iş ara...',
-                prefixIcon: Icon(PhosphorIcons.magnifyingGlass(), color: MidnightColors.primary),
+                prefixIcon: Icon(PhosphorIcons.magnifyingGlass(), color: c.primary),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
@@ -69,14 +82,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         Expanded(
           child: entriesAsync.when(
             data: (entries) => _buildHistoryList(entries, isWide),
-            loading: () => const Center(child: CircularProgressIndicator(color: MidnightColors.primary)),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(PhosphorIcons.warningCircle(), size: 64, color: Colors.red),
+                  Icon(PhosphorIcons.warningCircle(), size: 64, color: c.error),
                   const SizedBox(height: 16),
-                  Text('Hata: $error', style: TextStyle(color: MidnightColors.textMain)),
+                  Text('Hata: $error', style: TextStyle(color: c.textMain)),
                 ],
               ),
             ),
@@ -101,22 +114,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (!isWide) ...[
-                    GestureDetector(
-                      onTap: () => context.go('/home'),
-                      child: Icon(PhosphorIcons.x(), color: MidnightColors.textMain, size: 24),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
-                  Text(
-                    '🕰️ Geçmişi',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: MidnightColors.textMain,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'İş Geçmişi',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: c.textMain,
+                        ),
+                      ),
+                    ],
                   ),
+                  _buildSortDropdown(),
                 ],
               ),
             ),
@@ -124,10 +136,25 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ],
         ),
       ),
+      floatingActionButton: isWide
+          ? FloatingActionButton(
+              onPressed: () => context.go('/home/add'),
+              backgroundColor: c.primary,
+              child: Icon(Icons.add, color: c.onPrimary),
+            )
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 80.0),
+              child: FloatingActionButton(
+                onPressed: () => context.go('/home/add'),
+                backgroundColor: c.primary,
+                child: Icon(Icons.add, color: c.onPrimary),
+              ),
+            ),
     );
   }
 
   Widget _buildFilterChip(String label, String filter) {
+    final c = AppColors.of(context);
     final isSelected = _selectedFilter == filter;
     return GestureDetector(
       onTap: () {
@@ -147,15 +174,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? MidnightColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSelected ? c.primary.withValues(alpha: 0.1) : Colors.transparent,
           border: Border.all(
-            color: isSelected ? MidnightColors.primary.withValues(alpha: 0.4) : MidnightColors.cardBorder,
+            color: isSelected ? c.primary.withValues(alpha: 0.4) : c.cardBorder,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: MidnightColors.primary.withValues(alpha: 0.12),
+              color: c.primary.withValues(alpha: 0.12),
               blurRadius: 10,
             ),
           ] : [],
@@ -165,7 +192,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? MidnightColors.primary : MidnightColors.textMuted,
+            color: isSelected ? c.primary : c.textMuted,
           ),
         ),
       ),
@@ -173,8 +200,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   Widget _buildHistoryList(List entries, bool isWide) {
+    final c = AppColors.of(context);
     List filteredEntries = entries;
-    
+
     if (_searchQuery.isNotEmpty) {
       filteredEntries = filteredEntries.where((entry) {
         return entry.clientName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -184,9 +212,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     if (_selectedMonth != null) {
       filteredEntries = filteredEntries.where((entry) {
-        final entryDate = DateFormat('dd.MM.yyyy').parse(entry.date);
-        return entryDate.year == _selectedMonth!.year &&
-            entryDate.month == _selectedMonth!.month;
+        try {
+          final entryDate = DateFormat('dd.MM.yyyy').parse(entry.date);
+          return entryDate.year == _selectedMonth!.year &&
+              entryDate.month == _selectedMonth!.month;
+        } catch (_) {
+          // Malformed date — exclude entry from the month filter.
+          return false;
+        }
       }).toList();
     }
 
@@ -198,13 +231,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: MidnightColors.shimmer1.withValues(alpha: 0.2),
+                color: c.shimmer1.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 PhosphorIcons.clockCounterClockwise(),
                 size: 64,
-                color: MidnightColors.primary.withValues(alpha: 0.5),
+                color: c.primary.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 24),
@@ -212,7 +245,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               'Henüz kayıt yok',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: MidnightColors.textMain,
+                color: c.textMain,
                 fontSize: 18,
               ),
             ),
@@ -221,58 +254,80 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       );
     }
 
-    final groupedEntries = _groupByDate(filteredEntries);
+    final isGrouped = _selectedSort.startsWith('Tarih');
 
-    return ListView.builder(
-      padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
-      itemCount: groupedEntries.length,
-      itemBuilder: (context, index) {
-        final date = groupedEntries.keys.elementAt(index);
-        final dayEntries = groupedEntries[date]!;
+    if (isGrouped) {
+      final groupedEntries = _groupByDate(filteredEntries);
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: MidnightColors.cardBorder,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      _formatDateHeader(date),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: MidnightColors.textMuted,
-                        letterSpacing: 0.5,
+      return ListView.builder(
+        padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
+        itemCount: groupedEntries.length,
+        itemBuilder: (context, index) {
+          final date = groupedEntries.keys.elementAt(index);
+          final dayEntries = groupedEntries[date]!;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        color: c.cardBorder,
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: MidnightColors.cardBorder,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        _formatDateHeader(date),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: c.textMuted,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        color: c.cardBorder,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            ...dayEntries.map((entry) => _buildEntryCard(entry)),
-          ],
-        );
-      },
-    );
+              ...dayEntries.map((entry) => _buildEntryCard(entry)),
+            ],
+          );
+        },
+      );
+    } else {
+      // Sort by duration flat list
+      final sortedEntries = List.from(filteredEntries);
+      if (_selectedSort == 'Süre (En Uzun)') {
+        sortedEntries.sort((a, b) => b.durationHours.compareTo(a.durationHours));
+      } else {
+        sortedEntries.sort((a, b) => a.durationHours.compareTo(b.durationHours));
+      }
+
+      return ListView.builder(
+        padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
+        itemCount: sortedEntries.length,
+        itemBuilder: (context, index) {
+          final entry = sortedEntries[index];
+          return _buildEntryCard(entry);
+        },
+      );
+    }
   }
 
   Widget _buildEntryCard(dynamic entry) {
-    final clientColor = Color(int.parse(entry.clientColor.replaceAll('#', '0xFF')));
+    final c = AppColors.of(context);
+    final clientColor = _parseColor(entry.clientColor as String, c.primary);
     final hasProject =
         entry.projectName != null && entry.projectName.toString().isNotEmpty;
     final clientLabel = hasProject
@@ -298,7 +353,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
             child: Center(
               child: Text(
-                entry.clientName[0].toUpperCase(),
+                entry.clientName.isNotEmpty
+                    ? entry.clientName[0].toUpperCase()
+                    : '?',
                 style: TextStyle(
                   color: clientColor,
                   fontWeight: FontWeight.bold,
@@ -313,46 +370,52 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  entry.workType,
-                  style: const TextStyle(
+                  clientLabel,
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: MidnightColors.textMain,
+                    color: c.textMain,
+                    fontSize: 15,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${entry.date} • ${entry.startTime} - ${entry.endTime}',
+                  '${entry.workType} • ${entry.startTime} - ${entry.endTime}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: MidnightColors.textMuted,
+                    color: c.textMuted,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                clientLabel,
-                style: const TextStyle(
+                '${entry.durationHours.toStringAsFixed(1)} sa',
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: MidnightColors.primary,
+                  fontSize: 14,
+                  color: c.textMain,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               if (!entry.synced)
                 Icon(
                   PhosphorIcons.cloudArrowUp(),
                   size: 14,
-                  color: Colors.orange,
+                  color: c.orange,
                 )
               else
                 Icon(
                   PhosphorIcons.cloudCheck(),
                   size: 14,
-                  color: MidnightColors.emerald,
+                  color: c.emerald,
                 ),
             ],
           ),
@@ -374,7 +437,122 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       } catch (e) {
       }
     }
-    return grouped;
+
+    // Sort keys based on selectedSort
+    final sortedKeys = grouped.keys.toList();
+    if (_selectedSort == 'Tarih (En Eski)') {
+      sortedKeys.sort((a, b) => a.compareTo(b)); // oldest first
+    } else {
+      sortedKeys.sort((a, b) => b.compareTo(a)); // newest first (default)
+    }
+
+    final sortedGrouped = <DateTime, List>{};
+    for (final key in sortedKeys) {
+      final list = grouped[key]!;
+      // Sort entries within the same day by start time
+      list.sort((a, b) {
+        if (_selectedSort == 'Tarih (En Eski)') {
+          return a.startTime.compareTo(b.startTime);
+        } else {
+          return b.startTime.compareTo(a.startTime);
+        }
+      });
+      sortedGrouped[key] = list;
+    }
+
+    return sortedGrouped;
+  }
+
+  Widget _buildSortDropdown() {
+    final c = AppColors.of(context);
+    IconData getSortIcon() {
+      switch (_selectedSort) {
+        case 'Tarih (En Eski)':
+          return PhosphorIcons.sortAscending();
+        case 'Süre (En Uzun)':
+          return PhosphorIcons.chartLineUp();
+        case 'Süre (En Kısa)':
+          return PhosphorIcons.chartLineDown();
+        case 'Tarih (En Yeni)':
+        default:
+          return PhosphorIcons.sortDescending();
+      }
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        cardColor: c.navBg, // Popup arka plan rengi
+      ),
+      child: PopupMenuButton<String>(
+        padding: EdgeInsets.zero,
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: c.shimmer1.withValues(alpha: 0.1),
+            border: Border.all(color: c.cardBorder, width: 1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            getSortIcon(),
+            size: 20,
+            color: c.primary,
+          ),
+        ),
+        tooltip: 'Sırala',
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: c.cardBorder, width: 1),
+        ),
+        offset: const Offset(0, 48),
+        onSelected: (String newValue) {
+          setState(() {
+            _selectedSort = newValue;
+          });
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          _buildPopupItem('Tarih (En Yeni)', 'En Yeni Tarih', PhosphorIcons.sortDescending()),
+          _buildPopupItem('Tarih (En Eski)', 'En Eski Tarih', PhosphorIcons.sortAscending()),
+          const PopupMenuDivider(height: 1),
+          _buildPopupItem('Süre (En Uzun)', 'En Uzun Süre', PhosphorIcons.trendUp()),
+          _buildPopupItem('Süre (En Kısa)', 'En Kısa Süre', PhosphorIcons.trendDown()),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _buildPopupItem(String value, String text, IconData icon) {
+    final c = AppColors.of(context);
+    final isSelected = _selectedSort == value;
+    return PopupMenuItem<String>(
+      value: value,
+      height: 44,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? c.primary : c.textMuted,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isSelected ? c.primary : c.textMain,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          if (isSelected)
+            Icon(
+              PhosphorIcons.check(),
+              size: 16,
+              color: c.primary,
+            ),
+        ],
+      ),
+    );
   }
 
   String _formatDateHeader(DateTime date) {
@@ -397,145 +575,149 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: MidnightColors.navBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: MidnightColors.cardBorder,
-                borderRadius: BorderRadius.circular(2),
+      builder: (context) {
+        final c = AppColors.of(context);
+        return Container(
+          decoration: BoxDecoration(
+            color: c.navBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: c.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Kayıt Detayları',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: c.textMain,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(PhosphorIcons.x(), color: c.textMain),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    Divider(height: 32, color: c.cardBorder),
+                    _buildDetailRow(PhosphorIcons.user(), 'Müşteri', entry.clientName),
+                    if (entry.projectName != null &&
+                        entry.projectName.toString().isNotEmpty)
+                      _buildDetailRow(
+                          PhosphorIcons.folderSimple(), 'Proje', entry.projectName),
+                    _buildDetailRow(PhosphorIcons.calendarBlank(), 'Tarih', entry.date),
+                    _buildDetailRow(PhosphorIcons.clock(), 'Saat', '${entry.startTime} - ${entry.endTime}'),
+                    _buildDetailRow(PhosphorIcons.timer(), 'Süre', '${entry.durationHours.toStringAsFixed(1)} saat'),
+                    _buildDetailRow(PhosphorIcons.briefcase(), 'Tür', entry.workType),
+                    if (entry.notes.isNotEmpty) ...[
+                      const SizedBox(height: 16),
                       Text(
-                        'Kayıt Detayları',
+                        'Notlar',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: MidnightColors.textMain,
+                          color: c.textMain,
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(PhosphorIcons.x(), color: MidnightColors.textMain),
-                        onPressed: () => Navigator.pop(context),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: c.shimmer1.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(entry.notes, style: TextStyle(color: c.textMain)),
                       ),
                     ],
-                  ),
-                  const Divider(height: 32, color: MidnightColors.cardBorder),
-                  _buildDetailRow(PhosphorIcons.user(), 'Müşteri', entry.clientName),
-                  if (entry.projectName != null &&
-                      entry.projectName.toString().isNotEmpty)
-                    _buildDetailRow(
-                        PhosphorIcons.folderSimple(), 'Proje', entry.projectName),
-                  _buildDetailRow(PhosphorIcons.calendarBlank(), 'Tarih', entry.date),
-                  _buildDetailRow(PhosphorIcons.clock(), 'Saat', '${entry.startTime} - ${entry.endTime}'),
-                  _buildDetailRow(PhosphorIcons.timer(), 'Süre', '${entry.durationHours.toStringAsFixed(1)} saat'),
-                  _buildDetailRow(PhosphorIcons.briefcase(), 'Tür', entry.workType),
-                  if (entry.notes.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      'Notlar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: MidnightColors.textMain,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: MidnightColors.shimmer1.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(entry.notes, style: TextStyle(color: MidnightColors.textMain)),
-                    ),
-                  ],
-                  const SizedBox(height: 32),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: MidnightButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            context.go('/home/add', extra: entry);
-                          },
-                          child: const Text('Düzenle', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: MidnightButton(
-                          onPressed: () async {
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                backgroundColor: MidnightColors.navBg,
-                                title: const Text('Kaydı Sil', style: TextStyle(color: MidnightColors.textMain)),
-                                content: const Text('Bu kaydı silmek istediğinize emin misiniz?', style: TextStyle(color: MidnightColors.textMuted)),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('İptal', style: TextStyle(color: MidnightColors.primary)),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    style: TextButton.styleFrom(foregroundColor: MidnightColors.error),
-                                    child: const Text('Sil'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirmed == true) {
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: MidnightButton(
+                            onPressed: () {
                               Navigator.pop(context);
-                              ref.read(entriesProvider.notifier).deleteEntry(entry.id);
-                              CustomToast.show(context, 'Kayıt silindi');
-                            }
-                          },
-                          color: MidnightColors.error.withValues(alpha: 0.1),
-                          child: const Text('Sil', style: TextStyle(color: MidnightColors.error, fontWeight: FontWeight.bold)),
+                              context.go('/home/add', extra: entry);
+                            },
+                            child: Text('Düzenle', style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary)),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: MidnightButton(
+                            onPressed: () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: c.navBg,
+                                  title: Text('Kaydı Sil', style: TextStyle(color: c.textMain)),
+                                  content: Text('Bu kaydı silmek istediğinize emin misiniz?', style: TextStyle(color: c.textMuted)),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: Text('İptal', style: TextStyle(color: c.primary)),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: TextButton.styleFrom(foregroundColor: c.error),
+                                      child: const Text('Sil'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed == true) {
+                                Navigator.pop(context);
+                                ref.read(entriesProvider.notifier).deleteEntry(entry.id);
+                                CustomToast.show(context, 'Kayıt silindi');
+                              }
+                            },
+                            color: c.error.withValues(alpha: 0.1),
+                            child: Text('Sil', style: TextStyle(color: c.error, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: MidnightColors.primary),
+          Icon(icon, size: 20, color: c.primary),
           const SizedBox(width: 12),
-          Text('$label: ', style: TextStyle(color: MidnightColors.textMuted, fontWeight: FontWeight.w500)),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: MidnightColors.textMain))),
+          Text('$label: ', style: TextStyle(color: c.textMuted, fontWeight: FontWeight.w500)),
+          Expanded(child: Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: c.textMain))),
         ],
       ),
     );

@@ -17,19 +17,33 @@ class TimePickerRow extends StatelessWidget {
     required this.onEndTimeChanged,
   });
 
+  /// Safely parses "HH:mm" into minutes-since-midnight (null on bad input).
+  static int? _toMinutes(String s) {
+    final parts = s.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+    return h * 60 + m;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final startParts = startTime.split(':').map(int.parse).toList();
-    final endParts = endTime.split(':').map(int.parse).toList();
-    final duration = (endParts[0] * 60 + endParts[1] - startParts[0] * 60 - startParts[1]) / 60.0;
+    final c = AppColors.of(context);
+    final startMin = _toMinutes(startTime);
+    final endMin = _toMinutes(endTime);
+    final duration = (startMin != null && endMin != null)
+        ? (endMin - startMin) / 60.0
+        : 0.0;
 
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildTimePicker(context, 'BAŞLANGIÇ', startTime, onStartTimeChanged)),
+            Expanded(child: _buildTimePicker(context, 'BAŞLANGIÇ', startTime, onStartTimeChanged, c)),
             const SizedBox(width: 12),
-            Expanded(child: _buildTimePicker(context, 'BİTİŞ', endTime, onEndTimeChanged)),
+            Expanded(child: _buildTimePicker(context, 'BİTİŞ', endTime, onEndTimeChanged, c)),
           ],
         ),
         const SizedBox(height: 16),
@@ -38,14 +52,14 @@ class TimePickerRow extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(PhosphorIcons.clock(), size: 16, color: AppColors.primary),
+              Icon(PhosphorIcons.clock(), size: 16, color: c.primary),
               const SizedBox(width: 10),
               Text(
                 'Toplam: ${duration > 0 ? duration.toStringAsFixed(1) : "0.0"} saat',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: c.primary,
                 ),
               ),
             ],
@@ -60,6 +74,7 @@ class TimePickerRow extends StatelessWidget {
     String label,
     String time,
     ValueChanged<String> onChanged,
+    AppPalette c,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,20 +83,20 @@ class TimePickerRow extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
-              color: AppColors.textMuted,
+              color: c.textMuted,
             ),
           ),
         ),
         GestureDetector(
           onTap: () async {
-            final parts = time.split(':').map(int.parse).toList();
+            final min = _toMinutes(time) ?? (9 * 60);
             final picked = await showTimePicker(
               context: context,
-              initialTime: TimeOfDay(hour: parts[0], minute: parts[1]),
+              initialTime: TimeOfDay(hour: min ~/ 60, minute: min % 60),
             );
             if (picked != null) {
               onChanged(
@@ -94,10 +109,10 @@ class TimePickerRow extends StatelessWidget {
             child: Center(
               child: Text(
                 time,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: c.textMain,
                 ),
               ),
             ),
