@@ -1,19 +1,38 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConstants {
   static const String appName = 'WorkLog';
 
-  // Supabase URL ve Anon Key (Loaded securely from environment variables)
-  static const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://qattsgpayyklmtgwygtu.supabase.co',
-  );
-  static const String supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhdHRzZ3BheXlrbG10Z3d5Z3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2OTMyMDEsImV4cCI6MjA5OTI2OTIwMX0.uvFOo6YHz9mDUMEhAGlEFktMEugxYuUmmmjnCBE93pw',
-  );
+  /// Loads configuration values from the bundled `.env` asset.
+  /// Must be called once at startup (see `main.dart`) before reading any value.
+  static Future<void> load() async {
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e) {
+      // The .env asset is optional in test/CI environments. When it is missing
+      // we fall back to compile-time environment overrides (or empty strings),
+      // so the app never crashes on config; callers should validate presence.
+      debugPrint('AppConstants.load: .env not loaded ($e)');
+    }
+  }
+
+  static String get supabaseUrl =>
+      dotenv.maybeGet('SUPABASE_URL') ??
+      const String.fromEnvironment('SUPABASE_URL');
+
+  static String get supabaseAnonKey =>
+      dotenv.maybeGet('SUPABASE_ANON_KEY') ??
+      const String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  static String get googleServerClientId =>
+      dotenv.maybeGet('GOOGLE_SERVER_CLIENT_ID') ??
+      const String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
   static const String entriesTable = 'work_entries';
   static const String clientsTable = 'clients';
   static const String projectsTable = 'projects';
+  static const String paymentsTable = 'payments';
 
   static const List<String> workTypes = ['Grafik', 'Yazılım', 'Diğer'];
 
@@ -21,4 +40,26 @@ class AppConstants {
     '#4A90D9', '#50C878', '#FF6B6B', '#FFB347',
     '#9B59B6', '#1ABC9C', '#E67E22', '#E91E63',
   ];
+
+  // ── Advertising (AdMob) ──────────────────────────────────────────────────
+  //
+  // These use Google's official test ad unit IDs by default so the app is
+  // fully functional during development. Override them at build time with
+  // production IDs:
+  //   flutter build appbundle \
+  //     --dart-define=ADMOB_APP_ID=ca-app-pub-... \
+  //     --dart-define=ADMOB_BANNER_ID=ca-app-pub-... \
+  //     --dart-define=ADMOB_INTERSTITIAL_ID=ca-app-pub-...
+  static const String admobAppId =
+      String.fromEnvironment('ADMOB_APP_ID', defaultValue: 'ca-app-pub-3940256099942544~3347511713');
+  static const String admobBannerUnitId =
+      String.fromEnvironment('ADMOB_BANNER_ID', defaultValue: 'ca-app-pub-3940256099942544/6300978111');
+  static const String admobInterstitialUnitId =
+      String.fromEnvironment('ADMOB_INTERSTITIAL_ID', defaultValue: 'ca-app-pub-3940256099942544/1033173712');
+
+  // ── In-App Purchase ──────────────────────────────────────────────────────
+  /// Product id for the one-time "remove ads" purchase. Must match the
+  /// product created in the Play Console / App Store Connect.
+  static const String iapRemoveAdsProductId = 'worktrack_remove_ads';
+  static const List<String> iapProductIds = [iapRemoveAdsProductId];
 }

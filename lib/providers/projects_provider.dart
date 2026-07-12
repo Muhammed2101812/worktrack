@@ -21,6 +21,35 @@ class ProjectsNotifier extends AsyncNotifier<List<Project>> {
     return project;
   }
 
+  /// Updates an existing project (e.g. rename) and syncs.
+  Future<void> updateProject(Project project) async {
+    final db = ref.read(localDBServiceProvider);
+    final sync = ref.read(syncServiceProvider);
+    // Mark as needing sync by bumping updatedAt and clearing synced flag.
+    final updated = project.copyWith(
+      updatedAt: DateTime.now().toIso8601String(),
+      synced: false,
+    );
+    await db.updateProject(updated);
+    try {
+      await sync.syncPendingProjects();
+    } catch (_) {}
+    ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
+  }
+
+  /// Soft-deletes a project so the deletion propagates to remote on sync.
+  Future<void> deleteProject(String id) async {
+    final db = ref.read(localDBServiceProvider);
+    final sync = ref.read(syncServiceProvider);
+    await db.softDeleteProject(id);
+    try {
+      await sync.syncPendingProjects();
+    } catch (_) {}
+    ref.invalidateSelf();
+    await ref.read(backupServiceProvider).triggerBackup();
+  }
+
   Future<void> refresh() => Future(() => ref.invalidateSelf());
 }
 

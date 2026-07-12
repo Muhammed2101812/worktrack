@@ -29,7 +29,10 @@ void main() {
         'Başlangıç',
         'Bitiş',
         'İş Türü',
+        'Proje',
         'Notlar',
+        'Ücret Tipi',
+        'Ücret',
       ]));
     });
 
@@ -47,7 +50,10 @@ void main() {
         '09:00',
         '17:00',
         'Arayüz tasarımı',
+        'Kartvizit Tasarımı',
         'Örnek not',
+        'Saatlik',
+        '150',
       ]));
     });
 
@@ -95,7 +101,10 @@ void main() {
         '08:00',
         '12:00',
         'Software Development',
+        '', // project name (empty)
         'Writing unit tests',
+        'Saatlik',
+        '0.0',
       ]));
 
       final row2 = sheet.rows[2].map(getCellValue).toList();
@@ -105,7 +114,10 @@ void main() {
         '13:00',
         '17:00',
         'Meeting',
+        '', // project name (empty)
         'Sprint planning',
+        'Saatlik',
+        '0.0',
       ]));
     });
 
@@ -141,7 +153,10 @@ void main() {
         '10:00',
         '11:00',
         'Support',
+        '', // project name (empty)
         'Solving bugs',
+        'Saatlik',
+        '0.0',
       ]));
     });
   });

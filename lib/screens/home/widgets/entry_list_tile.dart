@@ -11,7 +11,8 @@ class EntryListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clientColor = _parseColor(entry.clientColor);
+    final c = AppColors.of(context);
+    final clientColor = _parseColor(entry.clientColor, c.primary);
     final hasProject =
         entry.projectName != null && entry.projectName!.isNotEmpty;
     final displayTitle = hasProject
@@ -24,13 +25,13 @@ class EntryListTile extends ConsumerWidget {
       background: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.error,
+          color: c.error,
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_outline_rounded,
-            color: Colors.white, size: 22),
+        child: Icon(Icons.delete_outline_rounded,
+            color: c.onPrimary, size: 22),
       ),
       confirmDismiss: (_) async {
         return await showDialog<bool>(
@@ -47,8 +48,7 @@ class EntryListTile extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: TextButton.styleFrom(
-                    foregroundColor: AppColors.error),
+                style: TextButton.styleFrom(foregroundColor: c.error),
                 child: const Text('Sil'),
               ),
             ],
@@ -61,9 +61,9 @@ class EntryListTile extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: c.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.cardBorder),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -74,7 +74,6 @@ class EntryListTile extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // Client color dot + icon
             Container(
               width: 44,
               height: 44,
@@ -96,42 +95,38 @@ class EntryListTile extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 14),
-
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     displayTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: c.textMain,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     entry.workType,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: c.textMuted,
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Duration + time + sync badge
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   '${entry.durationHours.toStringAsFixed(1)} sa',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: c.textMain,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -139,16 +134,16 @@ class EntryListTile extends ConsumerWidget {
                   children: [
                     if (!entry.synced)
                       Icon(PhosphorIcons.cloudArrowUp(),
-                          size: 12, color: Colors.orange)
+                          size: 12, color: c.orange)
                     else
                       Icon(PhosphorIcons.cloudCheck(),
-                          size: 12, color: AppColors.primary),
+                          size: 12, color: c.primary),
                     const SizedBox(width: 4),
                     Text(
                       entry.startTime,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textMuted,
+                        color: c.textMuted,
                       ),
                     ),
                   ],
@@ -161,11 +156,11 @@ class EntryListTile extends ConsumerWidget {
     );
   }
 
-  Color _parseColor(String hex) {
+  Color _parseColor(String hex, Color fallback) {
     try {
       return Color(int.parse(hex.replaceAll('#', '0xFF')));
     } catch (_) {
-      return AppColors.primary;
+      return fallback;
     }
   }
 }

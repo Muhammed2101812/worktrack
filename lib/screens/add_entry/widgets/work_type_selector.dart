@@ -14,6 +14,7 @@ class WorkTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -25,10 +26,10 @@ class WorkTypeSelector extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : AppColors.surface,
+              color: isSelected ? c.primary : c.cardBg,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? c.primary : c.cardBorder,
               ),
             ),
             child: Text(
@@ -36,7 +37,7 @@ class WorkTypeSelector extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? c.onPrimary : c.textMuted,
               ),
             ),
           ),

@@ -10,6 +10,7 @@ import 'package:worklog/providers/clients_provider.dart';
 import 'package:worklog/providers/entries_provider.dart';
 import 'package:worklog/models/client.dart';
 import 'package:worklog/models/work_entry.dart';
+import 'package:worklog/models/project.dart';
 
 // --- Integration Test Mock ---
 class MockWidgetRefIntegration implements WidgetRef {
@@ -31,6 +32,8 @@ class MockLocalDBServiceUnit extends Fake implements LocalDBService {
   final List<Client> mockClients = [];
   final List<Client> insertedClients = [];
   final List<WorkEntry> insertedEntries = [];
+  final List<Project> mockProjects = [];
+  final List<Project> insertedProjects = [];
   bool shouldThrowOnInsertEntry = false;
 
   @override
@@ -52,7 +55,14 @@ class MockLocalDBServiceUnit extends Fake implements LocalDBService {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<List<Project>> getAllProjects() async {
+    return mockProjects;
+  }
+
+  @override
+  Future<void> insertProject(Project project) async {
+    insertedProjects.add(project);
+  }
 }
 
 class MockBackupService extends Fake implements BackupService {
@@ -113,7 +123,10 @@ void main() {
         TextCellValue('Başlangıç'),
         TextCellValue('Bitiş'),
         TextCellValue('İş Türü'),
+        TextCellValue('Proje'),
         TextCellValue('Notlar'),
+        TextCellValue('Ücret Tipi'),
+        TextCellValue('Ücret'),
       ]);
 
       // Data rows
@@ -126,7 +139,7 @@ void main() {
 
     test('should successfully import valid rows and create new client', () async {
       final bytes = createExcelBytes([
-        ['15.03.2026', 'Yeni Müşteri', '09:00', '12:00', 'Yazılım', 'İlk not'],
+        ['15.03.2026', 'Yeni Müşteri', '09:00', '12:00', 'Yazılım', 'Örnek Proje', 'İlk not'],
       ]);
 
       final count = await ImportService.importBytes(bytes, mockRef);
@@ -138,6 +151,7 @@ void main() {
       expect(mockDB.insertedEntries.first.clientName, equals('Yeni Müşteri'));
       expect(mockDB.insertedEntries.first.startTime, equals('09:00'));
       expect(mockDB.insertedEntries.first.endTime, equals('12:00'));
+      expect(mockDB.insertedEntries.first.projectName, equals('Örnek Proje'));
 
       expect(mockRef.invalidatedProviders, contains(clientsProvider));
       expect(mockRef.invalidatedProviders, contains(entriesProvider));
@@ -148,7 +162,7 @@ void main() {
       mockDB.mockClients.add(existingClient);
 
       final bytes = createExcelBytes([
-        ['15.03.2026', 'mevcut müşteri', '09:00', '12:00', 'Yazılım', 'İkinci not'],
+        ['15.03.2026', 'mevcut müşteri', '09:00', '12:00', 'Yazılım', 'Örnek Proje', 'İkinci not'],
       ]);
 
       final count = await ImportService.importBytes(bytes, mockRef);
@@ -164,11 +178,10 @@ void main() {
 
     test('should skip rows with missing or empty required fields', () async {
       final bytes = createExcelBytes([
-        ['', 'Müşteri', '09:00', '12:00', 'Yazılım'], // missing date
-        ['15.03.2026', '', '09:00', '12:00', 'Yazılım'], // missing client name
-        ['15.03.2026', 'Müşteri', '', '12:00', 'Yazılım'], // missing start time
-        ['15.03.2026', 'Müşteri', '09:00', '', 'Yazılım'], // missing end time
-        ['15.03.2026', 'Müşteri', '09:00', '12:00', ''], // missing work type
+        ['', 'Müşteri', '09:00', '12:00', 'Yazılım', 'Proje'], // missing date
+        ['15.03.2026', '', '09:00', '12:00', 'Yazılım', 'Proje'], // missing client name
+        ['15.03.2026', 'Müşteri', '', '12:00', 'Yazılım', 'Proje'], // missing start time
+        ['15.03.2026', 'Müşteri', '09:00', '', 'Yazılım', 'Proje'], // missing end time
       ]);
 
       final count = await ImportService.importBytes(bytes, mockRef);
@@ -179,7 +192,44 @@ void main() {
       expect(mockRef.invalidatedProviders, isEmpty);
     });
 
-    test('should skip rows that have fewer than 5 columns', () async {
+    test('should import row even when work type is empty (optional field)', () async {
+      final bytes = createExcelBytes([
+        ['15.03.2026', 'Müşteri', '09:00', '12:00', '', 'Proje', 'Notlar'], // empty work type — should still import
+      ]);
+
+      final count = await ImportService.importBytes(bytes, mockRef);
+
+      expect(count, equals(1));
+      expect(mockDB.insertedEntries.length, equals(1));
+      expect(mockDB.insertedEntries.first.workType, equals('Diğer'));
+    });
+
+    test('should import pricing details (hourly and fixed billing types)', () async {
+      final bytes = createExcelBytes([
+        ['15.03.2026', 'Müşteri A', '09:00', '12:00', 'Yazılım', 'Proje A', 'Saatlik iş', 'Saatlik', '250'],
+        ['16.03.2026', 'Müşteri B', '10:00', '11:00', 'Tasarım', 'Proje B', 'Sabit iş', 'Sabit', '1500'],
+      ]);
+
+      final count = await ImportService.importBytes(bytes, mockRef);
+
+      expect(count, equals(2));
+      expect(mockDB.insertedEntries.length, equals(2));
+
+      // First entry - Hourly (250 TL/hr * 3 hrs = 750 TL)
+      final hourlyEntry = mockDB.insertedEntries.first;
+      expect(hourlyEntry.billingType, equals('hourly'));
+      expect(hourlyEntry.hourlyRate, equals(250.0));
+      expect(hourlyEntry.totalPrice, equals(750.0));
+      expect(hourlyEntry.durationHours, equals(3.0));
+
+      // Second entry - Fixed (1500 TL total price)
+      final fixedEntry = mockDB.insertedEntries[1];
+      expect(fixedEntry.billingType, equals('fixed'));
+      expect(fixedEntry.hourlyRate, equals(0.0));
+      expect(fixedEntry.totalPrice, equals(1500.0));
+    });
+
+    test('should import rows that have fewer than 6 columns (defaulting to Genel project)', () async {
       final excel = Excel.createExcel();
       final sheet = excel['Sheet1'];
       sheet.appendRow([
@@ -189,45 +239,50 @@ void main() {
         TextCellValue('Bitiş'),
         TextCellValue('İş Türü'),
       ]);
-      // Appending only 4 columns
+      // Sadece 5 sütun — Proje eksik
       sheet.appendRow([
         TextCellValue('15.03.2026'),
         TextCellValue('Müşteri'),
         TextCellValue('09:00'),
         TextCellValue('12:00'),
+        TextCellValue('Yazılım'),
       ]);
 
       final bytes = excel.encode()!;
       final count = await ImportService.importBytes(bytes, mockRef);
 
-      expect(count, equals(0));
-      expect(mockDB.insertedClients.isEmpty, isTrue);
-      expect(mockDB.insertedEntries.isEmpty, isTrue);
+      expect(count, equals(1));
+      expect(mockDB.insertedClients.length, equals(1));
+      expect(mockDB.insertedEntries.length, equals(1));
+      expect(mockDB.insertedEntries.first.projectName, equals('Genel'));
     });
 
-    test('should handle malformed row values (catch block triggered) and continue with other valid rows', () async {
+    test('should handle malformed row values gracefully and continue with other valid rows', () async {
       final bytes = createExcelBytes([
-        ['15.03.2026', 'Hatalı Zaman', '09:00', 'invalid-time', 'Yazılım'], // triggers FormatException in duration calc
-        ['16.03.2026', 'Düzgün Müşteri', '10:00', '11:00', 'Tasarım'], // valid row
+        ['15.03.2026', 'Hatalı Zaman', '09:00', 'invalid-time', 'Yazılım', 'Proje'], // invalid end-time -> duration 0, still imported
+        ['16.03.2026', 'Düzgün Müşteri', '10:00', '11:00', 'Tasarım', 'Proje'], // valid row
       ]);
 
       final count = await ImportService.importBytes(bytes, mockRef);
 
-      // The first malformed row triggers the catch block, but the second row should be successfully parsed
-      expect(count, equals(1));
+      // Both rows are imported; the malformed-time row yields a 0-duration entry
+      // instead of crashing, so it no longer falls into the catch block.
+      expect(count, equals(2));
       expect(mockDB.insertedClients.length, equals(2));
       expect(mockDB.insertedClients[0].name, equals('Hatalı Zaman'));
       expect(mockDB.insertedClients[1].name, equals('Düzgün Müşteri'));
-      expect(mockDB.insertedEntries.length, equals(1));
-      expect(mockDB.insertedEntries.first.clientName, equals('Düzgün Müşteri'));
-      expect(mockDB.insertedEntries.first.date, equals('16.03.2026'));
+      expect(mockDB.insertedEntries.length, equals(2));
+      // The valid row's entry is present
+      expect(mockDB.insertedEntries.any((e) => e.clientName == 'Düzgün Müşteri' && e.date == '16.03.2026'), isTrue);
+      // The malformed-time row is also present but with 0 duration
+      expect(mockDB.insertedEntries.any((e) => e.clientName == 'Hatalı Zaman' && e.durationHours == 0.0), isTrue);
       expect(mockRef.invalidatedProviders, contains(entriesProvider));
     });
 
     test('should gracefully handle database exceptions (catch block triggered) and continue', () async {
       final bytes = createExcelBytes([
-        ['15.03.2026', 'Müşteri 1', '09:00', '10:00', 'Yazılım'],
-        ['16.03.2026', 'Müşteri 2', '11:00', '12:00', 'Tasarım'],
+        ['15.03.2026', 'Müşteri 1', '09:00', '10:00', 'Yazılım', 'Proje'],
+        ['16.03.2026', 'Müşteri 2', '11:00', '12:00', 'Tasarım', 'Proje'],
       ]);
 
       // Set DB to throw during processing of the first row
@@ -247,7 +302,11 @@ void main() {
     late MockWidgetRefIntegration mockRef;
 
     setUp(() async {
-      container = ProviderContainer();
+      container = ProviderContainer(
+        overrides: [
+          localDBServiceProvider.overrideWithValue(LocalDBService(dbName: ':memory:')),
+        ],
+      );
       mockRef = MockWidgetRefIntegration(container);
 
       // Clear database before each test
@@ -271,6 +330,7 @@ void main() {
         TextCellValue('Başlangıç'),
         TextCellValue('Bitiş'),
         TextCellValue('İş Tipi'),
+        TextCellValue('Proje'),
         TextCellValue('Notlar'),
       ]);
 
@@ -283,6 +343,7 @@ void main() {
           TextCellValue('09:00'),
           TextCellValue('17:00'),
           TextCellValue('Yazılım'),
+          TextCellValue('Project_$clientNum'),
           TextCellValue('Note $i'),
         ]);
       }
