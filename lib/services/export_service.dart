@@ -64,12 +64,10 @@ class ExportService {
         TextCellValue('Örnek not'),
       ]);
     } else {
+      final clientMap = {for (final client in clients) client.id: client};
       for (final entry in entries) {
-        final client = clients.firstWhere(
-          (c) => c.id == entry.clientId,
-          orElse: () =>
-              Client(id: entry.clientId, name: 'Bilinmeyen', color: '#000000'),
-        );
+        final client = clientMap[entry.clientId] ??
+              Client(id: entry.clientId, name: 'Bilinmeyen', color: '#000000');
         sheet.appendRow([
           TextCellValue(entry.date),
           TextCellValue(client.name),
