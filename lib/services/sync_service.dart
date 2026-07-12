@@ -76,9 +76,9 @@ class SyncService {
 
       try {
         await supabase.upsertProjects(unsynced);
-        for (final project in unsynced) {
-          await localDB.updateProject(project.copyWith(synced: true));
-        }
+        // Batch-mark all as synced in one transaction (PR #31 optimisation).
+        await localDB.updateProjectsSyncBatch(
+            unsynced.map((p) => p.id).toList(), true);
       } catch (_) {
         // Fallback to individual upserts on failure
         for (final project in unsynced) {

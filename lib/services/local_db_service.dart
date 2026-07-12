@@ -449,6 +449,21 @@ class LocalDBService {
     await db.delete('projects');
   }
 
+  /// Batch-updates the `synced` flag for multiple projects in one transaction,
+  /// avoiding per-row UPDATE calls during sync.
+  Future<void> updateProjectsSyncBatch(List<String> ids, bool synced) async {
+    if (ids.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in ids) {
+        batch.update('projects', {'synced': synced ? 1 : 0},
+            where: 'id = ?', whereArgs: [id]);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   // ── ÖDEMELER (PAYMENTS) ──
 
   Future<void> insertPayment(Payment payment) async {
