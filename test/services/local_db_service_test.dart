@@ -14,7 +14,7 @@ void main() {
     late LocalDBService dbService;
 
     setUp(() async {
-      dbService = LocalDBService();
+      dbService = LocalDBService(dbName: ':memory:');
       try {
         await dbService.clearEntries();
         await dbService.clearClients();

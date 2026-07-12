@@ -10,6 +10,7 @@ import '../../models/work_entry.dart';
 import '../../models/client.dart';
 import '../../models/project.dart';
 import '../../core/constants.dart';
+import '../../providers/settings_provider.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
 import 'widgets/client_dropdown.dart';
@@ -35,6 +36,12 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   late String _workType;
   late String _notes;
 
+  String _billingType = 'hourly';
+  double _hourlyRate = 0.0;
+  double _totalPrice = 0.0;
+  final _hourlyRateController = TextEditingController();
+  final _fixedPriceController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +60,12 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       _endTime = entry.endTime;
       _workType = entry.workType;
       _notes = entry.notes;
+      _billingType = entry.billingType;
+      _hourlyRate = entry.hourlyRate;
+      _totalPrice = entry.totalPrice;
+      _hourlyRateController.text = _hourlyRate > 0 ? _hourlyRate.toStringAsFixed(1) : '';
+      _fixedPriceController.text = _billingType == 'fixed' && _totalPrice > 0 ? _totalPrice.toStringAsFixed(1) : '';
+
       if (entry.projectId != null && entry.projectName != null) {
         _selectedProject = Project(
           id: entry.projectId!,
@@ -70,8 +83,20 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   }
 
   @override
+  void dispose() {
+    _hourlyRateController.dispose();
+    _fixedPriceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final clientsAsync = ref.watch(clientsProvider);
+    final defaultRate = ref.watch(defaultHourlyRateProvider).valueOrNull ?? 0.0;
+    if (widget.entryToEdit == null && _hourlyRate == 0.0 && defaultRate > 0.0 && _hourlyRateController.text.isEmpty) {
+      _hourlyRate = defaultRate;
+      _hourlyRateController.text = defaultRate.toStringAsFixed(1);
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -145,7 +170,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 8),
               child: Text(
-                'PROJE',
+                'PROJE *',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -160,7 +185,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
-              'YAPILAN İŞ',
+              'YAPILAN İŞ (İSTEĞE BAĞLI)',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -205,6 +230,140 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               });
             },
           ),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              'ÜCRETLENDİRME',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: MidnightColors.textMuted,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _billingType = 'hourly';
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _billingType == 'hourly'
+                          ? MidnightColors.primary.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: _billingType == 'hourly'
+                            ? MidnightColors.primary
+                            : MidnightColors.cardBorder,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Saatlik Ücret',
+                      style: TextStyle(
+                        fontWeight: _billingType == 'hourly' ? FontWeight.bold : FontWeight.w600,
+                        color: _billingType == 'hourly' ? MidnightColors.primary : MidnightColors.textMain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _billingType = 'fixed';
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _billingType == 'fixed'
+                          ? MidnightColors.primary.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: _billingType == 'fixed'
+                            ? MidnightColors.primary
+                            : MidnightColors.cardBorder,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Sabit Ücret',
+                      style: TextStyle(
+                        fontWeight: _billingType == 'fixed' ? FontWeight.bold : FontWeight.w600,
+                        color: _billingType == 'fixed' ? MidnightColors.primary : MidnightColors.textMain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_billingType == 'hourly') ...[
+            Row(
+              children: [
+                Expanded(
+                  child: MidnightInput(
+                    controller: _hourlyRateController,
+                    hintText: 'Saatlik Ücret (TL)',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: MidnightColors.primary),
+                    onChanged: (value) {
+                      setState(() {
+                        _hourlyRate = double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: MidnightColors.shimmer1.withValues(alpha: 0.15),
+                      border: Border.all(color: MidnightColors.cardBorder),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Toplam: ${(_calcDurationHours() * _hourlyRate).toStringAsFixed(1)} TL',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: MidnightColors.textMain,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            MidnightInput(
+              controller: _fixedPriceController,
+              hintText: 'Sabit Ücret Tutarı (TL)',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              prefixIcon: Icon(PhosphorIcons.wallet(), color: MidnightColors.primary),
+              onChanged: (value) {
+                setState(() {
+                  _totalPrice = double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+                });
+              },
+            ),
+          ],
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -459,7 +618,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: MidnightColors.navBg,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: MidnightColors.cardBorder, width: 1),
               ),
               child: Column(
@@ -559,7 +718,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: MidnightColors.navBg,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: MidnightColors.cardBorder, width: 1),
               ),
               child: StatefulBuilder(
@@ -672,6 +831,19 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     }
   }
 
+  double _calcDurationHours() {
+    try {
+      final s = _startTime.split(':');
+      final e = _endTime.split(':');
+      final startMin = int.parse(s[0]) * 60 + int.parse(s[1]);
+      final endMin = int.parse(e[0]) * 60 + int.parse(e[1]);
+      final diff = endMin - startMin;
+      return diff > 0 ? diff / 60.0 : 0.0;
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
   Future<void> _saveEntry() async {
     if (_formKey.currentState?.validate() != true) {
       return;
@@ -679,6 +851,11 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
 
     if (_selectedClient == null) {
       CustomToast.show(context, 'Lütfen bir müşteri seçin');
+      return;
+    }
+
+    if (_selectedProject == null) {
+      CustomToast.show(context, 'Lütfen bir proje seçin');
       return;
     }
 
@@ -691,6 +868,13 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     if (endMinutes <= startMinutes) {
       CustomToast.show(context, 'Bitiş saati başlangıç saatten büyük olmalı');
       return;
+    }
+
+    double finalTotalPrice = 0.0;
+    if (_billingType == 'hourly') {
+      finalTotalPrice = _calcDurationHours() * _hourlyRate;
+    } else {
+      finalTotalPrice = _totalPrice;
     }
 
     final entry = WorkEntry(
@@ -706,6 +890,9 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       synced: false,
       projectId: _selectedProject?.id,
       projectName: _selectedProject?.name,
+      billingType: _billingType,
+      hourlyRate: _billingType == 'hourly' ? _hourlyRate : 0.0,
+      totalPrice: finalTotalPrice,
     );
 
     if (widget.entryToEdit == null) {

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,10 +22,12 @@ class HomeShell extends ConsumerWidget {
     int currentIndex = 0;
     if (location.contains('/history')) {
       currentIndex = 1;
-    } else if (location.contains('/stats')) {
+    } else if (location.contains('/finance')) {
       currentIndex = 2;
-    } else if (location.contains('/settings')) {
+    } else if (location.contains('/stats')) {
       currentIndex = 3;
+    } else if (location.contains('/settings')) {
+      currentIndex = 4;
     }
 
     return Scaffold(
@@ -50,33 +53,6 @@ class HomeShell extends ConsumerWidget {
                 right: 24,
                 bottom: 30,
                 child: _buildCustomNavbar(context, currentIndex),
-              ),
-              Positioned(
-                bottom: 55,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () => context.go('/home/add'),
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.35),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 28),
-                    ),
-                  ),
-                ),
               ),
             ],
           );
@@ -112,17 +88,24 @@ class HomeShell extends ConsumerWidget {
         route: '/home/history',
       ),
       _NavItemData(
+        label: 'Finans',
+        icon: PhosphorIcons.wallet(),
+        activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
+        index: 2,
+        route: '/home/finance',
+      ),
+      _NavItemData(
         label: 'Raporlar',
         icon: PhosphorIcons.chartPie(),
         activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
-        index: 2,
+        index: 3,
         route: '/home/stats',
       ),
       _NavItemData(
         label: 'Ayarlar',
         icon: PhosphorIcons.gear(),
         activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
-        index: 3,
+        index: 4,
         route: '/home/settings',
       ),
     ];
@@ -304,23 +287,27 @@ class HomeShell extends ConsumerWidget {
   }
 
   Widget _buildCustomNavbar(BuildContext context, int currentIndex) {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 32,
-            offset: const Offset(0, 8),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          height: 70,
+          decoration: BoxDecoration(
+            color: AppColors.surface.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border.withOpacity(0.5), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 32,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Row(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildNavItem(
@@ -339,27 +326,33 @@ class HomeShell extends ConsumerWidget {
                   isActive: currentIndex == 1,
                   onTap: () => context.go('/home/history'),
                 ),
-                
-                // Central FAB Placeholder/Spacer
-                const SizedBox(width: 70),
-
                 _buildNavItem(
                   context,
                   index: 2,
-                  icon: PhosphorIcons.chartPie(),
-                  activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
+                  icon: PhosphorIcons.wallet(),
+                  activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
                   isActive: currentIndex == 2,
-                  onTap: () => context.go('/home/stats'),
+                  onTap: () => context.go('/home/finance'),
                 ),
                 _buildNavItem(
                   context,
                   index: 3,
+                  icon: PhosphorIcons.chartPie(),
+                  activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
+                  isActive: currentIndex == 3,
+                  onTap: () => context.go('/home/stats'),
+                ),
+                _buildNavItem(
+                  context,
+                  index: 4,
                   icon: PhosphorIcons.gear(),
                   activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
-                  isActive: currentIndex == 3,
+                  isActive: currentIndex == 4,
                   onTap: () => context.go('/home/settings'),
                 ),
               ],
+            ),
+          ),
         ),
       ),
     );
@@ -469,6 +462,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             barrierDismissible: false,
             builder: (ctx) => AlertDialog(
               backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: const BorderSide(color: AppColors.border, width: 1),
+              ),
               title: const Row(
                 children: [
                   Icon(Icons.backup_outlined, color: AppColors.primary),
@@ -535,54 +532,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return Scaffold(
           backgroundColor: Colors.transparent, // Let HomeShell handle bg
           extendBodyBehindAppBar: true,
-          appBar: isWide
-              ? null
-              : AppBar(
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Merhaba,',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                      Text(
-                        displayName,
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 24),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryLight,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            avatarLetter,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          appBar: null,
           body: entriesAsync.when(
             data: (entries) => Center(
               child: ConstrainedBox(
@@ -590,11 +540,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(
                     24,
-                    isWide ? 40 : 120,
                     24,
-                    isWide ? 40 : 150,
+                    24,
+                    isWide ? 40 : 120,
                   ),
                   children: [
+                    // Welcome Header Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Merhaba,',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                            Text(
+                              displayName,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.5,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              avatarLetter,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
                     const TodaySummaryCard(),
                     const SizedBox(height: 35),
                     Row(
@@ -637,6 +634,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, s) => Center(child: Text('Hata: $e')),
           ),
+          floatingActionButton: isWide
+              ? FloatingActionButton(
+                  onPressed: () => context.go('/home/add'),
+                  backgroundColor: AppColors.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
+                )
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 80.0),
+                  child: FloatingActionButton(
+                    onPressed: () => context.go('/home/add'),
+                    backgroundColor: AppColors.primary,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
+                ),
         );
       },
     );

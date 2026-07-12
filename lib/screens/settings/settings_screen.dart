@@ -2,17 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:file_saver/file_saver.dart';
-import 'package:file_picker/file_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../providers/core_providers.dart';
 import '../../models/client.dart';
 import '../../core/constants.dart';
 import '../../core/widgets/midnight_widgets.dart';
@@ -42,13 +36,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
           child: Row(
             children: [
-              if (!isWide)
-                GestureDetector(
-                  onTap: () => context.go('/home'),
-                  child: Icon(PhosphorIcons.x(),
-                      color: MidnightColors.textMain, size: 24),
-                ),
-              if (!isWide) const SizedBox(width: 16),
               Text(
                 'Ayarlar',
                 style: TextStyle(
@@ -66,6 +53,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               _buildDataSyncSection(context, syncAsync, unsyncedAsync, syncEnabled, currentUser),
               _buildAccountSection(context, currentUser),
+              _buildFinanceSection(context),
               _buildAboutSection(context),
             ],
           ),
@@ -170,86 +158,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => _showImportModal(context),
                 trailingIcon: PhosphorIcons.caretRight(),
               ),
-              _divider(),
-              _buildSettingsItem(
-                context: context,
-                icon: PhosphorIcons.downloadSimple(),
-                title: 'Manuel Yedek Oluştur (JSON)',
-                iconColor: MidnightColors.primary,
-                onTap: () async {
-                  try {
-                    final clients = await ref.read(localDBServiceProvider).getAllClients();
-                    final entries = await ref.read(localDBServiceProvider).getAllEntries();
-
-                    final backupMap = {
-                      'timestamp': DateTime.now().toIso8601String(),
-                      'clients': clients.map((c) => c.toMap()).toList(),
-                      'entries': entries.map((e) => e.toLocalMap()).toList(),
-                    };
-
-                    final jsonStr = jsonEncode(backupMap);
-                    final bytes = Uint8List.fromList(utf8.encode(jsonStr));
-
-                    await FileSaver.instance.saveFile(
-                      name: 'worktrack_backup',
-                      bytes: bytes,
-                      fileExtension: 'json',
-                      mimeType: MimeType.json,
-                    );
-                    if (context.mounted) {
-                      CustomToast.show(context, 'Yedek dosyası başarıyla indirildi.');
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      CustomToast.show(context, 'Yedekleme başarısız oldu.');
-                    }
-                  }
-                },
-                trailingIcon: PhosphorIcons.download(),
-              ),
-              _divider(),
-              _buildSettingsItem(
-                context: context,
-                icon: PhosphorIcons.uploadSimple(),
-                title: 'Yedekten Geri Yükle (JSON)',
-                iconColor: MidnightColors.orange,
-                onTap: () async {
-                  try {
-                    final result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['json'],
-                      withData: true,
-                    );
-                    if (result == null || result.files.isEmpty) return;
-
-                    Uint8List? bytes = result.files.first.bytes;
-                    if (bytes == null && result.files.first.path != null) {
-                      final file = File(result.files.first.path!);
-                      bytes = await file.readAsBytes();
-                    }
-
-                    if (bytes != null) {
-                      final jsonStr = utf8.decode(bytes);
-                      final backupMap = jsonDecode(jsonStr) as Map<String, dynamic>;
-                      
-                      final backupService = ref.read(backupServiceProvider);
-                      await backupService.restoreBackup(backupMap);
-
-                      ref.invalidate(entriesProvider);
-                      ref.invalidate(clientsProvider);
-
-                      if (context.mounted) {
-                        CustomToast.show(context, 'Veriler yedeklemeden başarıyla geri yüklendi.');
-                      }
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      CustomToast.show(context, 'Geri yükleme işlemi başarısız oldu.');
-                    }
-                  }
-                },
-                trailingIcon: PhosphorIcons.caretRight(),
-              ),
             ],
           ),
         ),
@@ -299,6 +207,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       context: context,
                       builder: (ctx) => AlertDialog(
                         backgroundColor: MidnightColors.navBg,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
+                        ),
                         title: const Text('Çıkış Yap',
                             style: TextStyle(color: MidnightColors.textMain)),
                         content: const Text(
@@ -342,6 +254,97 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildFinanceSection(BuildContext context) {
+    final defaultRateAsync = ref.watch(defaultHourlyRateProvider);
+    final defaultRate = defaultRateAsync.valueOrNull ?? 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Text(
+            'FİNANS VE ÜCRETLENDİRME',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              color: MidnightColors.textMuted,
+            ),
+          ),
+        ),
+        MidnightCard(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              _buildSettingsItem(
+                context: context,
+                icon: PhosphorIcons.currencyCircleDollar(),
+                title: 'Varsayılan Saatlik Ücret: ${defaultRate.toStringAsFixed(1)} TL',
+                iconColor: MidnightColors.emerald,
+                onTap: () => _showHourlyRateDialog(context, defaultRate),
+                trailingIcon: PhosphorIcons.pencilSimple(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showHourlyRateDialog(BuildContext context, double currentRate) async {
+    final controller = TextEditingController(text: currentRate > 0 ? currentRate.toStringAsFixed(1) : '');
+    final result = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MidnightColors.navBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
+        ),
+        title: const Text('Varsayılan Saatlik Ücret', style: TextStyle(color: MidnightColors.textMain)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Yeni kayıtlar oluşturulurken kullanılacak varsayılan saatlik ücret tutarını girin.',
+              style: TextStyle(fontSize: 13, color: MidnightColors.textMuted),
+            ),
+            const SizedBox(height: 16),
+            MidnightInput(
+              controller: controller,
+              hintText: 'Saatlik Ücret (TL)',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: MidnightColors.primary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('İptal', style: TextStyle(color: MidnightColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () {
+              final val = double.tryParse(controller.text.replaceAll(',', '.')) ?? 0.0;
+              Navigator.pop(ctx, val);
+            },
+            style: TextButton.styleFrom(foregroundColor: MidnightColors.primary),
+            child: const Text('Kaydet', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      await ref.read(defaultHourlyRateProvider.notifier).updateRate(result);
+      if (mounted) {
+        CustomToast.show(context, 'Varsayılan saatlik ücret güncellendi');
+      }
+    }
   }
 
   Widget _buildAboutSection(BuildContext context) {
@@ -504,6 +507,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: MidnightColors.navBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
+        ),
         title: const Text('Müşteriyi Sil',
             style: TextStyle(color: MidnightColors.textMain)),
         content: Text('"${client.name}" silinsin mi?',
@@ -551,7 +558,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: MidnightColors.navBg,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 border:
                     Border.all(color: MidnightColors.cardBorder, width: 1),
               ),
@@ -942,7 +949,8 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 _formatRow('Müşteri', 'Müşteri adı'),
                 _formatRow('Başlangıç', 'HH:mm (örn: 09:00)'),
                 _formatRow('Bitiş', 'HH:mm (örn: 17:00)'),
-                _formatRow('İş Türü', 'Yapılan işin türü'),
+                _formatRow('İş Türü', 'İsteğe bağlı (boşsa "Diğer" atanır)'),
+                _formatRow('Proje', 'Proje adı'),
                 _formatRow('Notlar', 'İsteğe bağlı notlar'),
               ],
             ),

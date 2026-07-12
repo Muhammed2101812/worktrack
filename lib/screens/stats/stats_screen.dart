@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:go_router/go_router.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../models/client.dart';
@@ -38,14 +37,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                   child: Row(
                     children: [
-                      if (!isWide) ...[
-                        GestureDetector(
-                          onTap: () => context.go('/home'),
-                          child: Icon(PhosphorIcons.x(),
-                              color: MidnightColors.textMain, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                      ],
                       Text(
                         'Aylık Rapor',
                         style: TextStyle(

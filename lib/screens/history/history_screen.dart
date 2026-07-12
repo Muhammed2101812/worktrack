@@ -19,6 +19,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   DateTime? _selectedMonth = DateTime.now();
   String _searchQuery = '';
   String _selectedFilter = 'Tümü';
+  String _selectedSort = 'Tarih (En Yeni)';
 
   @override
   Widget build(BuildContext context) {
@@ -101,22 +102,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (!isWide) ...[
-                    GestureDetector(
-                      onTap: () => context.go('/home'),
-                      child: Icon(PhosphorIcons.x(), color: MidnightColors.textMain, size: 24),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
-                  Text(
-                    '🕰️ Geçmişi',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: MidnightColors.textMain,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'İş Geçmişi',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: MidnightColors.textMain,
+                        ),
+                      ),
+                    ],
                   ),
+                  _buildSortDropdown(),
                 ],
               ),
             ),
@@ -124,6 +124,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ],
         ),
       ),
+      floatingActionButton: isWide
+          ? FloatingActionButton(
+              onPressed: () => context.go('/home/add'),
+              backgroundColor: MidnightColors.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 80.0),
+              child: FloatingActionButton(
+                onPressed: () => context.go('/home/add'),
+                backgroundColor: MidnightColors.primary,
+                child: const Icon(Icons.add, color: Colors.white),
+              ),
+            ),
     );
   }
 
@@ -221,54 +235,75 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       );
     }
 
-    final groupedEntries = _groupByDate(filteredEntries);
+    final isGrouped = _selectedSort.startsWith('Tarih');
 
-    return ListView.builder(
-      padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
-      itemCount: groupedEntries.length,
-      itemBuilder: (context, index) {
-        final date = groupedEntries.keys.elementAt(index);
-        final dayEntries = groupedEntries[date]!;
+    if (isGrouped) {
+      final groupedEntries = _groupByDate(filteredEntries);
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: MidnightColors.cardBorder,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      _formatDateHeader(date),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: MidnightColors.textMuted,
-                        letterSpacing: 0.5,
+      return ListView.builder(
+        padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
+        itemCount: groupedEntries.length,
+        itemBuilder: (context, index) {
+          final date = groupedEntries.keys.elementAt(index);
+          final dayEntries = groupedEntries[date]!;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        color: MidnightColors.cardBorder,
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: MidnightColors.cardBorder,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        _formatDateHeader(date),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: MidnightColors.textMuted,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        color: MidnightColors.cardBorder,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            ...dayEntries.map((entry) => _buildEntryCard(entry)),
-          ],
-        );
-      },
-    );
+              ...dayEntries.map((entry) => _buildEntryCard(entry)),
+            ],
+          );
+        },
+      );
+    } else {
+      // Sort by duration flat list
+      final sortedEntries = List.from(filteredEntries);
+      if (_selectedSort == 'Süre (En Uzun)') {
+        sortedEntries.sort((a, b) => b.durationHours.compareTo(a.durationHours));
+      } else {
+        sortedEntries.sort((a, b) => a.durationHours.compareTo(b.durationHours));
+      }
+
+      return ListView.builder(
+        padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
+        itemCount: sortedEntries.length,
+        itemBuilder: (context, index) {
+          final entry = sortedEntries[index];
+          return _buildEntryCard(entry);
+        },
+      );
+    }
   }
 
   Widget _buildEntryCard(dynamic entry) {
@@ -298,7 +333,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
             child: Center(
               child: Text(
-                entry.clientName[0].toUpperCase(),
+                entry.clientName.isNotEmpty
+                    ? entry.clientName[0].toUpperCase()
+                    : '?',
                 style: TextStyle(
                   color: clientColor,
                   fontWeight: FontWeight.bold,
@@ -313,35 +350,41 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  entry.workType,
+                  clientLabel,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: MidnightColors.textMain,
+                    fontSize: 15,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${entry.date} • ${entry.startTime} - ${entry.endTime}',
+                  '${entry.workType} • ${entry.startTime} - ${entry.endTime}',
                   style: TextStyle(
                     fontSize: 12,
                     color: MidnightColors.textMuted,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                clientLabel,
+                '${entry.durationHours.toStringAsFixed(1)} sa',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: MidnightColors.primary,
+                  fontSize: 14,
+                  color: MidnightColors.textMain,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               if (!entry.synced)
                 Icon(
                   PhosphorIcons.cloudArrowUp(),
@@ -374,7 +417,120 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       } catch (e) {
       }
     }
-    return grouped;
+    
+    // Sort keys based on selectedSort
+    final sortedKeys = grouped.keys.toList();
+    if (_selectedSort == 'Tarih (En Eski)') {
+      sortedKeys.sort((a, b) => a.compareTo(b)); // oldest first
+    } else {
+      sortedKeys.sort((a, b) => b.compareTo(a)); // newest first (default)
+    }
+
+    final sortedGrouped = <DateTime, List>{};
+    for (final key in sortedKeys) {
+      final list = grouped[key]!;
+      // Sort entries within the same day by start time
+      list.sort((a, b) {
+        if (_selectedSort == 'Tarih (En Eski)') {
+          return a.startTime.compareTo(b.startTime);
+        } else {
+          return b.startTime.compareTo(a.startTime);
+        }
+      });
+      sortedGrouped[key] = list;
+    }
+    
+    return sortedGrouped;
+  }
+
+  Widget _buildSortDropdown() {
+    IconData getSortIcon() {
+      switch (_selectedSort) {
+        case 'Tarih (En Eski)':
+          return PhosphorIcons.sortAscending();
+        case 'Süre (En Uzun)':
+          return PhosphorIcons.chartLineUp();
+        case 'Süre (En Kısa)':
+          return PhosphorIcons.chartLineDown();
+        case 'Tarih (En Yeni)':
+        default:
+          return PhosphorIcons.sortDescending();
+      }
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        cardColor: MidnightColors.navBg, // Popup arka plan rengi
+      ),
+      child: PopupMenuButton<String>(
+        padding: EdgeInsets.zero,
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: MidnightColors.shimmer1.withValues(alpha: 0.1),
+            border: Border.all(color: MidnightColors.cardBorder, width: 1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            getSortIcon(),
+            size: 20,
+            color: MidnightColors.primary,
+          ),
+        ),
+        tooltip: 'Sırala',
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
+        ),
+        offset: const Offset(0, 48),
+        onSelected: (String newValue) {
+          setState(() {
+            _selectedSort = newValue;
+          });
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          _buildPopupItem('Tarih (En Yeni)', 'En Yeni Tarih', PhosphorIcons.sortDescending()),
+          _buildPopupItem('Tarih (En Eski)', 'En Eski Tarih', PhosphorIcons.sortAscending()),
+          const PopupMenuDivider(height: 1),
+          _buildPopupItem('Süre (En Uzun)', 'En Uzun Süre', PhosphorIcons.trendUp()),
+          _buildPopupItem('Süre (En Kısa)', 'En Kısa Süre', PhosphorIcons.trendDown()),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _buildPopupItem(String value, String text, IconData icon) {
+    final isSelected = _selectedSort == value;
+    return PopupMenuItem<String>(
+      value: value,
+      height: 44,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? MidnightColors.primary : MidnightColors.textMuted,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isSelected ? MidnightColors.primary : MidnightColors.textMain,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          if (isSelected)
+            Icon(
+              PhosphorIcons.check(),
+              size: 16,
+              color: MidnightColors.primary,
+            ),
+        ],
+      ),
+    );
   }
 
   String _formatDateHeader(DateTime date) {

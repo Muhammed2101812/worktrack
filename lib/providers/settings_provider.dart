@@ -20,3 +20,22 @@ class SyncEnabledNotifier extends AsyncNotifier<bool> {
     state = AsyncData(!current);
   }
 }
+
+final defaultHourlyRateProvider =
+    AsyncNotifierProvider<DefaultHourlyRateNotifier, double>(DefaultHourlyRateNotifier.new);
+
+class DefaultHourlyRateNotifier extends AsyncNotifier<double> {
+  static const _key = 'default_hourly_rate';
+
+  @override
+  Future<double> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_key) ?? 0.0;
+  }
+
+  Future<void> updateRate(double rate) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_key, rate);
+    state = AsyncData(rate);
+  }
+}

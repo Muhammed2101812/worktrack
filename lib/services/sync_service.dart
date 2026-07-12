@@ -80,18 +80,43 @@ class SyncService {
     }
   }
 
+  Future<void> syncPendingPayments() async {
+    try {
+      if (!_isLoggedIn()) return;
+      final results = await Connectivity().checkConnectivity();
+      if (results.contains(ConnectivityResult.none)) return;
+
+      final unsynced = await localDB.getUnsyncedPayments();
+      if (unsynced.isEmpty) return;
+
+      try {
+        await supabase.upsertPayments(unsynced);
+        for (final payment in unsynced) {
+          await localDB.updatePaymentSync(payment.id, true);
+        }
+      } catch (_) {
+        // Fallback to individual upserts
+        for (final payment in unsynced) {
+          try {
+            await supabase.upsertPayment(payment);
+            await localDB.updatePaymentSync(payment.id, true);
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> fullSync() async {
     try {
       if (!_isLoggedIn()) return;
       final result = await Connectivity().checkConnectivity();
       if (result.contains(ConnectivityResult.none)) return;
 
-      // 1. Fetch remote clients
+      // 1. Fetch remote clients and push local-only clients first
       final remoteClients = await supabase.getAllClients();
       final remoteClientNames =
           remoteClients.map((c) => c.name.toLowerCase()).toSet();
 
-      // 2. Push local-only clients to remote (name-based dedup)
       final localClients = await localDB.getAllClients();
       final clientsToUpsert = <Client>[];
       for (final lc in localClients) {
@@ -105,10 +130,17 @@ class SyncService {
         } catch (_) {}
       }
 
-      // 3. Re-fetch remote (includes just-pushed clients)
-      final finalRemoteClients = await supabase.getAllClients();
+      // 2. Push unsynced projects to remote
+      await syncPendingProjects();
 
-      // 4. Deduplicate by name (keep first occurrence)
+      // 3. Push unsynced entries to remote
+      await syncPendingEntries();
+
+      // 3.5. Push unsynced payments to remote
+      await syncPendingPayments();
+
+      // 4. Re-fetch remote clients (includes just-pushed)
+      final finalRemoteClients = await supabase.getAllClients();
       final seenNames = <String>{};
       final dedupedClients = finalRemoteClients.where((c) {
         return seenNames.add(c.name.toLowerCase());
@@ -117,19 +149,65 @@ class SyncService {
       await localDB.clearClients();
       await localDB.insertClientsBatch(dedupedClients);
 
-      // 5. Sync projects
+      // 5. Merge projects: keep unsynced local projects, replace synced ones with remote
+      final localProjects = await localDB.getAllProjects();
+      final unsyncedProjects = localProjects.where((p) => !p.synced).toList();
+
       final remoteProjects = await supabase.getAllProjects();
       await localDB.clearProjects();
+
+      // Insert remote projects first (all marked as synced)
       await localDB.insertProjectsBatch(
         remoteProjects.map((p) => p.copyWith(synced: true)).toList(),
       );
+      // Re-insert unsynced local projects that are NOT in remote (by id)
+      final remoteProjectIds = remoteProjects.map((p) => p.id).toSet();
+      final localOnlyProjects = unsyncedProjects
+          .where((p) => !remoteProjectIds.contains(p.id))
+          .toList();
+      if (localOnlyProjects.isNotEmpty) {
+        await localDB.insertProjectsBatch(localOnlyProjects);
+      }
 
-      // 6. Sync entries
+      // 6. Merge entries: keep unsynced local entries, replace synced ones with remote
+      final localEntries = await localDB.getAllEntries();
+      final unsyncedEntries = localEntries.where((e) => !e.synced).toList();
+
       final remoteEntries = await supabase.getAllEntries();
       await localDB.clearEntries();
+
+      // Insert remote entries first (all marked as synced)
       await localDB.insertEntriesBatch(
         remoteEntries.map((e) => e.copyWith(synced: true)).toList(),
       );
+      // Re-insert unsynced local entries that are NOT in remote (by id)
+      final remoteEntryIds = remoteEntries.map((e) => e.id).toSet();
+      final localOnlyEntries = unsyncedEntries
+          .where((e) => !remoteEntryIds.contains(e.id))
+          .toList();
+      if (localOnlyEntries.isNotEmpty) {
+        await localDB.insertEntriesBatch(localOnlyEntries);
+      }
+
+      // 7. Merge payments: keep unsynced local payments, replace synced ones with remote
+      final localPayments = await localDB.getAllPayments();
+      final unsyncedPayments = localPayments.where((p) => !p.synced).toList();
+
+      final remotePayments = await supabase.getAllPayments();
+      await localDB.clearPayments();
+
+      // Insert remote payments first (all marked as synced)
+      await localDB.insertPaymentsBatch(
+        remotePayments.map((p) => p.copyWith(synced: true)).toList(),
+      );
+      // Re-insert unsynced local payments that are NOT in remote (by id)
+      final remotePaymentIds = remotePayments.map((p) => p.id).toSet();
+      final localOnlyPayments = unsyncedPayments
+          .where((p) => !remotePaymentIds.contains(p.id))
+          .toList();
+      if (localOnlyPayments.isNotEmpty) {
+        await localDB.insertPaymentsBatch(localOnlyPayments);
+      }
     } catch (_) {}
   }
 }

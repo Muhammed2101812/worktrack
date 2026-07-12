@@ -49,9 +49,6 @@ class FakeLocalDBService extends Fake implements LocalDBService {
   Future<void> insertEntry(WorkEntry entry) async => entries.add(entry);
 
   @override
-  Future<List<Client>> getAllClientsBatch(List<String> ids) async => clients;
-
-  @override
   Future<void> insertClientsBatch(List<Client> clients) async => this.clients.addAll(clients);
 
   @override
@@ -80,6 +77,14 @@ class FakeLocalDBService extends Fake implements LocalDBService {
   @override
   Future<void> insertProjectsBatch(List<Project> projects) async =>
       this.projects.addAll(projects);
+
+  @override
+  Future<void> updateProject(Project project) async {
+    final idx = projects.indexWhere((p) => p.id == project.id);
+    if (idx != -1) {
+      projects[idx] = project;
+    }
+  }
 }
 
 class FakeSupabaseService extends Fake implements SupabaseService {
@@ -195,6 +200,77 @@ void main() {
 
       await syncService.fullSync();
       expect(supabase.upsertClientsCalls, isEmpty);
+    });
+
+    test('should push unsynced entries to remote before clearing local DB during fullSync', () async {
+      final localEntry = WorkEntry(
+        id: 'local-e1',
+        clientId: 'r1',
+        clientName: 'Existing Client',
+        clientColor: '#111111',
+        date: '10.10.2025',
+        startTime: '09:00',
+        endTime: '17:00',
+        workType: 'Yazılım',
+      );
+      final localDB = FakeLocalDBService(unsyncedEntries: [localEntry]);
+      // Also add to entries list so getAllEntries() returns it for merge logic
+      localDB.entries.add(localEntry);
+      final supabase = FakeSupabaseService();
+      final syncService = SyncService(localDB: localDB, supabase: supabase);
+
+      final client = Client(id: 'r1', name: 'Existing Client', color: '#111111');
+      supabase.clients.add(client);
+      localDB.clients.add(client);
+
+      await syncService.fullSync();
+
+      // Verify that localEntry was pushed to remote in bulk
+      expect(supabase.upsertedInBulk, hasLength(1));
+      expect(supabase.upsertedInBulk.first.id, equals('local-e1'));
+      expect(localDB.updatedEntryIds, contains('local-e1'));
+    });
+
+    test('should preserve unsynced entries in local DB even when push to remote fails', () async {
+      final localEntry = WorkEntry(
+        id: 'local-e2',
+        clientId: 'r1',
+        clientName: 'Existing Client',
+        clientColor: '#111111',
+        date: '11.10.2025',
+        startTime: '10:00',
+        endTime: '18:00',
+        workType: 'Yazılım',
+      );
+      // failBulk = true simulates a network/FK error during push
+      final localDB = FakeLocalDBService(unsyncedEntries: [localEntry]);
+      localDB.entries.add(localEntry);
+      final supabase = FakeSupabaseService(failBulk: true);
+      final syncService = SyncService(localDB: localDB, supabase: supabase);
+
+      final client = Client(id: 'r1', name: 'Existing Client', color: '#111111');
+      supabase.clients.add(client);
+      localDB.clients.add(client);
+
+      // Remote has a different entry
+      supabase.entries.add(WorkEntry(
+        id: 'remote-e1',
+        clientId: 'r1',
+        clientName: 'Existing Client',
+        clientColor: '#111111',
+        date: '09.10.2025',
+        startTime: '09:00',
+        endTime: '17:00',
+        workType: 'Yazılım',
+      ));
+
+      await syncService.fullSync();
+
+      // The local entry must still exist in the local DB despite push failing
+      expect(localDB.entries.any((e) => e.id == 'local-e2'), isTrue,
+          reason: 'Unsynced local entry must be preserved after fullSync even if push fails');
+      // Remote entry should also be in local DB
+      expect(localDB.entries.any((e) => e.id == 'remote-e1'), isTrue);
     });
   });
 

@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../core/utils.dart';
 
 class Project {
   final String id;
@@ -56,8 +57,8 @@ class Project {
   factory Project.fromMap(Map<String, dynamic> m) => Project(
         id: m['id'],
         clientId: m['client_id'] ?? '',
-        name: m['name'] ?? '',
-        description: m['description'] ?? '',
+        name: decodeHtmlEntities(m['name'] ?? ''),
+        description: decodeHtmlEntities(m['description'] ?? ''),
         status: m['status'] ?? 'active',
         createdAt: m['created_at'] ?? '',
         synced: m['synced'] == 1 || m['synced'] == true,

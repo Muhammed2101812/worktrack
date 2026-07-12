@@ -62,7 +62,7 @@ class MidnightButton extends StatefulWidget {
     super.key,
     required this.onPressed,
     required this.child,
-    this.borderRadius = 14,
+    this.borderRadius = 16,
     this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
     this.width,
     this.height,
@@ -228,7 +228,7 @@ class _MidnightInputState extends State<MidnightInput> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(

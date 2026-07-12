@@ -5,9 +5,13 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
 import '../models/project.dart';
+import '../models/payment.dart';
 
 class LocalDBService {
-  static Database? _db;
+  final String dbName;
+  Database? _db;
+
+  LocalDBService({this.dbName = 'worklog.db'});
 
   Future<Database> get database async {
     _db ??= await _initDB();
@@ -16,20 +20,19 @@ class LocalDBService {
 
   Future<Database> _initDB() async {
     if (kIsWeb) {
-      // Web üzerinde doğrudan databaseFactoryFfiWeb (ayrı çalışan) kullanılır, getDatabasesPath desteklenmez.
       return await databaseFactoryFfiWeb.openDatabase(
-        'worklog.db',
+        dbName,
         options: OpenDatabaseOptions(
-          version: 3,
+          version: 8,
           onCreate: _onCreate,
           onUpgrade: _onUpgrade,
         ),
       );
     } else {
-      final path = join(await getDatabasesPath(), 'worklog.db');
+      final path = dbName == ':memory:' ? inMemoryDatabasePath : join(await getDatabasesPath(), dbName);
       return await openDatabase(
         path,
-        version: 3,
+        version: 8,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
@@ -40,9 +43,7 @@ class LocalDBService {
     if (oldVersion < 2) {
       try {
         await db.execute('ALTER TABLE work_entries ADD COLUMN client_color text not null default "#4A90D9"');
-      } catch (e) {
-        // Sütun zaten varsa oluşan hatayı görmezden gel
-      }
+      } catch (_) {}
     }
     if (oldVersion < 3) {
       try {
@@ -57,19 +58,69 @@ class LocalDBService {
             synced integer default 0
           )
         ''');
-      } catch (e) {
-        // Tablo zaten varsa oluşan hatayı görmezden gel
-      }
+      } catch (_) {}
       try {
         await db.execute('ALTER TABLE work_entries ADD COLUMN project_id text');
-      } catch (e) {
-        // Sütun zaten varsa oluşan hatayı görmezden gel
-      }
+      } catch (_) {}
       try {
         await db.execute('ALTER TABLE work_entries ADD COLUMN project_name text');
-      } catch (e) {
-        // Sütun zaten varsa oluşan hatayı görmezden gel
-      }
+      } catch (_) {}
+    }
+    if (oldVersion < 6) {
+      try {
+        await db.execute("ALTER TABLE projects ADD COLUMN description text DEFAULT ''");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE projects ADD COLUMN status text DEFAULT 'active'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE projects ADD COLUMN created_at text DEFAULT ''");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE projects ADD COLUMN synced integer DEFAULT 0");
+      } catch (_) {}
+    }
+    if (oldVersion < 7) {
+      try {
+        await db.execute('DROP TABLE IF EXISTS projects');
+        await db.execute('''
+          create table projects (
+            id text primary key,
+            client_id text,
+            name text not null,
+            description text default '',
+            status text default 'active',
+            created_at text not null,
+            synced integer default 0
+          )
+        ''');
+      } catch (_) {}
+    }
+    if (oldVersion < 8) {
+      try {
+        await db.execute("ALTER TABLE work_entries ADD COLUMN billing_type text DEFAULT 'hourly'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE work_entries ADD COLUMN hourly_rate real DEFAULT 0.0");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE work_entries ADD COLUMN total_price real DEFAULT 0.0");
+      } catch (_) {}
+      try {
+        await db.execute('''
+          create table payments (
+            id text primary key,
+            client_id text not null,
+            client_name text not null,
+            client_color text not null default '#4A90D9',
+            amount real not null,
+            date text not null,
+            notes text default '',
+            synced integer default 0,
+            created_at text not null
+          )
+        ''');
+      } catch (_) {}
     }
   }
 
@@ -88,7 +139,10 @@ class LocalDBService {
         notes text default '',
         synced integer default 0,
         project_id text,
-        project_name text
+        project_name text,
+        billing_type text default 'hourly',
+        hourly_rate real default 0.0,
+        total_price real default 0.0
       )
     ''');
     await db.execute('''
@@ -107,6 +161,19 @@ class LocalDBService {
         status text default 'active',
         created_at text not null,
         synced integer default 0
+      )
+    ''');
+    await db.execute('''
+      create table payments (
+        id text primary key,
+        client_id text not null,
+        client_name text not null,
+        client_color text not null default '#4A90D9',
+        amount real not null,
+        date text not null,
+        notes text default '',
+        synced integer default 0,
+        created_at text not null
       )
     ''');
   }
@@ -281,16 +348,76 @@ class LocalDBService {
     await db.delete('projects');
   }
 
+  // ── ÖDEMELER (PAYMENTS) ──
+
+  Future<void> insertPayment(Payment payment) async {
+    final db = await database;
+    await db.insert('payments', payment.toLocalMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> insertPaymentsBatch(List<Payment> payments) async {
+    if (payments.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final payment in payments) {
+        batch.insert('payments', payment.toLocalMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  Future<List<Payment>> getAllPayments() async {
+    final db = await database;
+    final rows = await db.query('payments', orderBy: 'date desc, created_at desc');
+    return rows.map(Payment.fromMap).toList();
+  }
+
+  Future<List<Payment>> getUnsyncedPayments() async {
+    final db = await database;
+    final rows = await db.query('payments', where: 'synced = 0');
+    return rows.map(Payment.fromMap).toList();
+  }
+
+  Future<void> updatePaymentSync(String id, bool synced) async {
+    final db = await database;
+    await db.update('payments', {'synced': synced ? 1 : 0},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updatePayment(Payment payment) async {
+    final db = await database;
+    await db.update(
+      'payments',
+      payment.toLocalMap(),
+      where: 'id = ?',
+      whereArgs: [payment.id],
+    );
+  }
+
+  Future<void> deletePayment(String id) async {
+    final db = await database;
+    await db.delete('payments', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> clearPayments() async {
+    final db = await database;
+    await db.delete('payments');
+  }
+
   // ── YEDEK GERİ YÜKLEME ──
 
   Future<void> restoreBackupTransaction(
       List<Client> clients, List<WorkEntry> entries,
-      [List<Project> projects = const []]) async {
+      [List<Project> projects = const [], List<Payment> payments = const []]) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete('work_entries');
       await txn.delete('clients');
       await txn.delete('projects');
+      await txn.delete('payments');
 
       final batch = txn.batch();
       for (final client in clients) {
@@ -303,6 +430,10 @@ class LocalDBService {
       }
       for (final project in projects) {
         batch.insert('projects', project.toLocalMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final payment in payments) {
+        batch.insert('payments', payment.toLocalMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
       await batch.commit(noResult: true);
