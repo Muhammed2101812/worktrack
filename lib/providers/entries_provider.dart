@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/work_entry.dart';
+import '../services/ad_service.dart';
 import 'core_providers.dart';
+import 'settings_provider.dart';
 
 class EntriesNotifier extends AsyncNotifier<List<WorkEntry>> {
   @override
@@ -29,11 +31,16 @@ class EntriesNotifier extends AsyncNotifier<List<WorkEntry>> {
 
   Future<void> deleteEntry(String id) async {
     final db = ref.read(localDBServiceProvider);
-    final supabase = ref.read(supabaseServiceProvider);
-    await db.deleteEntry(id);
-    try { await supabase.deleteEntry(id); } catch (_) {}
+    final sync = ref.read(syncServiceProvider);
+    // Soft-delete locally so the deletion propagates to remote on next sync,
+    // instead of being resurrected by fullSync's remote pull.
+    await db.softDeleteEntry(id);
+    await sync.syncPendingEntries();
     ref.invalidateSelf();
     await ref.read(backupServiceProvider).triggerBackup();
+    // Occasional interstitial ad (rate-limited, premium users never see it).
+    final isPremium = ref.read(isPremiumProvider).valueOrNull ?? false;
+    AdService.instance.showInterstitial(isPremium: isPremium);
   }
 
   Future<void> refresh() => Future(() => ref.invalidateSelf());

@@ -14,10 +14,12 @@ void main() {
     late LocalDBService dbService;
 
     setUp(() async {
-      dbService = LocalDBService();
+      dbService = LocalDBService(dbName: ':memory:');
       try {
         await dbService.clearEntries();
         await dbService.clearClients();
+        await dbService.clearProjects();
+        await dbService.clearPayments();
       } catch (_) {}
     });
 
@@ -25,6 +27,8 @@ void main() {
       try {
         await dbService.clearEntries();
         await dbService.clearClients();
+        await dbService.clearProjects();
+        await dbService.clearPayments();
       } catch (_) {}
     });
 

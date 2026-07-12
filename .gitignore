@@ -62,3 +62,9 @@ test_out.txt
 # Local Environment Variables
 .env
 .env.*
+
+# Local user data exports (Notion/CSV imports, not project assets)
+docs/
+
+# ZCode plan files
+.zcode/

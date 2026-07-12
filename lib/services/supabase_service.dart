@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
 import '../models/project.dart';
+import '../models/payment.dart';
 import '../core/constants.dart';
 
 class SupabaseService {
@@ -128,5 +129,34 @@ class SupabaseService {
 
   Future<void> deleteProject(String id) async {
     await _db.from(AppConstants.projectsTable).delete().eq('id', id);
+  }
+
+  // ── ÖDEMELER ─────────────────────────────────
+
+  Future<void> upsertPayment(Payment payment) async {
+    await _db.from(AppConstants.paymentsTable).upsert(payment.toMap());
+  }
+
+  Future<void> upsertPayments(List<Payment> payments) async {
+    if (payments.isEmpty) return;
+    await _db
+        .from(AppConstants.paymentsTable)
+        .upsert(payments.map((p) => p.toMap()).toList());
+  }
+
+  Future<List<Payment>> getAllPayments() async {
+    try {
+      final data = await _db
+          .from(AppConstants.paymentsTable)
+          .select()
+          .order('date', ascending: false);
+      return (data as List).map((e) => Payment.fromMap(e)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> deletePayment(String id) async {
+    await _db.from(AppConstants.paymentsTable).delete().eq('id', id);
   }
 }

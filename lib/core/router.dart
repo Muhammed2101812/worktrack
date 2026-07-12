@@ -8,6 +8,7 @@ import '../models/work_entry.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/stats/stats_screen.dart';
+import '../screens/finance/finance_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -34,6 +35,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(path: '/home/history', builder: (_, __) => const HistoryScreen()),
+          GoRoute(path: '/home/finance', builder: (_, __) => const FinanceScreen()),
           GoRoute(path: '/home/stats', builder: (_, __) => const StatsScreen()),
           GoRoute(path: '/home/settings', builder: (_, __) => const SettingsScreen()),
         ],
