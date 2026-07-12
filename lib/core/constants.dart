@@ -11,6 +11,12 @@ class AppConstants {
     defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhdHRzZ3BheXlrbG10Z3d5Z3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2OTMyMDEsImV4cCI6MjA5OTI2OTIwMX0.uvFOo6YHz9mDUMEhAGlEFktMEugxYuUmmmjnCBE93pw',
   );
 
+  // Google OAuth Client ID (Loaded securely from environment variables)
+  static const String googleClientId = String.fromEnvironment(
+    'GOOGLE_CLIENT_ID',
+    defaultValue: '430614470319-al4ugk9ub67kkisacq59dbjqbv9mm6u6.apps.googleusercontent.com',
+  );
+
   static const String entriesTable = 'work_entries';
   static const String clientsTable = 'clients';
   static const String projectsTable = 'projects';

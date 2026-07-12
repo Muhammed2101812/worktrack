@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:worklog/core/constants.dart';
 
 class AuthService {
   final SupabaseClient _client;
@@ -34,7 +35,7 @@ class AuthService {
 
     try {
       final googleSignIn = GoogleSignIn(
-        serverClientId: '430614470319-al4ugk9ub67kkisacq59dbjqbv9mm6u6.apps.googleusercontent.com',
+        serverClientId: AppConstants.googleClientId.isEmpty ? null : AppConstants.googleClientId,
         scopes: ['email'],
       );
       final googleUser = await googleSignIn.signIn();
