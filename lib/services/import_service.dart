@@ -93,11 +93,8 @@ class ImportService {
     return count;
   }
 
-  static String _cellStr(dynamic cell) {
+  static String _cellStr(Data? cell) {
     if (cell == null) return '';
-    if (cell is Data) {
-      return cell.value?.toString().trim() ?? '';
-    }
-    return cell.toString().trim();
+    return cell.value?.toString().trim() ?? '';
   }
 }
