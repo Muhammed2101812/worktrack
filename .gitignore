@@ -65,3 +65,6 @@ test_out.txt
 
 # Local user data exports (Notion/CSV imports, not project assets)
 docs/
+
+# ZCode plan files
+.zcode/

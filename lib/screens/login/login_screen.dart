@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
+import '../../services/auth_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -38,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (mounted) context.go('/home');
       }
     } catch (e) {
-      if (mounted) CustomToast.show(context, e.toString());
+      if (mounted) CustomToast.show(context, friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -54,16 +55,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (mounted) context.go('/home');
       }
     } catch (e) {
-      if (mounted) CustomToast.show(context, e.toString());
+      if (mounted) CustomToast.show(context, friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      CustomToast.show(context, 'Lütfen önce e-posta adresinizi girin');
+      return;
+    }
+    try {
+      await AuthService().resetPassword(email);
+      if (mounted) {
+        CustomToast.show(context, 'Şifre sıfırlama bağlantısı e-postanıza gönderildi');
+      }
+    } catch (e) {
+      if (mounted) CustomToast.show(context, friendlyAuthError(e));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.bgColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 64),
@@ -74,76 +92,94 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
+                  color: c.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: c.cardBorder),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.work_history_rounded,
                   size: 36,
-                  color: AppColors.primary,
+                  color: c.primary,
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'WorkTrack',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1,
-                  color: AppColors.textPrimary,
+                  color: c.textMain,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Çalışma kayıtların tek yerde',
                 style: TextStyle(
                   fontSize: 15,
-                  color: AppColors.textMuted,
+                  color: c.textMuted,
                 ),
               ),
               const SizedBox(height: 48),
               MidnightInput(
                 controller: _emailController,
                 hintText: 'E-posta',
-                prefixIcon: Icon(PhosphorIcons.envelope(), color: AppColors.textMuted, size: 20),
+                prefixIcon: Icon(PhosphorIcons.envelope(), color: c.textMuted, size: 20),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
               MidnightInput(
                 controller: _passwordController,
                 hintText: 'Şifre',
-                prefixIcon: Icon(PhosphorIcons.lock(), color: AppColors.textMuted, size: 20),
+                prefixIcon: Icon(PhosphorIcons.lock(), color: c.textMuted, size: 20),
                 obscureText: true,
               ),
-              const SizedBox(height: 32),
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: _loading ? null : _resetPassword,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 4),
+                    child: Text(
+                      'Şifremi unuttum?',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: c.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
               MidnightButton(
                 onPressed: _loading ? null : _submit,
                 width: double.infinity,
                 child: _loading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimary),
                       )
                     : Text(
                         _isSignUp ? 'KAYIT OL' : 'GİRİŞ YAP',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          color: Colors.white,
+                          color: c.onPrimary,
                         ),
                       ),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: Divider(color: AppColors.border.withOpacity(0.5))),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('veya', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  Expanded(child: Divider(color: c.cardBorder.withValues(alpha: 0.5))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('veya', style: TextStyle(color: c.textMuted, fontSize: 13)),
                   ),
-                  Expanded(child: Divider(color: AppColors.border.withOpacity(0.5))),
+                  Expanded(child: Divider(color: c.cardBorder.withValues(alpha: 0.5))),
                 ],
               ),
               const SizedBox(height: 16),
@@ -151,12 +187,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: _loading ? null : _signInWithGoogle,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: c.cardBorder),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: AppColors.surface,
-                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: c.cardBg,
+                  foregroundColor: c.textMain,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -167,7 +203,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       width: 20,
                     ),
                     const SizedBox(width: 12),
-                    const Text(
+                    Text(
                       'Google ile Giriş Yap',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
@@ -186,9 +222,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     _isSignUp
                         ? 'Zaten hesabın var mı? Giriş yap'
                         : 'Henüz hesabın yok mu? Kayıt ol',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: c.primary,
                     ),
                   ),
                 ),
@@ -196,13 +232,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: () => context.go('/home'),
-                child: const Padding(
-                  padding: EdgeInsets.all(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
                   child: Text(
                     'Giriş Yapmadan Devam Et',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
+                      color: c.textMuted,
                       decoration: TextDecoration.underline,
                     ),
                   ),

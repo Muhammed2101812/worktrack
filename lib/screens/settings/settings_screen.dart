@@ -5,8 +5,10 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/entries_provider.dart';
+import '../../providers/payments_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../models/client.dart';
 import '../../core/constants.dart';
 import '../../core/widgets/midnight_widgets.dart';
@@ -24,9 +26,11 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final currentUser = ref.watch(authNotifierProvider);
     final syncAsync = ref.watch(syncProvider);
-    final unsyncedAsync = ref.watch(unsyncedEntriesProvider);
+    final unsyncedEntriesAsync = ref.watch(unsyncedEntriesProvider);
+    final unsyncedPaymentsAsync = ref.watch(unsyncedPaymentsProvider);
     final syncEnabled = ref.watch(syncEnabledProvider).valueOrNull ?? true;
     final isWide = MediaQuery.of(context).size.width >= 768;
 
@@ -41,7 +45,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: MidnightColors.textMain,
+                  color: c.textMain,
                 ),
               ),
             ],
@@ -51,7 +55,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ListView(
             padding: EdgeInsets.only(bottom: isWide ? 40 : 100),
             children: [
-              _buildDataSyncSection(context, syncAsync, unsyncedAsync, syncEnabled, currentUser),
+              _buildThemeSection(context),
+              _buildDataSyncSection(context, syncAsync, unsyncedEntriesAsync, unsyncedPaymentsAsync, syncEnabled, currentUser),
               _buildAccountSection(context, currentUser),
               _buildFinanceSection(context),
               _buildAboutSection(context),
@@ -75,14 +80,129 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  // ── GÖRÜNÜM (Tema) ──────────────────────────────────────────────────────
+  Widget _buildThemeSection(BuildContext context) {
+    final c = AppColors.of(context);
+    final themeMode = ref.watch(themeProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Text(
+            'GÖRÜNÜM',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              color: c.textMuted,
+            ),
+          ),
+        ),
+        MidnightCard(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: c.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: c.primary.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(PhosphorIcons.palette(), color: c.primary, size: 20),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Tema',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: c.textMain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildThemeOption(context, 'Sistem', ThemeMode.system, PhosphorIcons.monitor(), themeMode)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildThemeOption(context, 'Açık', ThemeMode.light, PhosphorIcons.sun(), themeMode)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildThemeOption(context, 'Koyu', ThemeMode.dark, PhosphorIcons.moon(), themeMode)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThemeOption(BuildContext context, String label, ThemeMode mode, IconData icon, ThemeMode current) {
+    final c = AppColors.of(context);
+    final isSelected = mode == current;
+    return GestureDetector(
+      onTap: () => ref.read(themeProvider.notifier).setTheme(mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? c.primary.withValues(alpha: 0.12) : c.bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? c.primary : c.cardBorder,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: isSelected ? c.primary : c.textMuted),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? c.primary : c.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDataSyncSection(
     BuildContext context,
     AsyncValue syncAsync,
-    AsyncValue unsyncedAsync,
+    AsyncValue unsyncedEntriesAsync,
+    AsyncValue unsyncedPaymentsAsync,
     bool syncEnabled,
     dynamic currentUser,
   ) {
+    final c = AppColors.of(context);
     final isLoggedIn = currentUser != null;
+    final unsyncedCount = (unsyncedEntriesAsync.valueOrNull?.length ?? 0) +
+        (unsyncedPaymentsAsync.valueOrNull?.length ?? 0);
+    final isSyncing = syncAsync.isLoading;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -94,7 +214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
-              color: MidnightColors.textMuted,
+              color: c.textMuted,
             ),
           ),
         ),
@@ -107,7 +227,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 context: context,
                 icon: PhosphorIcons.cloudArrowUp(),
                 title: 'Bulut Senkronizasyonu',
-                iconColor: MidnightColors.primary,
+                iconColor: c.primary,
                 hasToggle: true,
                 toggleValue: isLoggedIn && syncEnabled,
                 onTap: () {
@@ -121,9 +241,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _divider(),
               _buildSettingsItem(
                 context: context,
+                icon: isSyncing ? PhosphorIcons.spinner() : PhosphorIcons.arrowsClockwise(),
+                title: isSyncing
+                    ? 'Senkronize ediliyor...'
+                    : (unsyncedCount > 0
+                        ? '$unsyncedCount kayıt senkronize edilmedi'
+                        : 'Tüm veriler senkronize'),
+                iconColor: unsyncedCount > 0 ? c.orange : c.emerald,
+                onTap: (isSyncing || !isLoggedIn || unsyncedCount == 0)
+                    ? null
+                    : () async {
+                        try {
+                          await ref.read(syncProvider.notifier).fullSync();
+                          if (context.mounted) {
+                            CustomToast.show(context, 'Senkronizasyon tamamlandı');
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            CustomToast.show(context, 'Senkronizasyon başarısız: $e');
+                          }
+                        }
+                      },
+                trailingIcon: isSyncing ? null : PhosphorIcons.caretRight(),
+              ),
+              _divider(),
+              _buildSettingsItem(
+                context: context,
                 icon: PhosphorIcons.fileXls(),
                 title: 'Verileri Dışa Aktar (Excel)',
-                iconColor: MidnightColors.emerald,
+                iconColor: c.emerald,
                 onTap: () async {
                   final entriesVal = ref.read(entriesProvider);
                   final clientsVal = ref.read(clientsProvider);
@@ -154,7 +300,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 context: context,
                 icon: PhosphorIcons.uploadSimple(),
                 title: 'Verileri İçe Aktar (Excel)',
-                iconColor: MidnightColors.orange,
+                iconColor: c.orange,
                 onTap: () => _showImportModal(context),
                 trailingIcon: PhosphorIcons.caretRight(),
               ),
@@ -166,6 +312,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildAccountSection(BuildContext context, dynamic currentUser) {
+    final c = AppColors.of(context);
     final isLoggedIn = currentUser != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +325,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
-              color: MidnightColors.textMuted,
+              color: c.textMuted,
             ),
           ),
         ),
@@ -191,7 +338,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 context: context,
                 icon: PhosphorIcons.users(),
                 title: 'Müşterileri Yönet',
-                iconColor: MidnightColors.orange,
+                iconColor: c.orange,
                 onTap: () => _showClientManagementSheet(context),
                 trailingIcon: PhosphorIcons.caretRight(),
               ),
@@ -201,36 +348,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   context: context,
                   icon: PhosphorIcons.signOut(),
                   title: 'Çıkış Yap (${currentUser.email})',
-                  iconColor: MidnightColors.error,
+                  iconColor: c.error,
                   onTap: () async {
                     final confirmed = await showDialog<bool>(
                       context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: MidnightColors.navBg,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
-                        ),
-                        title: const Text('Çıkış Yap',
-                            style: TextStyle(color: MidnightColors.textMain)),
-                        content: const Text(
-                            'Çıkış yapmak istediğinize emin misiniz?',
-                            style: TextStyle(color: MidnightColors.textMuted)),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('İptal',
-                                style:
-                                    TextStyle(color: MidnightColors.primary)),
+                      builder: (ctx) {
+                        final dc = AppColors.of(ctx);
+                        return AlertDialog(
+                          backgroundColor: dc.navBg,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            side: BorderSide(color: dc.cardBorder, width: 1),
                           ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            style: TextButton.styleFrom(
-                                foregroundColor: MidnightColors.error),
-                            child: const Text('Çıkış Yap'),
-                          ),
-                        ],
-                      ),
+                          title: Text('Çıkış Yap', style: TextStyle(color: dc.textMain)),
+                          content: Text('Çıkış yapmak istediğinize emin misiniz?',
+                              style: TextStyle(color: dc.textMuted)),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: Text('İptal', style: TextStyle(color: dc.primary)),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              style: TextButton.styleFrom(foregroundColor: dc.error),
+                              child: const Text('Çıkış Yap'),
+                            ),
+                          ],
+                        );
+                      },
                     );
                     if (confirmed == true && context.mounted) {
                       await ref.read(authNotifierProvider.notifier).signOut();
@@ -243,7 +388,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   context: context,
                   icon: PhosphorIcons.signIn(),
                   title: 'Giriş Yap / Kayıt Ol',
-                  iconColor: MidnightColors.primary,
+                  iconColor: c.primary,
                   onTap: () {
                     context.go('/login');
                   },
@@ -257,6 +402,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildFinanceSection(BuildContext context) {
+    final c = AppColors.of(context);
     final defaultRateAsync = ref.watch(defaultHourlyRateProvider);
     final defaultRate = defaultRateAsync.valueOrNull ?? 0.0;
 
@@ -271,7 +417,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
-              color: MidnightColors.textMuted,
+              color: c.textMuted,
             ),
           ),
         ),
@@ -284,7 +430,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 context: context,
                 icon: PhosphorIcons.currencyCircleDollar(),
                 title: 'Varsayılan Saatlik Ücret: ${defaultRate.toStringAsFixed(1)} TL',
-                iconColor: MidnightColors.emerald,
+                iconColor: c.emerald,
                 onTap: () => _showHourlyRateDialog(context, defaultRate),
                 trailingIcon: PhosphorIcons.pencilSimple(),
               ),
@@ -299,44 +445,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final controller = TextEditingController(text: currentRate > 0 ? currentRate.toStringAsFixed(1) : '');
     final result = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MidnightColors.navBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
-        ),
-        title: const Text('Varsayılan Saatlik Ücret', style: TextStyle(color: MidnightColors.textMain)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Yeni kayıtlar oluşturulurken kullanılacak varsayılan saatlik ücret tutarını girin.',
-              style: TextStyle(fontSize: 13, color: MidnightColors.textMuted),
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: dc.cardBorder, width: 1),
+          ),
+          title: Text('Varsayılan Saatlik Ücret', style: TextStyle(color: dc.textMain)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Yeni kayıtlar oluşturulurken kullanılacak varsayılan saatlik ücret tutarını girin.',
+                style: TextStyle(fontSize: 13, color: dc.textMuted),
+              ),
+              const SizedBox(height: 16),
+              MidnightInput(
+                controller: controller,
+                hintText: 'Saatlik Ücret (TL)',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: dc.primary),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('İptal', style: TextStyle(color: dc.textMuted)),
             ),
-            const SizedBox(height: 16),
-            MidnightInput(
-              controller: controller,
-              hintText: 'Saatlik Ücret (TL)',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: MidnightColors.primary),
+            TextButton(
+              onPressed: () {
+                final val = double.tryParse(controller.text.replaceAll(',', '.')) ?? 0.0;
+                Navigator.pop(ctx, val);
+              },
+              style: TextButton.styleFrom(foregroundColor: dc.primary),
+              child: const Text('Kaydet', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal', style: TextStyle(color: MidnightColors.textMuted)),
-          ),
-          TextButton(
-            onPressed: () {
-              final val = double.tryParse(controller.text.replaceAll(',', '.')) ?? 0.0;
-              Navigator.pop(ctx, val);
-            },
-            style: TextButton.styleFrom(foregroundColor: MidnightColors.primary),
-            child: const Text('Kaydet', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (result != null) {
@@ -348,6 +497,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildAboutSection(BuildContext context) {
+    final c = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -359,7 +509,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
-              color: MidnightColors.textMuted,
+              color: c.textMuted,
             ),
           ),
         ),
@@ -368,16 +518,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Center(
             child: Column(
               children: [
-                const Text(
+                Text(
                   'WORKTRACK v1.0.0',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: MidnightColors.textMain,
+                    color: c.textMain,
                   ),
                 ),
                 Text(
                   'Günlük iş kayıt uygulaması',
-                  style: TextStyle(color: MidnightColors.textMuted),
+                  style: TextStyle(color: c.textMuted),
                 ),
               ],
             ),
@@ -388,12 +538,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _divider() {
+    final c = AppColors.of(context);
     return Column(
       children: [
         const SizedBox(height: 1),
         Container(
           height: 1,
-          color: MidnightColors.cardBorder,
+          color: c.cardBorder,
           margin: const EdgeInsets.symmetric(horizontal: 12),
         ),
         const SizedBox(height: 1),
@@ -411,6 +562,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     bool hasToggle = false,
     bool toggleValue = false,
   }) {
+    final c = AppColors.of(context);
+    final accent = iconColor ?? c.primary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -422,26 +575,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: (iconColor ?? MidnightColors.primary)
-                    .withValues(alpha: 0.1),
+                color: accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: (iconColor ?? MidnightColors.primary)
-                      .withValues(alpha: 0.2),
+                  color: accent.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
-              child: Icon(icon,
-                  color: iconColor ?? MidnightColors.primary, size: 20),
+              child: Icon(icon, color: accent, size: 20),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: MidnightColors.textMain,
+                  color: c.textMain,
                 ),
               ),
             ),
@@ -454,8 +604,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   height: 24,
                   decoration: BoxDecoration(
                     color: toggleValue
-                        ? MidnightColors.primary
-                        : MidnightColors.textMuted.withValues(alpha: 0.3),
+                        ? c.primary
+                        : c.textMuted.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Stack(
@@ -470,7 +620,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           width: 22,
                           height: 22,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: c.navBg,
                             borderRadius: BorderRadius.circular(11),
                           ),
                         ),
@@ -480,7 +630,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             if (trailingIcon != null && !hasToggle)
-              Icon(trailingIcon, color: MidnightColors.textMuted, size: 20),
+              Icon(trailingIcon, color: c.textMuted, size: 20),
           ],
         ),
       ),
@@ -505,33 +655,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _showDeleteClientDialog(BuildContext context, Client client) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MidnightColors.navBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
-        ),
-        title: const Text('Müşteriyi Sil',
-            style: TextStyle(color: MidnightColors.textMain)),
-        content: Text('"${client.name}" silinsin mi?',
-            style: const TextStyle(color: MidnightColors.textMuted)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('İptal',
-                style: TextStyle(color: MidnightColors.primary)),
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: dc.cardBorder, width: 1),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style:
-                TextButton.styleFrom(foregroundColor: MidnightColors.error),
-            child: const Text('Sil'),
-          ),
-        ],
-      ),
+          title: Text('Müşteriyi Sil', style: TextStyle(color: dc.textMain)),
+          content: Text('"${client.name}" silinsin mi?', style: TextStyle(color: dc.textMuted)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('İptal', style: TextStyle(color: dc.primary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: dc.error),
+              child: const Text('Sil'),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed == true && context.mounted) {
       await ref.read(clientsProvider.notifier).deleteClient(client.id);
+    }
+  }
+
+  Color _parseColor(String hex, Color fallback) {
+    try {
+      return Color(int.parse(hex.replaceAll('#', '0xFF')));
+    } catch (_) {
+      return fallback;
     }
   }
 
@@ -549,6 +706,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       barrierLabel: '',
       pageBuilder: (context, anim1, anim2) => const SizedBox.shrink(),
       transitionBuilder: (context, anim1, anim2, child) {
+        final dc = AppColors.of(context);
         return ScaleTransition(
           scale: anim1,
           child: AlertDialog(
@@ -557,37 +715,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             content: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: MidnightColors.navBg,
+                color: dc.navBg,
                 borderRadius: BorderRadius.circular(24),
-                border:
-                    Border.all(color: MidnightColors.cardBorder, width: 1),
+                border: Border.all(color: dc.cardBorder, width: 1),
               ),
               child: StatefulBuilder(
                 builder: (context, setDialogState) {
+                  final sc = AppColors.of(context);
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         isEditing ? 'Müşteriyi Düzenle' : 'Yeni Müşteri',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: MidnightColors.textMain,
+                          color: sc.textMain,
                         ),
                       ),
                       const SizedBox(height: 24),
                       MidnightInput(
                         controller: nameController,
                         hintText: 'Müşteri Adı',
-                        prefixIcon: Icon(PhosphorIcons.buildings(),
-                            color: MidnightColors.primary),
+                        prefixIcon: Icon(PhosphorIcons.buildings(), color: sc.primary),
                       ),
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'RENK SEÇ',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: MidnightColors.textMain,
+                          color: sc.textMain,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -597,8 +754,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         alignment: WrapAlignment.center,
                         children:
                             AppConstants.clientColors.map((color) {
-                          final colorVal = Color(int.parse(
-                              color.replaceAll('#', '0xFF')));
+                          final colorVal = _parseColor(color, sc.primary);
                           final isSelected = selectedColor == color;
                           return GestureDetector(
                             onTap: () => setDialogState(
@@ -612,7 +768,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: isSelected
-                                      ? MidnightColors.textMain
+                                      ? sc.textMain
                                       : Colors.transparent,
                                   width: 3,
                                 ),
@@ -638,8 +794,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             child: MidnightButton(
                               onPressed: () =>
                                   Navigator.pop(context, false),
-                              child: const Text('İptal',
-                                  style: TextStyle(color: Colors.white)),
+                              child: Text('İptal', style: TextStyle(color: sc.onPrimary)),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -653,9 +808,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               },
                               child: Text(
                                 isEditing ? 'Kaydet' : 'Ekle',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white),
+                                    color: sc.onPrimary),
                               ),
                             ),
                           ),
@@ -715,12 +870,13 @@ class _ClientManagementSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final clientsAsync = ref.watch(clientsProvider);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: c.cardBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -733,7 +889,7 @@ class _ClientManagementSheet extends ConsumerWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: MidnightColors.cardBorder,
+              color: c.cardBorder,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -748,13 +904,12 @@ class _ClientManagementSheet extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: MidnightColors.textMain,
+                    color: c.textMain,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon:
-                      Icon(Icons.close, color: MidnightColors.textMuted),
+                  icon: Icon(Icons.close, color: c.textMuted),
                 ),
               ],
             ),
@@ -768,12 +923,11 @@ class _ClientManagementSheet extends ConsumerWidget {
                     children: [
                       Icon(Icons.people_outline,
                           size: 48,
-                          color: MidnightColors.textMuted
-                              .withValues(alpha: 0.4)),
+                          color: c.textMuted.withValues(alpha: 0.4)),
                       const SizedBox(height: 12),
                       Text(
                         'Henüz müşteri yok',
-                        style: TextStyle(color: MidnightColors.textMuted),
+                        style: TextStyle(color: c.textMuted),
                       ),
                     ],
                   ),
@@ -790,8 +944,7 @@ class _ClientManagementSheet extends ConsumerWidget {
                   itemCount: clients.length,
                   itemBuilder: (_, i) {
                     final client = clients[i];
-                    final color = Color(int.parse(
-                        client.color.replaceAll('#', '0xFF')));
+                    final color = _parseColor(client.color, c.primary);
                     return MidnightCard(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(
@@ -810,9 +963,9 @@ class _ClientManagementSheet extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               client.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: MidnightColors.textMain,
+                                color: c.textMain,
                               ),
                             ),
                           ),
@@ -822,7 +975,7 @@ class _ClientManagementSheet extends ConsumerWidget {
                               onAddOrEdit(client);
                             },
                             child: Icon(Icons.edit_outlined,
-                                color: Colors.blue, size: 20),
+                                color: c.primary, size: 20),
                           ),
                           const SizedBox(width: 16),
                           GestureDetector(
@@ -831,7 +984,7 @@ class _ClientManagementSheet extends ConsumerWidget {
                               onDelete(client);
                             },
                             child: Icon(Icons.delete_outline,
-                                color: MidnightColors.error, size: 20),
+                                color: c.error, size: 20),
                           ),
                         ],
                       ),
@@ -840,15 +993,13 @@ class _ClientManagementSheet extends ConsumerWidget {
                 ),
               );
             },
-            loading: () => const Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(
-                  color: MidnightColors.primary),
+            loading: () => Padding(
+              padding: const EdgeInsets.all(32),
+              child: CircularProgressIndicator(color: c.primary),
             ),
-            error: (_, __) => const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('Yüklenirken hata oluştu',
-                  style: TextStyle(color: MidnightColors.textMain)),
+            error: (_, __) => Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Yüklenirken hata oluştu', style: TextStyle(color: c.textMain)),
             ),
           ),
           Padding(
@@ -862,12 +1013,12 @@ class _ClientManagementSheet extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.add, color: Colors.white, size: 20),
+                  Icon(Icons.add, color: c.onPrimary, size: 20),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Yeni Müşteri Ekle',
                     style: TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.white),
+                        fontWeight: FontWeight.bold, color: c.onPrimary),
                   ),
                 ],
               ),
@@ -876,6 +1027,14 @@ class _ClientManagementSheet extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Color _parseColor(String hex, Color fallback) {
+    try {
+      return Color(int.parse(hex.replaceAll('#', '0xFF')));
+    } catch (_) {
+      return fallback;
+    }
   }
 }
 
@@ -892,10 +1051,11 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: c.cardBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         left: 24,
@@ -915,12 +1075,12 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: MidnightColors.textMain,
+                  color: c.textMain,
                 ),
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close, color: MidnightColors.textMuted),
+                icon: Icon(Icons.close, color: c.textMuted),
               ),
             ],
           ),
@@ -928,10 +1088,9 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: MidnightColors.primary.withValues(alpha: 0.05),
+              color: c.primary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: MidnightColors.primary.withValues(alpha: 0.15)),
+              border: Border.all(color: c.primary.withValues(alpha: 0.15)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -940,18 +1099,18 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                   'Örnek dosya formatı:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: MidnightColors.textMain,
+                    color: c.textMain,
                     fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 8),
-                _formatRow('Tarih', 'dd.MM.yyyy (örn: 15.03.2026)'),
-                _formatRow('Müşteri', 'Müşteri adı'),
-                _formatRow('Başlangıç', 'HH:mm (örn: 09:00)'),
-                _formatRow('Bitiş', 'HH:mm (örn: 17:00)'),
-                _formatRow('İş Türü', 'İsteğe bağlı (boşsa "Diğer" atanır)'),
-                _formatRow('Proje', 'Proje adı'),
-                _formatRow('Notlar', 'İsteğe bağlı notlar'),
+                _formatRow(context, 'Tarih', 'dd.MM.yyyy (örn: 15.03.2026)'),
+                _formatRow(context, 'Müşteri', 'Müşteri adı'),
+                _formatRow(context, 'Başlangıç', 'HH:mm (örn: 09:00)'),
+                _formatRow(context, 'Bitiş', 'HH:mm (örn: 17:00)'),
+                _formatRow(context, 'İş Türü', 'İsteğe bağlı (boşsa "Diğer" atanır)'),
+                _formatRow(context, 'Proje', 'Proje adı'),
+                _formatRow(context, 'Notlar', 'İsteğe bağlı notlar'),
               ],
             ),
           ),
@@ -969,18 +1128,15 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 }
               }
             },
-            color: MidnightColors.primary.withValues(alpha: 0.1),
+            color: c.primary.withValues(alpha: 0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.download_outlined,
-                    color: MidnightColors.primary, size: 20),
+                Icon(Icons.download_outlined, color: c.primary, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Örnek Dosyayı İndir',
-                  style: TextStyle(
-                      color: MidnightColors.primary,
-                      fontWeight: FontWeight.bold),
+                  style: TextStyle(color: c.primary, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -992,39 +1148,32 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: MidnightColors.emerald.withValues(alpha: 0.08),
+                  color: c.emerald.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: MidnightColors.emerald.withValues(alpha: 0.3)),
+                  border: Border.all(color: c.emerald.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   _resultMessage!,
-                  style: TextStyle(
-                      color: MidnightColors.emerald,
-                      fontWeight: FontWeight.w600),
+                  style: TextStyle(color: c.emerald, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
           MidnightButton(
             onPressed: _isLoading ? null : () => _pickAndImport(context),
             child: _isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(color: c.onPrimary, strokeWidth: 2),
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.upload_file_outlined,
-                          color: Colors.white, size: 20),
+                      Icon(Icons.upload_file_outlined, color: c.onPrimary, size: 20),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Excel Dosyası Seç',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary),
                       ),
                     ],
                   ),
@@ -1034,7 +1183,8 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
     );
   }
 
-  Widget _formatRow(String col, String desc) {
+  Widget _formatRow(BuildContext context, String col, String desc) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1043,15 +1193,10 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
           SizedBox(
             width: 80,
             child: Text(col,
-                style: TextStyle(
-                    color: MidnightColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12)),
+                style: TextStyle(color: c.primary, fontWeight: FontWeight.w600, fontSize: 12)),
           ),
           Expanded(
-              child: Text(desc,
-                  style: TextStyle(
-                      color: MidnightColors.textMuted, fontSize: 12))),
+              child: Text(desc, style: TextStyle(color: c.textMuted, fontSize: 12))),
         ],
       ),
     );

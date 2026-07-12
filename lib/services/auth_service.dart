@@ -49,5 +49,11 @@ class AuthService {
 
   Future<void> signOut() async => await _client.auth.signOut();
 
+  /// Sends a password-reset email to [email]. Supabase will email a link the
+  /// user can follow to set a new password.
+  Future<void> resetPassword(String email) async {
+    await _client.auth.resetPasswordForEmail(email);
+  }
+
   User? getCurrentUser() => _client.auth.currentUser;
 }

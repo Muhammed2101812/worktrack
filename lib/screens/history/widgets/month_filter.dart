@@ -16,6 +16,7 @@ class MonthFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return MidnightCard(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -30,11 +31,11 @@ class MonthFilter extends StatelessWidget {
           ),
           Text(
             DateFormat('MMMM yyyy', 'tr').format(selectedMonth).toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
               letterSpacing: 1.1,
-              color: AppColors.textPrimary,
+              color: c.textMain,
             ),
           ),
           _NavButton(
@@ -57,17 +58,18 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: c.bgColor,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.cardBorder),
         ),
-        child: Icon(icon, size: 16, color: AppColors.textSecondary),
+        child: Icon(icon, size: 16, color: c.textMuted),
       ),
     );
   }

@@ -20,8 +20,17 @@ class StatsScreen extends ConsumerStatefulWidget {
 class _StatsScreenState extends ConsumerState<StatsScreen> {
   DateTime _selectedMonth = DateTime.now();
 
+  DateTime? _tryParseDate(String s) {
+    try {
+      return DateFormat('dd.MM.yyyy').parse(s);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final entriesAsync = ref.watch(entriesProvider);
     final clientsAsync = ref.watch(clientsProvider);
     final isWide = MediaQuery.of(context).size.width >= 768;
@@ -42,7 +51,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: MidnightColors.textMain,
+                          color: c.textMain,
                         ),
                       ),
                     ],
@@ -60,8 +69,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   child: entriesAsync.when(
                     data: (entries) {
                       final monthEntries = entries.where((entry) {
-                        final entryDate =
-                            DateFormat('dd.MM.yyyy').parse(entry.date);
+                        final entryDate = _tryParseDate(entry.date);
+                        if (entryDate == null) return false;
                         return entryDate.year == _selectedMonth.year &&
                             entryDate.month == _selectedMonth.month;
                       }).toList();
@@ -74,23 +83,21 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                               Container(
                                 padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
-                                  color: MidnightColors.shimmer1
-                                      .withValues(alpha: 0.2),
+                                  color: c.shimmer1.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   PhosphorIcons.chartPieSlice(),
                                   size: 64,
-                                  color: MidnightColors.primary
-                                      .withValues(alpha: 0.5),
+                                  color: c.primary.withValues(alpha: 0.5),
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              const Text(
+                              Text(
                                 'Bu ay için kayıt bulunamadı.',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: MidnightColors.textMain,
+                                  color: c.textMain,
                                 ),
                               ),
                             ],
@@ -133,19 +140,18 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                 .compareTo(projectHours[a]!));
 
                           if (totalHours == 0)
-                            return const Center(
+                            return Center(
                                 child: Text('Toplam çalışma saati 0.',
-                                    style: TextStyle(
-                                        color: MidnightColors.textMain)));
+                                    style: TextStyle(color: c.textMain)));
 
                           final sortedClientIds = clientHours.keys.toList()
                             ..sort((a, b) =>
                                 clientHours[b]!.compareTo(clientHours[a]!));
 
                           final colors = [
-                            MidnightColors.orange,
-                            MidnightColors.primary,
-                            MidnightColors.purple,
+                            c.orange,
+                            c.primary,
+                            c.purple,
                           ];
 
                           return ListView(
@@ -161,16 +167,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 1.2,
-                                        color: MidnightColors.primary,
+                                        color: c.primary,
                                       ),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       '${totalHours.toStringAsFixed(1)} Saat',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 32,
                                         fontWeight: FontWeight.bold,
-                                        color: MidnightColors.textMain,
+                                        color: c.textMain,
                                       ),
                                     ),
                                     const SizedBox(height: 32),
@@ -200,10 +206,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                                   title:
                                                       '${percentage.toStringAsFixed(0)}%',
                                                   radius: 50,
-                                                  titleStyle: const TextStyle(
+                                                  titleStyle: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
+                                                    color: c.onPrimary,
                                                   ),
                                                 );
                                               }).toList(),
@@ -217,10 +223,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                             margin: const EdgeInsets.all(32),
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: MidnightColors.bgColor,
+                                              color: c.bgColor,
                                               border: Border.all(
-                                                color:
-                                                    MidnightColors.cardBorder,
+                                                color: c.cardBorder,
                                                 width: 1,
                                               ),
                                             ),
@@ -233,11 +238,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                               children: [
                                                 Text(
                                                   '${totalHours.toInt()}s',
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 48,
                                                     fontWeight: FontWeight.bold,
-                                                    color:
-                                                        MidnightColors.textMain,
+                                                    color: c.textMain,
                                                     letterSpacing: -2,
                                                   ),
                                                 ),
@@ -245,12 +249,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                                   DateFormat('MMMM', 'tr')
                                                       .format(_selectedMonth)
                                                       .toUpperCase(),
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
                                                     letterSpacing: 2.0,
-                                                    color: MidnightColors
-                                                        .textMuted,
+                                                    color: c.textMuted,
                                                   ),
                                                 ),
                                               ],
@@ -271,7 +274,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1.0,
-                                    color: MidnightColors.textMuted,
+                                    color: c.textMuted,
                                   ),
                                 ),
                               ),
@@ -280,7 +283,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                 final clientId = entry.value;
                                 final hours = clientHours[clientId]!;
                                 final client = clients.firstWhere(
-                                  (c) => c.id == clientId,
+                                  (cl) => cl.id == clientId,
                                   orElse: () => Client(
                                       id: clientId,
                                       name: 'Bilinmeyen',
@@ -325,9 +328,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                           children: [
                                             Text(
                                               client.name,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                color: MidnightColors.textMain,
+                                                color: c.textMain,
                                               ),
                                             ),
                                             const SizedBox(height: 4),
@@ -336,9 +339,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                                   BorderRadius.circular(2),
                                               child: LinearProgressIndicator(
                                                 value: hours / totalHours,
-                                                backgroundColor: MidnightColors
-                                                    .shimmer1
-                                                    .withValues(alpha: 0.3),
+                                                backgroundColor:
+                                                    c.shimmer1.withValues(alpha: 0.3),
                                                 valueColor:
                                                     AlwaysStoppedAnimation<
                                                         Color>(color),
@@ -355,16 +357,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                         children: [
                                           Text(
                                             '${hours.toStringAsFixed(1)} Sa',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: MidnightColors.textMain,
+                                              color: c.textMain,
                                             ),
                                           ),
                                           Text(
                                             '%${percentage.toStringAsFixed(1)}',
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: MidnightColors.textMuted,
+                                              color: c.textMuted,
                                             ),
                                           ),
                                         ],
@@ -384,11 +386,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 1.0,
-                                      color: MidnightColors.textMuted,
+                                      color: c.textMuted,
                                     ),
                                   ),
                                 ),
-                                // Proje bazlı pasta grafik
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 24, vertical: 8),
@@ -414,10 +415,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                             title:
                                                 '${percentage.toStringAsFixed(0)}%',
                                             radius: 45,
-                                            titleStyle: const TextStyle(
+                                            titleStyle: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                              color: c.onPrimary,
                                             ),
                                           );
                                         }).toList(),
@@ -470,10 +471,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                             children: [
                                               Text(
                                                 name,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  color:
-                                                      MidnightColors.textMain,
+                                                  color: c.textMain,
                                                 ),
                                               ),
                                               const SizedBox(height: 4),
@@ -485,9 +485,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                                   value: hours /
                                                       projectTotalHours,
                                                   backgroundColor:
-                                                      MidnightColors.shimmer1
-                                                          .withValues(
-                                                              alpha: 0.3),
+                                                      c.shimmer1.withValues(alpha: 0.3),
                                                   valueColor:
                                                       AlwaysStoppedAnimation<
                                                               Color>(
@@ -505,18 +503,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                           children: [
                                             Text(
                                               '${hours.toStringAsFixed(1)} Sa',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                color:
-                                                    MidnightColors.textMain,
+                                                color: c.textMain,
                                               ),
                                             ),
                                             Text(
                                               '%${percentage.toStringAsFixed(1)}',
                                               style: TextStyle(
                                                 fontSize: 11,
-                                                color:
-                                                    MidnightColors.textMuted,
+                                                color: c.textMuted,
                                               ),
                                             ),
                                           ],
@@ -529,22 +525,19 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             ],
                           );
                         },
-                        loading: () => const Center(
-                            child: CircularProgressIndicator(
-                                color: MidnightColors.primary)),
+                        loading: () => Center(
+                            child: CircularProgressIndicator(color: c.primary)),
                         error: (e, st) => Center(
                             child: Text(
                                 'Müşteriler yüklenirken hata oluştu: $e',
-                                style:
-                                    TextStyle(color: MidnightColors.textMain))),
+                                style: TextStyle(color: c.textMain))),
                       );
                     },
-                    loading: () => const Center(
-                        child: CircularProgressIndicator(
-                            color: MidnightColors.primary)),
+                    loading: () => Center(
+                        child: CircularProgressIndicator(color: c.primary)),
                     error: (e, st) => Center(
                         child: Text('Kayıtlar yüklenirken hata oluştu: $e',
-                            style: TextStyle(color: MidnightColors.textMain))),
+                            style: TextStyle(color: c.textMain))),
                   ),
                 ),
               ],

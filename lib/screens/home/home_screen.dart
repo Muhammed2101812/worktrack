@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/midnight_widgets.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/core_providers.dart';
@@ -18,6 +19,7 @@ class HomeShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final location = GoRouterState.of(context).matchedLocation;
     int currentIndex = 0;
     if (location.contains('/history')) {
@@ -31,7 +33,7 @@ class HomeShell extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.bgColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 768;
@@ -62,6 +64,7 @@ class HomeShell extends ConsumerWidget {
   }
 
   Widget _buildSidebar(BuildContext context, WidgetRef ref, int currentIndex) {
+    final c = AppColors.of(context);
     final currentUser = ref.watch(authNotifierProvider);
     final metadata = currentUser?.userMetadata;
     String displayName = metadata?['full_name'] as String? ??
@@ -112,10 +115,10 @@ class HomeShell extends ConsumerWidget {
 
     return Container(
       width: 260,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: c.cardBg,
         border: Border(
-          right: BorderSide(color: AppColors.border, width: 1),
+          right: BorderSide(color: c.cardBorder, width: 1),
         ),
       ),
       child: Column(
@@ -129,29 +132,29 @@ class HomeShell extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
+                    color: c.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     PhosphorIcons.timer(),
-                    color: AppColors.primary,
+                    color: c.primary,
                     size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'WorkTrack',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
-                    color: AppColors.textPrimary,
+                    color: c.textMain,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: c.cardBorder, height: 1),
 
           // New record button
           Padding(
@@ -161,8 +164,8 @@ class HomeShell extends ConsumerWidget {
               child: ElevatedButton.icon(
                 onPressed: () => context.go('/home/add'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: c.primary,
+                  foregroundColor: c.onPrimary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -192,7 +195,7 @@ class HomeShell extends ConsumerWidget {
             ),
           ),
 
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: c.cardBorder, height: 1),
 
           // Footer: user profile
           Padding(
@@ -202,15 +205,15 @@ class HomeShell extends ConsumerWidget {
                 Container(
                   width: 40,
                   height: 40,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
+                  decoration: BoxDecoration(
+                    color: c.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Text(
                       avatarLetter,
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: c.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -221,10 +224,10 @@ class HomeShell extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: c.textMain,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -234,7 +237,7 @@ class HomeShell extends ConsumerWidget {
                       ref.read(authNotifierProvider.notifier).signOut(),
                   icon: Icon(
                     PhosphorIcons.signOut(),
-                    color: AppColors.textMuted,
+                    color: c.textMuted,
                     size: 20,
                   ),
                   tooltip: 'Çıkış Yap',
@@ -252,6 +255,7 @@ class HomeShell extends ConsumerWidget {
     required _NavItemData item,
     required bool isActive,
   }) {
+    final c = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -260,14 +264,14 @@ class HomeShell extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: isActive ? AppColors.primaryLight : Colors.transparent,
+            color: isActive ? c.primary.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
               Icon(
                 isActive ? item.activeIcon : item.icon,
-                color: isActive ? AppColors.primary : AppColors.textMuted,
+                color: isActive ? c.primary : c.textMuted,
                 size: 22,
               ),
               const SizedBox(width: 12),
@@ -276,7 +280,7 @@ class HomeShell extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  color: isActive ? AppColors.primary : AppColors.textSecondary,
+                  color: isActive ? c.primary : c.textMuted,
                 ),
               ),
             ],
@@ -287,6 +291,7 @@ class HomeShell extends ConsumerWidget {
   }
 
   Widget _buildCustomNavbar(BuildContext context, int currentIndex) {
+    final c = AppColors.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -294,12 +299,12 @@ class HomeShell extends ConsumerWidget {
         child: Container(
           height: 70,
           decoration: BoxDecoration(
-            color: AppColors.surface.withOpacity(0.8),
+            color: c.cardBg.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border.withOpacity(0.5), width: 1.2),
+            border: Border.all(color: c.cardBorder.withValues(alpha: 0.5), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 32,
                 offset: const Offset(0, 8),
               ),
@@ -366,6 +371,7 @@ class HomeShell extends ConsumerWidget {
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final c = AppColors.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -377,7 +383,7 @@ class HomeShell extends ConsumerWidget {
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? AppColors.primary : AppColors.textMuted,
+              color: isActive ? c.primary : c.textMuted,
               size: 24,
             ),
             if (isActive) ...[
@@ -385,8 +391,8 @@ class HomeShell extends ConsumerWidget {
               Container(
                 width: 4,
                 height: 4,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
+                decoration: BoxDecoration(
+                  color: c.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -460,35 +466,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final shouldRestore = await showDialog<bool>(
             context: context,
             barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: const BorderSide(color: AppColors.border, width: 1),
-              ),
-              title: const Row(
-                children: [
-                  Icon(Icons.backup_outlined, color: AppColors.primary),
-                  SizedBox(width: 12),
-                  Text('Veri Kurtarma', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            builder: (ctx) {
+              final c = AppColors.of(ctx);
+              return AlertDialog(
+                backgroundColor: c.cardBg,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(color: c.cardBorder, width: 1),
+                ),
+                title: Row(
+                  children: [
+                    Icon(Icons.backup_outlined, color: c.primary),
+                    const SizedBox(width: 12),
+                    Text('Veri Kurtarma', style: TextStyle(fontWeight: FontWeight.bold, color: c.textMain)),
+                  ],
+                ),
+                content: Text(
+                  'Uygulamada kayıtlı veri bulunamadı ancak yerel bir yedek tespit edildi ($displayTime).\n\nVerilerinizi bu yedeklemeden geri yüklemek ister misiniz?',
+                  style: TextStyle(height: 1.4, color: c.textMuted),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: Text('Hayır, Yeni Başla', style: TextStyle(color: c.textMuted)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: TextButton.styleFrom(foregroundColor: c.primary),
+                    child: const Text('Evet, Geri Yükle', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                 ],
-              ),
-              content: Text(
-                'Uygulamada kayıtlı veri bulunamadı ancak yerel bir yedek tespit edildi ($displayTime).\n\nVerilerinizi bu yedeklemeden geri yüklemek ister misiniz?',
-                style: const TextStyle(height: 1.4, color: AppColors.textSecondary),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Hayır, Yeni Başla', style: TextStyle(color: AppColors.textMuted)),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-                  child: const Text('Evet, Geri Yükle', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
+              );
+            },
           );
 
           if (shouldRestore == true && mounted) {
@@ -527,6 +536,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final c = AppColors.of(context);
         final isWide = constraints.maxWidth >= 768;
 
         return Scaffold(
@@ -552,21 +562,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Merhaba,',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: AppColors.textSecondary,
+                                color: c.textMuted,
                                 fontWeight: FontWeight.normal,
                               ),
                             ),
                             Text(
                               displayName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.5,
-                                color: AppColors.textPrimary,
+                                color: c.textMain,
                               ),
                             ),
                           ],
@@ -574,15 +584,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Container(
                           width: 48,
                           height: 48,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primaryLight,
+                          decoration: BoxDecoration(
+                            color: c.primary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: Text(
                               avatarLetter,
-                              style: const TextStyle(
-                                color: AppColors.primary,
+                              style: TextStyle(
+                                color: c.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
@@ -597,20 +607,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Son Kayıtlar',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: c.textMain,
                           ),
                         ),
                         TextButton(
                           onPressed: () => context.go('/home/history'),
-                          child: const Text(
+                          child: Text(
                             'Tümünü Gör',
                             style: TextStyle(
-                              color: AppColors.primary,
+                              color: c.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -619,10 +629,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 10),
                     if (entries.isEmpty)
-                      const Center(
+                      Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 40),
-                          child: Text('Henüz kayıt bulunmuyor'),
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(28),
+                                decoration: BoxDecoration(
+                                  color: c.primary.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.edit_note_rounded,
+                                  size: 56,
+                                  color: c.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Henüz kaydınız bulunmuyor',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: c.textMain,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'İlk çalışma kaydınızı oluşturun',
+                                style: TextStyle(color: c.textMuted, fontSize: 13),
+                              ),
+                              const SizedBox(height: 20),
+                              MidnightButton(
+                                onPressed: () => context.go('/home/add'),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.add, color: c.onPrimary, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'İlk Kaydını Oluştur',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: c.onPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       )
                     else
@@ -637,15 +696,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           floatingActionButton: isWide
               ? FloatingActionButton(
                   onPressed: () => context.go('/home/add'),
-                  backgroundColor: AppColors.primary,
-                  child: const Icon(Icons.add, color: Colors.white),
+                  backgroundColor: c.primary,
+                  child: Icon(Icons.add, color: c.onPrimary),
                 )
               : Padding(
                   padding: const EdgeInsets.only(bottom: 80.0),
                   child: FloatingActionButton(
                     onPressed: () => context.go('/home/add'),
-                    backgroundColor: AppColors.primary,
-                    child: const Icon(Icons.add, color: Colors.white),
+                    backgroundColor: c.primary,
+                    child: Icon(Icons.add, color: c.onPrimary),
                   ),
                 ),
         );

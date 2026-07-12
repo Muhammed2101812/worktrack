@@ -18,8 +18,17 @@ class ClientDropdown extends StatelessWidget {
     required this.onAddClient,
   });
 
+  Color _parseColor(String hex, Color fallback) {
+    try {
+      return Color(int.parse(hex.replaceAll('#', '0xFF')));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: () => _showClientSelector(context),
       child: MidnightCard(
@@ -31,14 +40,14 @@ class ClientDropdown extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Color(int.parse(selectedClient!.color.replaceAll('#', '0xFF'))).withValues(alpha: 0.15),
+                  color: _parseColor(selectedClient!.color, c.primary).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Text(
                     selectedClient!.name[0].toUpperCase(),
                     style: TextStyle(
-                      color: Color(int.parse(selectedClient!.color.replaceAll('#', '0xFF'))),
+                      color: _parseColor(selectedClient!.color, c.primary),
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -49,24 +58,24 @@ class ClientDropdown extends StatelessWidget {
               Expanded(
                 child: Text(
                   selectedClient!.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: c.textMain,
                   ),
                 ),
               ),
             ] else ...[
-              Icon(PhosphorIcons.buildings(), color: AppColors.textMuted, size: 20),
+              Icon(PhosphorIcons.buildings(), color: c.textMuted, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Müşteri Seç',
-                  style: const TextStyle(fontSize: 15, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 15, color: c.textMuted),
                 ),
               ),
             ],
-            Icon(PhosphorIcons.caretDown(), color: AppColors.textMuted, size: 16),
+            Icon(PhosphorIcons.caretDown(), color: c.textMuted, size: 16),
           ],
         ),
       ),
@@ -74,6 +83,7 @@ class ClientDropdown extends StatelessWidget {
   }
 
   void _showClientSelector(BuildContext context) {
+    final c = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
@@ -85,9 +95,9 @@ class ClientDropdown extends StatelessWidget {
         maxChildSize: 0.9,
         builder: (context, scrollController) => Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: c.cardBg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: c.cardBorder),
           ),
           child: Column(
             children: [
@@ -96,19 +106,19 @@ class ClientDropdown extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: c.cardBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.all(20),
+              Padding(
+                padding: const EdgeInsets.all(20),
                 child: Text(
                   'MÜŞTERİ SEÇİN',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
-                    color: AppColors.textMuted,
+                    color: c.textMuted,
                   ),
                 ),
               ),
@@ -129,11 +139,11 @@ class ClientDropdown extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(PhosphorIcons.plus(), color: Colors.white, size: 18),
+                              Icon(PhosphorIcons.plus(), color: c.onPrimary, size: 18),
                               const SizedBox(width: 10),
-                              const Text(
+                              Text(
                                 'YENİ MÜŞTERİ EKLE',
-                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                                style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary),
                               ),
                             ],
                           ),
@@ -143,7 +153,7 @@ class ClientDropdown extends StatelessWidget {
 
                     final client = clients[index];
                     final isSelected = selectedClient?.id == client.id;
-                    final clientColor = Color(int.parse(client.color.replaceAll('#', '0xFF')));
+                    final clientColor = _parseColor(client.color, c.primary);
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -177,13 +187,13 @@ class ClientDropdown extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                   fontSize: 15,
-                                  color: AppColors.textPrimary,
+                                  color: c.textMain,
                                 ),
                               ),
                             ),
                             if (isSelected)
                               Icon(PhosphorIcons.checkCircle(PhosphorIconsStyle.fill),
-                                  color: AppColors.primary, size: 20),
+                                  color: c.primary, size: 20),
                           ],
                         ),
                       ),

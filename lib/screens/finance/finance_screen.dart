@@ -20,9 +20,40 @@ class FinanceScreen extends ConsumerStatefulWidget {
 
 class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   int _activeTab = 0; // 0: Müşteri Durumu, 1: Ödemeler Geçmişi
+  final _paymentSearchController = TextEditingController();
+  String _paymentSearchQuery = '';
+
+  @override
+  void dispose() {
+    _paymentSearchController.dispose();
+    super.dispose();
+  }
+
+  /// Parses a `#RRGGBB` / `0xFFRRGGBB` colour string into a [Color], falling
+  /// back to [fallback] if the value is malformed.
+  Color _parseColor(String hex, Color fallback) {
+    try {
+      return Color(int.parse(hex.replaceAll('#', '0xFF')));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  /// Filters payments by the current search query (client name or notes).
+  List<Payment> _filterPayments(List<Payment> payments) {
+    if (_paymentSearchQuery.isEmpty) return payments;
+    final q = _paymentSearchQuery.toLowerCase();
+    return payments
+        .where((p) =>
+            p.clientName.toLowerCase().contains(q) ||
+            p.notes.toLowerCase().contains(q) ||
+            p.date.toLowerCase().contains(q))
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final entriesAsync = ref.watch(entriesProvider);
     final paymentsAsync = ref.watch(paymentsProvider);
     final clientsAsync = ref.watch(clientsProvider);
@@ -37,14 +68,14 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
           data: (entries) => paymentsAsync.when(
             data: (payments) => clientsAsync.when(
               data: (clients) => _buildBody(context, entries, payments, clients, isWide),
-              loading: () => const Center(child: CircularProgressIndicator(color: MidnightColors.primary)),
-              error: (e, _) => Center(child: Text('Müşteriler yüklenemedi: $e', style: const TextStyle(color: MidnightColors.textMain))),
+              loading: () => Center(child: CircularProgressIndicator(color: c.primary)),
+              error: (e, _) => Center(child: Text('Müşteriler yüklenemedi: $e', style: TextStyle(color: c.textMain))),
             ),
-            loading: () => const Center(child: CircularProgressIndicator(color: MidnightColors.primary)),
-            error: (e, _) => Center(child: Text('Ödemeler yüklenemedi: $e', style: const TextStyle(color: MidnightColors.textMain))),
+            loading: () => Center(child: CircularProgressIndicator(color: c.primary)),
+            error: (e, _) => Center(child: Text('Ödemeler yüklenemedi: $e', style: TextStyle(color: c.textMain))),
           ),
-          loading: () => const Center(child: CircularProgressIndicator(color: MidnightColors.primary)),
-          error: (e, _) => Center(child: Text('İş kayıtları yüklenemedi: $e', style: const TextStyle(color: MidnightColors.textMain))),
+          loading: () => Center(child: CircularProgressIndicator(color: c.primary)),
+          error: (e, _) => Center(child: Text('İş kayıtları yüklenemedi: $e', style: TextStyle(color: c.textMain))),
         ),
       ),
     );
@@ -72,6 +103,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     List<Client> clients,
     bool isWide,
   ) {
+    final c = AppColors.of(context);
+
     // 1. Calculate general stats
     double totalEarned = 0.0;
     for (final e in entries) {
@@ -122,7 +155,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: MidnightColors.textMain,
+                      color: c.textMain,
                     ),
                   ),
                   MidnightButton(
@@ -132,11 +165,11 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold), color: Colors.white, size: 16),
+                        Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold), color: c.onPrimary, size: 16),
                         const SizedBox(width: 6),
-                        const Text(
+                        Text(
                           'Ödeme Ekle',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: c.onPrimary),
                         ),
                       ],
                     ),
@@ -160,15 +193,15 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: MidnightColors.textMuted,
+                            color: c.textMuted,
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: remainingBalance > 0
-                                ? MidnightColors.orange.withValues(alpha: 0.1)
-                                : MidnightColors.emerald.withValues(alpha: 0.1),
+                                ? c.orange.withValues(alpha: 0.1)
+                                : c.emerald.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -176,7 +209,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: remainingBalance > 0 ? MidnightColors.orange : MidnightColors.emerald,
+                              color: remainingBalance > 0 ? c.orange : c.emerald,
                             ),
                           ),
                         ),
@@ -190,7 +223,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
-                          color: remainingBalance > 0 ? MidnightColors.orange : MidnightColors.textMain,
+                          color: remainingBalance > 0 ? c.orange : c.textMain,
                           letterSpacing: -1,
                         ),
                       ),
@@ -198,7 +231,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     const SizedBox(height: 20),
                     Container(
                       height: 1,
-                      color: MidnightColors.cardBorder,
+                      color: c.cardBorder,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -211,17 +244,17 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                                 'Toplam Hakediş',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: MidnightColors.textMuted,
+                                  color: c.textMuted,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${totalEarned.toStringAsFixed(1)} TL',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: MidnightColors.textMain,
+                                  color: c.textMain,
                                 ),
                               ),
                             ],
@@ -230,7 +263,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                         Container(
                           width: 1,
                           height: 32,
-                          color: MidnightColors.cardBorder,
+                          color: c.cardBorder,
                         ),
                         const SizedBox(width: 24),
                         Expanded(
@@ -241,17 +274,17 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                                 'Alınan Ödeme',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: MidnightColors.textMuted,
+                                  color: c.textMuted,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${totalReceived.toStringAsFixed(1)} TL',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: MidnightColors.emerald,
+                                  color: c.emerald,
                                 ),
                               ),
                             ],
@@ -270,7 +303,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: MidnightColors.shimmer1,
+                  color: c.shimmer1,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -281,7 +314,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: _activeTab == 0 ? Colors.white : Colors.transparent,
+                            color: _activeTab == 0 ? c.cardBg : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: _activeTab == 0
                                 ? [
@@ -299,7 +332,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: _activeTab == 0 ? FontWeight.bold : FontWeight.w600,
-                              color: _activeTab == 0 ? MidnightColors.textMain : MidnightColors.textMuted,
+                              color: _activeTab == 0 ? c.textMain : c.textMuted,
                             ),
                           ),
                         ),
@@ -311,7 +344,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: _activeTab == 1 ? Colors.white : Colors.transparent,
+                            color: _activeTab == 1 ? c.cardBg : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: _activeTab == 1
                                 ? [
@@ -329,7 +362,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: _activeTab == 1 ? FontWeight.bold : FontWeight.w600,
-                              color: _activeTab == 1 ? MidnightColors.textMain : MidnightColors.textMuted,
+                              color: _activeTab == 1 ? c.textMain : c.textMuted,
                             ),
                           ),
                         ),
@@ -340,11 +373,33 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               ),
             ),
 
+            // Search bar (only on payments history tab)
+            if (_activeTab == 1 && payments.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                child: MidnightInput(
+                  controller: _paymentSearchController,
+                  hintText: 'Ödemelerde ara (müşteri, not)...',
+                  prefixIcon: Icon(PhosphorIcons.magnifyingGlass(),
+                      color: AppColors.of(context).textMuted, size: 18),
+                  suffixIcon: _paymentSearchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _paymentSearchController.clear();
+                            setState(() => _paymentSearchQuery = '');
+                          },
+                        )
+                      : null,
+                  onChanged: (value) => setState(() => _paymentSearchQuery = value),
+                ),
+              ),
+
             // Tab Content
             Expanded(
               child: _activeTab == 0
                   ? _buildClientBalances(context, clientFinanceList, isWide)
-                  : _buildPaymentsList(context, payments, isWide),
+                  : _buildPaymentsList(context, _filterPayments(payments), isWide),
             ),
           ],
         ),
@@ -353,16 +408,18 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   }
 
   Widget _buildClientBalances(BuildContext context, List<_ClientFinance> list, bool isWide) {
+    final c = AppColors.of(context);
+
     if (list.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(PhosphorIcons.users(PhosphorIconsStyle.thin), size: 48, color: MidnightColors.textMuted),
+            Icon(PhosphorIcons.users(PhosphorIconsStyle.thin), size: 48, color: c.textMuted),
             const SizedBox(height: 12),
             Text(
               'Henüz kayıtlı müşteri bulunmuyor.',
-              style: TextStyle(color: MidnightColors.textMuted),
+              style: TextStyle(color: c.textMuted),
             ),
           ],
         ),
@@ -374,7 +431,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       itemCount: list.length,
       itemBuilder: (context, index) {
         final item = list[index];
-        final clientColor = Color(int.parse(item.client.color.replaceAll('#', '0xFF')));
+        final clientColor = _parseColor(item.client.color, c.primary);
 
         return MidnightCard(
           margin: const EdgeInsets.only(bottom: 12),
@@ -396,10 +453,10 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   Expanded(
                     child: Text(
                       item.client.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: MidnightColors.textMain,
+                        color: c.textMain,
                       ),
                     ),
                   ),
@@ -410,24 +467,24 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: item.balance > 0 ? MidnightColors.orange : MidnightColors.emerald,
+                      color: item.balance > 0 ? c.orange : c.emerald,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              Container(height: 1, color: MidnightColors.cardBorder),
+              Container(height: 1, color: c.cardBorder),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Hakediş: ${item.earned.toStringAsFixed(1)} TL',
-                    style: TextStyle(fontSize: 12, color: MidnightColors.textMuted, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 12, color: c.textMuted, fontWeight: FontWeight.w500),
                   ),
                   Text(
                     'Alınan: ${item.received.toStringAsFixed(1)} TL',
-                    style: TextStyle(fontSize: 12, color: MidnightColors.emerald, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 12, color: c.emerald, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -439,16 +496,18 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   }
 
   Widget _buildPaymentsList(BuildContext context, List<Payment> list, bool isWide) {
+    final c = AppColors.of(context);
+
     if (list.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(PhosphorIcons.receipt(PhosphorIconsStyle.thin), size: 48, color: MidnightColors.textMuted),
+            Icon(PhosphorIcons.receipt(PhosphorIconsStyle.thin), size: 48, color: c.textMuted),
             const SizedBox(height: 12),
             Text(
               'Henüz ödeme kaydı eklenmemiş.',
-              style: TextStyle(color: MidnightColors.textMuted),
+              style: TextStyle(color: c.textMuted),
             ),
           ],
         ),
@@ -460,7 +519,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       itemCount: list.length,
       itemBuilder: (context, index) {
         final payment = list[index];
-        final color = Color(int.parse(payment.clientColor.replaceAll('#', '0xFF')));
+        final color = _parseColor(payment.clientColor, c.primary);
 
         return Dismissible(
           key: Key(payment.id),
@@ -469,7 +528,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 24),
             decoration: BoxDecoration(
-              color: MidnightColors.error,
+              color: c.error,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
@@ -492,23 +551,23 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     children: [
                       Text(
                         payment.clientName,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: MidnightColors.textMain),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: c.textMain),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           Text(
                             payment.date,
-                            style: TextStyle(fontSize: 11, color: MidnightColors.textMuted),
+                            style: TextStyle(fontSize: 11, color: c.textMuted),
                           ),
                           if (payment.notes.isNotEmpty) ...[
                             const SizedBox(width: 8),
-                            Container(width: 3, height: 3, decoration: BoxDecoration(color: MidnightColors.textMuted, shape: BoxShape.circle)),
+                            Container(width: 3, height: 3, decoration: BoxDecoration(color: c.textMuted, shape: BoxShape.circle)),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 payment.notes,
-                                style: TextStyle(fontSize: 11, color: MidnightColors.textMuted, overflow: TextOverflow.ellipsis),
+                                style: TextStyle(fontSize: 11, color: c.textMuted, overflow: TextOverflow.ellipsis),
                               ),
                             ),
                           ],
@@ -521,13 +580,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   children: [
                     Text(
                       '+${payment.amount.toStringAsFixed(1)} TL',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: MidnightColors.emerald, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: c.emerald, fontSize: 14),
                     ),
                     const SizedBox(width: 12),
                     Icon(
                       payment.synced ? PhosphorIcons.cloudCheck(PhosphorIconsStyle.fill) : PhosphorIcons.cloudArrowUp(),
                       size: 16,
-                      color: payment.synced ? MidnightColors.emerald : MidnightColors.textMuted,
+                      color: payment.synced ? c.emerald : c.textMuted,
                     ),
                   ],
                 ),
@@ -542,29 +601,32 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   Future<bool?> _showDeletePaymentConfirmDialog(BuildContext context, Payment payment) {
     return showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MidnightColors.navBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: MidnightColors.cardBorder, width: 1),
-        ),
-        title: const Text('Ödeme Kaydını Sil', style: TextStyle(color: MidnightColors.textMain)),
-        content: Text('${payment.clientName} müşterisinden alınan ${payment.amount} TL tutarındaki ödeme kaydı silinsin mi?', style: const TextStyle(color: MidnightColors.textMuted)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Vazgeç', style: TextStyle(color: MidnightColors.textMuted)),
+      builder: (ctx) {
+        final c = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: c.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: c.cardBorder, width: 1),
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(paymentsProvider.notifier).deletePayment(payment.id);
-              Navigator.pop(ctx, true);
-            },
-            style: TextButton.styleFrom(foregroundColor: MidnightColors.error),
-            child: const Text('Sil', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+          title: Text('Ödeme Kaydını Sil', style: TextStyle(color: c.textMain)),
+          content: Text('${payment.clientName} müşterisinden alınan ${payment.amount} TL tutarındaki ödeme kaydı silinsin mi?', style: TextStyle(color: c.textMuted)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Vazgeç', style: TextStyle(color: c.textMuted)),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(paymentsProvider.notifier).deletePayment(payment.id);
+                Navigator.pop(ctx, true);
+              },
+              style: TextButton.styleFrom(foregroundColor: c.error),
+              child: const Text('Sil', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -586,11 +648,12 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetCtx) => StatefulBuilder(
         builder: (dialogCtx, setSheetState) {
+          final sc = AppColors.of(dialogCtx);
           return Container(
             decoration: BoxDecoration(
-              color: MidnightColors.navBg,
+              color: sc.navBg,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(color: MidnightColors.cardBorder, width: 1),
+              border: Border.all(color: sc.cardBorder, width: 1),
             ),
             padding: EdgeInsets.only(
               left: 24,
@@ -607,11 +670,11 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   children: [
                     Text(
                       'Ödeme Alındı Ekle',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MidnightColors.textMain),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: sc.textMain),
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(dialogCtx),
-                      icon: Icon(PhosphorIcons.x(), color: MidnightColors.textMuted),
+                      icon: Icon(PhosphorIcons.x(), color: sc.textMuted),
                     ),
                   ],
                 ),
@@ -620,34 +683,34 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 // Client Dropdown
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('MÜŞTERİ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: MidnightColors.textMuted)),
+                  child: Text('MÜŞTERİ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: sc.cardBg,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: sc.cardBorder),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButtonFormField<Client>(
-                      value: selectedClient,
-                      dropdownColor: MidnightColors.navBg,
-                      icon: Icon(PhosphorIcons.caretDown(), color: MidnightColors.textMuted),
+                      initialValue: selectedClient,
+                      dropdownColor: sc.navBg,
+                      icon: Icon(PhosphorIcons.caretDown(), color: sc.textMuted),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
                         fillColor: Colors.transparent,
                       ),
-                      items: clients.map((c) {
-                        final color = Color(int.parse(c.color.replaceAll('#', '0xFF')));
+                      items: clients.map((client) {
+                        final color = _parseColor(client.color, sc.primary);
                         return DropdownMenuItem<Client>(
-                          value: c,
+                          value: client,
                           child: Row(
                             children: [
                               Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                               const SizedBox(width: 10),
-                              Text(c.name, style: const TextStyle(fontSize: 14, color: MidnightColors.textMain, fontWeight: FontWeight.w500)),
+                              Text(client.name, style: TextStyle(fontSize: 14, color: sc.textMain, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         );
@@ -665,20 +728,20 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 // Amount Input
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('TUTAR (TL)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: MidnightColors.textMuted)),
+                  child: Text('TUTAR (TL)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                 ),
                 MidnightInput(
                   controller: amountController,
                   hintText: 'Örn: 2500',
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: MidnightColors.primary),
+                  prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: sc.primary),
                 ),
                 const SizedBox(height: 20),
 
                 // Date Picker Button
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('TARİH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: MidnightColors.textMuted)),
+                  child: Text('TARİH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                 ),
                 GestureDetector(
                   onTap: () async {
@@ -687,13 +750,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                       initialDate: selectedDate,
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2100),
-                      builder: (context, child) {
+                      builder: (dpCtx, child) {
+                        final dpc = AppColors.of(dpCtx);
                         return Theme(
-                          data: Theme.of(context).copyWith(
-                            colorScheme: const ColorScheme.light(
-                              primary: MidnightColors.primary,
-                              onPrimary: Colors.white,
-                              onSurface: MidnightColors.textMain,
+                          data: Theme.of(dpCtx).copyWith(
+                            colorScheme: ColorScheme.fromSeed(
+                              seedColor: dpc.primary,
+                              brightness: Theme.of(dpCtx).brightness,
                             ),
                           ),
                           child: child!,
@@ -710,14 +773,14 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     child: Row(
                       children: [
-                        Icon(PhosphorIcons.calendar(), color: MidnightColors.textMuted, size: 20),
+                        Icon(PhosphorIcons.calendar(), color: sc.textMuted, size: 20),
                         const SizedBox(width: 12),
                         Text(
                           DateFormat('dd.MM.yyyy').format(selectedDate),
-                          style: const TextStyle(color: MidnightColors.textMain, fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(color: sc.textMain, fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                         const Spacer(),
-                        Icon(PhosphorIcons.caretRight(), color: MidnightColors.textMuted, size: 16),
+                        Icon(PhosphorIcons.caretRight(), color: sc.textMuted, size: 16),
                       ],
                     ),
                   ),
@@ -727,12 +790,12 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 // Notes Input
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('NOT (İSTEĞE BAĞLI)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: MidnightColors.textMuted)),
+                  child: Text('NOT (İSTEĞE BAĞLI)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                 ),
                 MidnightInput(
                   controller: noteController,
                   hintText: 'Örn: İlk peşinat / Banka havalesi',
-                  prefixIcon: Icon(PhosphorIcons.note(), color: MidnightColors.primary),
+                  prefixIcon: Icon(PhosphorIcons.note(), color: sc.primary),
                 ),
                 const SizedBox(height: 32),
 
@@ -769,11 +832,11 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(PhosphorIcons.checkCircle(), color: Colors.white),
+                      Icon(PhosphorIcons.checkCircle(), color: sc.onPrimary),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         'KAYDET',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.2),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: sc.onPrimary, letterSpacing: 1.2),
                       ),
                     ],
                   ),
