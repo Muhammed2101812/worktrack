@@ -12,9 +12,17 @@ class PaymentsNotifier extends AsyncNotifier<List<Payment>> {
     final db = ref.read(localDBServiceProvider);
     final sync = ref.read(syncServiceProvider);
     await db.insertPayment(payment);
-    await sync.syncPendingPayments();
+    try {
+      await sync.syncPendingPayments();
+    } catch (e) {
+      // Keep silent to prioritize local database insertion success
+    }
     ref.invalidateSelf();
-    await ref.read(backupServiceProvider).triggerBackup();
+    try {
+      await ref.read(backupServiceProvider).triggerBackup();
+    } catch (e) {
+      // Ignore backup failures for local data entry flow
+    }
   }
 
   Future<void> deletePayment(String id) async {

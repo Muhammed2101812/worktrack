@@ -452,31 +452,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               _divider(),
-              _buildSettingsItem(
-                context: context,
-                icon: isSyncing ? PhosphorIcons.spinner() : PhosphorIcons.arrowsClockwise(),
-                title: isSyncing
-                    ? 'Senkronize ediliyor...'
-                    : (unsyncedCount > 0
-                        ? '$unsyncedCount kayıt senkronize edilmedi'
-                        : 'Tüm veriler senkronize'),
-                iconColor: unsyncedCount > 0 ? c.orange : c.emerald,
-                onTap: (isSyncing || !isLoggedIn || unsyncedCount == 0)
-                    ? null
-                    : () async {
-                        try {
-                          await ref.read(syncProvider.notifier).fullSync();
-                          if (context.mounted) {
-                            CustomToast.show(context, 'Senkronizasyon tamamlandı');
+              if (isSyncing)
+                _buildSettingsItem(
+                  context: context,
+                  icon: PhosphorIcons.spinner(),
+                  title: 'Senkronize ediliyor...',
+                  iconColor: c.primary,
+                  onTap: null,
+                  trailingIcon: null,
+                )
+              else if (unsyncedCount > 0)
+                _buildSettingsItem(
+                  context: context,
+                  icon: PhosphorIcons.arrowsClockwise(),
+                  title: '$unsyncedCount kayıt senkronize edilmedi',
+                  iconColor: c.orange,
+                  onTap: !isLoggedIn
+                      ? null
+                      : () async {
+                          try {
+                            await ref.read(syncProvider.notifier).fullSync();
+                            if (context.mounted) {
+                              CustomToast.show(context, 'Senkronizasyon tamamlandı');
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              CustomToast.show(context, 'Senkronizasyon başarısız: $e');
+                            }
                           }
-                        } catch (e) {
-                          if (context.mounted) {
-                            CustomToast.show(context, 'Senkronizasyon başarısız: $e');
-                          }
-                        }
-                      },
-                trailingIcon: isSyncing ? null : PhosphorIcons.caretRight(),
-              ),
+                        },
+                  trailingIcon: PhosphorIcons.caretRight(),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: c.emerald.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: c.emerald.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(PhosphorIcons.cloudCheck(), color: c.emerald, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Senkronize',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: c.emerald,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Tüm veriler senkronize',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.normal,
+                            color: c.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               _divider(),
               _buildSettingsItem(
                 context: context,
@@ -1330,14 +1378,18 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
           const SizedBox(height: 16),
           MidnightButton(
             onPressed: () async {
+              if (context.mounted) {
+                CustomToast.show(context, 'Örnek dosya oluşturuluyor...');
+              }
               try {
                 await ExportService.generateSampleExcel();
                 if (context.mounted) {
                   CustomToast.show(context, 'Örnek dosya indirildi');
                 }
               } catch (e) {
+                debugPrint('Sample Excel export error: $e');
                 if (context.mounted) {
-                  CustomToast.show(context, 'İndirme sırasında hata oluştu');
+                  CustomToast.show(context, 'Hata: $e');
                 }
               }
             },

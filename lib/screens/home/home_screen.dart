@@ -61,7 +61,7 @@ class HomeShell extends ConsumerWidget {
           }
 
           // Narrow: floating navbar stays at bottom:30 as before. The banner
-          // (when loaded) sits directly above the system nav bar via SafeArea,
+          // (when loaded) sits ABOVE the floating navbar at bottom: 110,
           // without disturbing the existing floating-navbar layout.
           return Stack(
             children: [
@@ -76,11 +76,8 @@ class HomeShell extends ConsumerWidget {
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: 0,
-                  child: SafeArea(
-                    top: false,
-                    child: AdBannerWidget(shouldShow: showBanner),
-                  ),
+                  bottom: 110,
+                  child: AdBannerWidget(shouldShow: showBanner),
                 ),
             ],
           );
@@ -336,61 +333,64 @@ class HomeShell extends ConsumerWidget {
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildNavItem(
-                    context,
-                    index: 0,
-                    icon: PhosphorIcons.house(),
-                    activeIcon: PhosphorIcons.house(PhosphorIconsStyle.fill),
-                    isActive: currentIndex == 0,
-                    onTap: () => context.go('/home'),
+          child: Material(
+            color: Colors.transparent,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildNavItem(
+                      context,
+                      index: 0,
+                      icon: PhosphorIcons.house(),
+                      activeIcon: PhosphorIcons.house(PhosphorIconsStyle.fill),
+                      isActive: currentIndex == 0,
+                      onTap: () => context.go('/home'),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildNavItem(
-                    context,
-                    index: 1,
-                    icon: PhosphorIcons.clockCounterClockwise(),
-                    activeIcon: PhosphorIcons.clockCounterClockwise(PhosphorIconsStyle.fill),
-                    isActive: currentIndex == 1,
-                    onTap: () => context.go('/home/history'),
+                  Expanded(
+                    child: _buildNavItem(
+                      context,
+                      index: 1,
+                      icon: PhosphorIcons.clockCounterClockwise(),
+                      activeIcon: PhosphorIcons.clockCounterClockwise(PhosphorIconsStyle.fill),
+                      isActive: currentIndex == 1,
+                      onTap: () => context.go('/home/history'),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildNavItem(
-                    context,
-                    index: 2,
-                    icon: PhosphorIcons.wallet(),
-                    activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
-                    isActive: currentIndex == 2,
-                    onTap: () => context.go('/home/finance'),
+                  Expanded(
+                    child: _buildNavItem(
+                      context,
+                      index: 2,
+                      icon: PhosphorIcons.wallet(),
+                      activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
+                      isActive: currentIndex == 2,
+                      onTap: () => context.go('/home/finance'),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildNavItem(
-                    context,
-                    index: 3,
-                    icon: PhosphorIcons.chartPie(),
-                    activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
-                    isActive: currentIndex == 3,
-                    onTap: () => context.go('/home/stats'),
+                  Expanded(
+                    child: _buildNavItem(
+                      context,
+                      index: 3,
+                      icon: PhosphorIcons.chartPie(),
+                      activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
+                      isActive: currentIndex == 3,
+                      onTap: () => context.go('/home/stats'),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildNavItem(
-                    context,
-                    index: 4,
-                    icon: PhosphorIcons.gear(),
-                    activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
-                    isActive: currentIndex == 4,
-                    onTap: () => context.go('/home/settings'),
+                  Expanded(
+                    child: _buildNavItem(
+                      context,
+                      index: 4,
+                      icon: PhosphorIcons.gear(),
+                      activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
+                      isActive: currentIndex == 4,
+                      onTap: () => context.go('/home/settings'),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -410,15 +410,14 @@ class HomeShell extends ConsumerWidget {
     const navLabels = ['Ana Sayfa', 'Geçmiş', 'Finans', 'Raporlar', 'Ayarlar'];
     return Tooltip(
       message: navLabels[index],
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 52,
-          alignment: Alignment.center,
+      child: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isActive ? activeIcon : icon,

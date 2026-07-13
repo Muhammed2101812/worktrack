@@ -73,18 +73,22 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             }
                             return;
                           }
+                          if (context.mounted) {
+                            CustomToast.show(context, 'PDF oluşturuluyor...');
+                          }
                           try {
-                            final name = await PdfExportService.exportMonthlyReport(
+                            await PdfExportService.exportMonthlyReport(
                               entries: entriesVal,
                               clients: clientsVal,
                               month: _selectedMonth,
                             );
                             if (context.mounted) {
-                              CustomToast.show(context, '$name.pdf indiriliyor');
+                              CustomToast.show(context, 'PDF kaydedildi');
                             }
                           } catch (e) {
+                            debugPrint('PDF export error: $e');
                             if (context.mounted) {
-                              CustomToast.show(context, 'PDF oluşturulurken hata: $e');
+                              CustomToast.show(context, 'Hata: $e');
                             }
                           }
                         },

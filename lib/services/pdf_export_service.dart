@@ -26,7 +26,7 @@ class PdfExportService {
       name: fileName,
       bytes: bytes,
       fileExtension: 'pdf',
-      mimeType: MimeType.pdf,
+      mimeType: MimeType.other,
     );
     return fileName;
   }

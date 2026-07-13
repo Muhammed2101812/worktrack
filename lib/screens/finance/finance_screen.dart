@@ -824,9 +824,15 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     );
 
                     Navigator.pop(dialogCtx);
-                    await ref.read(paymentsProvider.notifier).addPayment(payment);
-                    if (context.mounted) {
-                      CustomToast.show(context, 'Ödeme kaydı başarıyla eklendi');
+                    try {
+                      await ref.read(paymentsProvider.notifier).addPayment(payment);
+                      if (context.mounted) {
+                        CustomToast.show(context, 'Ödeme kaydı başarıyla eklendi');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        CustomToast.show(context, 'Hata: $e');
+                      }
                     }
                   },
                   child: Row(

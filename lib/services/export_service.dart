@@ -16,7 +16,7 @@ class ExportService {
       name: fileName,
       bytes: bytes,
       fileExtension: 'xlsx',
-      mimeType: MimeType.microsoftExcel,
+      mimeType: MimeType.other,
     );
   }
 
@@ -28,7 +28,7 @@ class ExportService {
       name: 'WorkLog_Ornek',
       bytes: bytes,
       fileExtension: 'xlsx',
-      mimeType: MimeType.microsoftExcel,
+      mimeType: MimeType.other,
     );
   }
 
