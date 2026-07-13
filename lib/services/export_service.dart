@@ -87,21 +87,6 @@ class ExportService {
         TextCellValue('Sabit'),
         TextCellValue('5000'),
       ]);
-
-      // Second sheet: sample payments (so users know the payment format too).
-      final paymentsSheet = excel['Ödemeler'];
-      paymentsSheet.appendRow([
-        TextCellValue('Tarih'),
-        TextCellValue('Müşteri'),
-        TextCellValue('Tutar'),
-        TextCellValue('Not'),
-      ]);
-      paymentsSheet.appendRow([
-        TextCellValue('16.03.2026'),
-        TextCellValue('Örnek Müşteri'),
-        TextCellValue('1500'),
-        TextCellValue('Peşinat'),
-      ]);
     } else {
       final clientMap = {for (final client in clients) client.id: client};
       for (final entry in entries) {

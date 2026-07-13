@@ -61,11 +61,6 @@ void main() {
       final fixedRow = sheet.rows[2].map(getCellValue).toList();
       expect(fixedRow[7], 'Sabit');
       expect(fixedRow[8], '5000');
-
-      // A payments sheet should also exist in the sample file.
-      expect(excel.tables.containsKey('Ödemeler'), isTrue);
-      final paymentsSheet = excel.tables['Ödemeler']!;
-      expect(paymentsSheet.rows.length, equals(2)); // header + 1 sample
     });
 
     test('buildExcelBytes - should map work entries with clients correctly', () {
