@@ -39,44 +39,52 @@ class HomeShell extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: c.bgColor,
-      body: Column(
-        children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= 768;
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 768;
 
-                if (isWide) {
-                  return Row(
+          if (isWide) {
+            return Column(
+              children: [
+                Expanded(
+                  child: Row(
                     children: [
                       _buildSidebar(context, ref, currentIndex),
                       Expanded(child: child),
                     ],
-                  );
-                }
+                  ),
+                ),
+                if (showBanner)
+                  AdBannerWidget(shouldShow: showBanner),
+              ],
+            );
+          }
 
-                return Stack(
-                  children: [
-                    child,
-                    Positioned(
-                      left: 24,
-                      right: 24,
-                      bottom: 30,
-                      child: _buildCustomNavbar(context, currentIndex),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          // AdMob banner (mobile-only, hidden for premium users).
-          // Wrapped in SafeArea so it sits cleanly above the system nav bar.
-          if (showBanner)
-            SafeArea(
-              top: false,
-              child: AdBannerWidget(shouldShow: showBanner),
-            ),
-        ],
+          // Narrow: floating navbar stays at bottom:30 as before. The banner
+          // (when loaded) sits directly above the system nav bar via SafeArea,
+          // without disturbing the existing floating-navbar layout.
+          return Stack(
+            children: [
+              child,
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 30,
+                child: _buildCustomNavbar(context, currentIndex),
+              ),
+              if (showBanner)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SafeArea(
+                    top: false,
+                    child: AdBannerWidget(shouldShow: showBanner),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
