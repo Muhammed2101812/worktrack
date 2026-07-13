@@ -41,6 +41,9 @@ class AppConstants {
     '#9B59B6', '#1ABC9C', '#E67E22', '#E91E63',
   ];
 
+  /// Supported currency codes for the global currency setting.
+  static const List<String> currencies = ['TL', 'USD', 'EUR', 'GBP'];
+
   // ── Advertising (AdMob) ──────────────────────────────────────────────────
   //
   // These use Google's official test ad unit IDs by default so the app is

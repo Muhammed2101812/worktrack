@@ -7,6 +7,7 @@ import '../../services/pdf_export_service.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../models/client.dart';
 import '../../core/theme.dart';
 import '../history/widgets/month_filter.dart';
@@ -41,6 +42,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final c = AppColors.of(context);
     final entriesAsync = ref.watch(entriesProvider);
     final clientsAsync = ref.watch(clientsProvider);
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
     final isWide = MediaQuery.of(context).size.width >= 768;
 
     return Scaffold(
@@ -77,13 +79,18 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             CustomToast.show(context, 'PDF oluşturuluyor...');
                           }
                           try {
-                            await PdfExportService.exportMonthlyReport(
+                            final success = await PdfExportService.exportMonthlyReport(
                               entries: entriesVal,
                               clients: clientsVal,
                               month: _selectedMonth,
+                              currency: currency,
                             );
                             if (context.mounted) {
-                              CustomToast.show(context, 'PDF hazır');
+                              if (success) {
+                                CustomToast.show(context, 'PDF kaydedildi');
+                              } else {
+                                CustomToast.show(context, 'PDF kaydetme iptal edildi');
+                              }
                             }
                           } catch (e) {
                             debugPrint('PDF export error: $e');
@@ -701,6 +708,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   // ════════════════════════════════════════════════════════════════════════
   Widget _buildEarningsView(AppPalette c, List<Client> clients,
       List monthEntries, bool isWide) {
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
     // Müşteri bazlı saat + gelir hesapla
     final Map<String, double> clientHours = {};
     final Map<String, double> clientEarnings = {};
@@ -797,7 +805,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                '${totalEarnings.toStringAsFixed(0)} TL',
+                '${totalEarnings.toStringAsFixed(0)} $currency',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -859,7 +867,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '${totalEarnings.toStringAsFixed(0)} TL',
+                            '${totalEarnings.toStringAsFixed(0)} $currency',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -985,7 +993,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'ort. ${avgRate.toStringAsFixed(0)} TL/sa',
+                            'ort. ${avgRate.toStringAsFixed(0)} $currency/sa',
                             style: TextStyle(
                               fontSize: 11,
                               color: c.textMuted,
@@ -1001,7 +1009,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${earning.toStringAsFixed(0)} TL',
+                      '${earning.toStringAsFixed(0)} $currency',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: c.textMain,
@@ -1056,7 +1064,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                           getTooltipItems: (spots) {
                             return spots.map((s) {
                               return LineTooltipItem(
-                                'Gün ${(s.x + 1).toInt()}\n${s.y.toStringAsFixed(0)} TL',
+                                'Gün ${(s.x + 1).toInt()}\n${s.y.toStringAsFixed(0)} $currency',
                                 TextStyle(
                                   color: c.onPrimary,
                                   fontWeight: FontWeight.bold,

@@ -42,6 +42,9 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   final _hourlyRateController = TextEditingController();
   final _fixedPriceController = TextEditingController();
 
+  String? _breakStart;
+  String? _breakEnd;
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +68,8 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       _totalPrice = entry.totalPrice;
       _hourlyRateController.text = _hourlyRate > 0 ? _hourlyRate.toStringAsFixed(1) : '';
       _fixedPriceController.text = _billingType == 'fixed' && _totalPrice > 0 ? _totalPrice.toStringAsFixed(1) : '';
+      _breakStart = entry.breakStart;
+      _breakEnd = entry.breakEnd;
 
       if (entry.projectId != null && entry.projectName != null) {
         _selectedProject = Project(
@@ -77,8 +82,10 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       _selectedDate = DateTime.now();
       _startTime = '09:00';
       _endTime = '13:00';
-      _workType = AppConstants.workTypes.first;
+      _workType = 'Diğer';
       _notes = '';
+      _breakStart = null;
+      _breakEnd = null;
     }
   }
 
@@ -166,6 +173,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
 
   Widget _buildForm(List<Client> clients) {
     final c = AppColors.of(context);
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
     return Form(
       key: _formKey,
       child: ListView(
@@ -264,6 +272,157 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
+              'MOLA (İSTEĞE BAĞLI)',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: c.textMuted,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        'Başlangıç',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: c.textMuted),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final initialMin = _safeParseTime(_breakStart ?? '12:00') ?? [12, 0];
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(hour: initialMin[0], minute: initialMin[1]),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _breakStart = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          });
+                        }
+                      },
+                      child: MidnightCard(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                        child: Center(
+                          child: Text(
+                            _breakStart ?? '--:--',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: _breakStart != null ? c.textMain : c.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        'Bitiş',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: c.textMuted),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final initialMin = _safeParseTime(_breakEnd ?? '12:30') ?? [12, 30];
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(hour: initialMin[0], minute: initialMin[1]),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _breakEnd = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          });
+                        }
+                      },
+                      child: MidnightCard(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                        child: Center(
+                          child: Text(
+                            _breakEnd ?? '--:--',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: _breakEnd != null ? c.textMain : c.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (_breakStart != null || _breakEnd != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_breakStart != null && _breakEnd != null) ...[
+                  Builder(
+                    builder: (ctx) {
+                      final bs = _breakStart!.split(':');
+                      final be = _breakEnd!.split(':');
+                      final bStartMin = int.parse(bs[0]) * 60 + int.parse(bs[1]);
+                      final bEndMin = int.parse(be[0]) * 60 + int.parse(be[1]);
+                      var bDiff = bEndMin - bStartMin;
+                      if (bDiff < 0) bDiff += 24 * 60;
+                      final breakHours = bDiff / 60.0;
+                      return Text(
+                        'Mola: ${breakHours.toStringAsFixed(1)} sa',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: c.primary,
+                        ),
+                      );
+                    },
+                  ),
+                ] else
+                  const SizedBox(),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _breakStart = null;
+                      _breakEnd = null;
+                    });
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Temizle',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: c.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
               'ÜCRETLENDİRME',
               style: TextStyle(
                 fontSize: 12,
@@ -345,7 +504,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                 Expanded(
                   child: MidnightInput(
                     controller: _hourlyRateController,
-                    hintText: 'Saatlik Ücret (TL)',
+                    hintText: 'Saatlik Ücret ($currency)',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: c.primary),
                     onChanged: (value) {
@@ -366,7 +525,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      'Toplam: ${(_calcDurationHours() * _hourlyRate).toStringAsFixed(1)} TL',
+                      'Toplam: ${(_calcDurationHours() * _hourlyRate).toStringAsFixed(1)} $currency',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: c.textMain,
@@ -380,7 +539,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           ] else ...[
             MidnightInput(
               controller: _fixedPriceController,
-              hintText: 'Sabit Ücret Tutarı (TL)',
+              hintText: 'Sabit Ücret Tutarı ($currency)',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               prefixIcon: Icon(PhosphorIcons.wallet(), color: c.primary),
               onChanged: (value) {
@@ -946,8 +1105,23 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       final e = _endTime.split(':');
       final startMin = int.parse(s[0]) * 60 + int.parse(s[1]);
       final endMin = int.parse(e[0]) * 60 + int.parse(e[1]);
-      final diff = endMin - startMin;
-      return diff > 0 ? diff / 60.0 : 0.0;
+      var diff = endMin - startMin;
+      if (diff < 0) diff += 24 * 60;
+      final gross = diff / 60.0;
+
+      double breakHours = 0.0;
+      if (_breakStart != null && _breakEnd != null) {
+        final bs = _breakStart!.split(':');
+        final be = _breakEnd!.split(':');
+        final bStartMin = int.parse(bs[0]) * 60 + int.parse(bs[1]);
+        final bEndMin = int.parse(be[0]) * 60 + int.parse(be[1]);
+        var bDiff = bEndMin - bStartMin;
+        if (bDiff < 0) bDiff += 24 * 60;
+        breakHours = bDiff / 60.0;
+      }
+
+      final net = gross - breakHours;
+      return net < 0 ? 0.0 : net;
     } catch (_) {
       return 0.0;
     }
@@ -979,8 +1153,8 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     final startMinutes = startParts[0] * 60 + startParts[1];
     final endMinutes = endParts[0] * 60 + endParts[1];
 
-    if (endMinutes <= startMinutes) {
-      CustomToast.show(context, 'Bitiş saati başlangıç saatten büyük olmalı');
+    if (startMinutes == endMinutes) {
+      CustomToast.show(context, 'Başlangıç ve bitiş aynı saat olamaz');
       return;
     }
 
@@ -1007,6 +1181,8 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       billingType: _billingType,
       hourlyRate: _billingType == 'hourly' ? _hourlyRate : 0.0,
       totalPrice: finalTotalPrice,
+      breakStart: _breakStart,
+      breakEnd: _breakEnd,
       createdAt: widget.entryToEdit?.createdAt,
     );
 

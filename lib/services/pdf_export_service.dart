@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show visibleForTesting, debugPrint;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../models/client.dart';
 import '../models/work_entry.dart';
 
@@ -16,26 +15,37 @@ import '../models/work_entry.dart';
 /// given month, including the average hourly rate. Mirrors the on-screen
 /// stats view so the exported file matches what the user sees.
 class PdfExportService {
-  /// Builds and saves a monthly report PDF. Returns the file name on success.
-  static Future<String> exportMonthlyReport({
+  /// Builds and saves a monthly report PDF. Returns true on success.
+  static Future<bool> exportMonthlyReport({
     required List<WorkEntry> entries,
     required List<Client> clients,
     required DateTime month,
+    String currency = 'TL',
   }) async {
-    final bytes = await buildReportBytes(entries: entries, clients: clients, month: month);
+    final bytes = await buildReportBytes(entries: entries, clients: clients, month: month, currency: currency);
     final monthLabel = DateFormat('MMMM_yyyy', 'tr').format(month);
-    final fileName = 'WorkTrack_Rapor_$monthLabel.pdf';
-    
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/$fileName');
-    await file.writeAsBytes(bytes);
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final fileName = 'WorkTrack_Rapor_${monthLabel}_$timestamp.pdf';
     
     try {
-      await Share.shareXFiles([XFile(file.path)], subject: 'WorkTrack Raporu');
+      final String? path = await FilePicker.platform.saveFile(
+        dialogTitle: 'PDF Raporunu Kaydet',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        bytes: bytes,
+      );
+      if (path != null) {
+        if (!Platform.isAndroid && !Platform.isIOS) {
+          final file = File(path);
+          await file.writeAsBytes(bytes);
+        }
+        return true;
+      }
     } catch (e) {
-      // Ignore or log error
+      debugPrint('PDF export error: $e');
     }
-    return fileName;
+    return false;
   }
 
   @visibleForTesting
@@ -43,6 +53,7 @@ class PdfExportService {
     required List<WorkEntry> entries,
     required List<Client> clients,
     required DateTime month,
+    String currency = 'TL',
   }) async {
     // Load Roboto TTF (bundled in assets) so Turkish characters (ç ğ ı ö ş ü)
     // render correctly. The pdf package's default Type1 font lacks them.
@@ -120,7 +131,7 @@ class PdfExportService {
               mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
                 _summaryBlock('TOPLAM SAAT', '${totalHours.toStringAsFixed(1)} sa'),
-                _summaryBlock('TOPLAM GELİR', '${totalEarnings.toStringAsFixed(0)} TL'),
+                _summaryBlock('TOPLAM GELİR', '${totalEarnings.toStringAsFixed(0)} $currency'),
                 _summaryBlock('KAYIT SAYISI', '${monthEntries.length}'),
               ],
             ),
@@ -131,7 +142,7 @@ class PdfExportService {
               style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 8),
           _buildTable(
-            headers: ['Müşteri', 'Saat', 'Gelir (TL)', 'Ort. Saatlik (TL)'],
+            headers: ['Müşteri', 'Saat', 'Gelir ($currency)', 'Ort. Saatlik ($currency)'],
             rows: clientRows
                 .map((c) => [
                       c.name,
@@ -149,7 +160,7 @@ class PdfExportService {
                 style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
             _buildTable(
-              headers: ['Proje', 'Saat', 'Gelir (TL)'],
+              headers: ['Proje', 'Saat', 'Gelir ($currency)'],
               rows: projectRows
                   .map((p) => [
                         p.name,

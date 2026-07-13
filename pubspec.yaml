@@ -67,6 +67,7 @@ dev_dependencies:
   riverpod_generator: ^2.4.0
   build_runner: ^2.4.9
   mocktail: ^1.0.5
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
@@ -75,3 +76,10 @@ flutter:
     - assets/images/
     - assets/fonts/
     - .env
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#1E293B"
+  adaptive_icon_foreground: "assets/images/app_icon.png"

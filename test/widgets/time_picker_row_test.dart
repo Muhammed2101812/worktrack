@@ -42,7 +42,7 @@ void main() {
       expect(find.text('Toplam: 3.5 saat'), findsOneWidget);
     });
 
-    testWidgets('should show 0.0 for invalid range',
+    testWidgets('should show 21.0 for overnight range',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -57,7 +57,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Toplam: 0.0 saat'), findsOneWidget);
+      expect(find.text('Toplam: 21.0 saat'), findsOneWidget);
     });
   });
 }

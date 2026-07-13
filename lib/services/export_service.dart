@@ -1,42 +1,63 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:excel/excel.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
 
 class ExportService {
-  static Future<void> exportToExcel(
+  static Future<bool> exportToExcel(
       List<WorkEntry> entries, List<Client> clients) async {
     final bytes = buildExcelBytes(entries, clients);
     final fileName =
         'WorkLog_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx';
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/$fileName');
-    await file.writeAsBytes(bytes);
     try {
-      await Share.shareXFiles([XFile(file.path)], subject: 'WorkLog Excel');
+      final String? path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Excel Dosyasını Kaydet',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+        bytes: bytes,
+      );
+      if (path != null) {
+        if (!Platform.isAndroid && !Platform.isIOS) {
+          final file = File(path);
+          await file.writeAsBytes(bytes);
+        }
+        return true;
+      }
     } catch (e) {
-      // Ignore or log error
+      debugPrint('Excel export error: $e');
     }
+    return false;
   }
 
-  static Future<void> generateSampleExcel() async {
+  static Future<bool> generateSampleExcel() async {
     final sample = <WorkEntry>[];
     final sampleClients = <Client>[];
     final bytes = buildExcelBytes(sample, sampleClients, isSample: true);
-    final fileName = 'WorkLog_Ornek.xlsx';
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/$fileName');
-    await file.writeAsBytes(bytes);
+    final fileName = 'WorkLog_Ornek_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx';
     try {
-      await Share.shareXFiles([XFile(file.path)], subject: 'WorkLog Örnek Excel');
+      final String? path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Örnek Excel Dosyasını Kaydet',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+        bytes: bytes,
+      );
+      if (path != null) {
+        if (!Platform.isAndroid && !Platform.isIOS) {
+          final file = File(path);
+          await file.writeAsBytes(bytes);
+        }
+        return true;
+      }
     } catch (e) {
-      // Ignore or log error
+      debugPrint('Sample Excel export error: $e');
     }
+    return false;
   }
 
   @visibleForTesting

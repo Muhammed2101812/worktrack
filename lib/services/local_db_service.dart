@@ -23,7 +23,7 @@ class LocalDBService {
       return await databaseFactoryFfiWeb.openDatabase(
         dbName,
         options: OpenDatabaseOptions(
-          version: 9,
+          version: 10,
           onCreate: _onCreate,
           onUpgrade: _onUpgrade,
         ),
@@ -32,7 +32,7 @@ class LocalDBService {
       final path = dbName == ':memory:' ? inMemoryDatabasePath : join(await getDatabasesPath(), dbName);
       return await openDatabase(
         path,
-        version: 9,
+        version: 10,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
@@ -147,6 +147,11 @@ class LocalDBService {
       await _createIndex(db, 'idx_projects_synced', 'projects', 'synced');
       await _createIndex(db, 'idx_projects_deleted', 'projects', 'is_deleted');
     }
+    if (oldVersion < 10) {
+      // Break (mola) support — optional start/end timestamps on work entries.
+      await _addColumn(db, 'work_entries', 'break_start', 'text');
+      await _addColumn(db, 'work_entries', 'break_end', 'text');
+    }
   }
 
   Future<void> _addColumn(Database db, String table, String column, String type) async {
@@ -180,6 +185,8 @@ class LocalDBService {
         billing_type text default 'hourly',
         hourly_rate real default 0.0,
         total_price real default 0.0,
+        break_start text,
+        break_end text,
         created_at text default '',
         updated_at text default '',
         is_deleted integer default 0
@@ -312,6 +319,14 @@ class LocalDBService {
         where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Soft-deletes all entries.
+  Future<void> softDeleteAllEntries() async {
+    final db = await database;
+    await db.update('work_entries',
+        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'is_deleted = 0');
+  }
+
   Future<void> deleteEntry(String id) async {
     final db = await database;
     await db.delete('work_entries', where: 'id = ?', whereArgs: [id]);
@@ -368,7 +383,7 @@ class LocalDBService {
     final db = await database;
     await db.update(
       'clients',
-      client.toMap(),
+      client.toLocalMap(),
       where: 'id = ?',
       whereArgs: [client.id],
     );
@@ -528,6 +543,14 @@ class LocalDBService {
     await db.update('payments',
         {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
         where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Soft-deletes all payments.
+  Future<void> softDeleteAllPayments() async {
+    final db = await database;
+    await db.update('payments',
+        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'is_deleted = 0');
   }
 
   Future<void> deletePayment(String id) async {

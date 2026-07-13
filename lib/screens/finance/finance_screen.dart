@@ -8,6 +8,7 @@ import '../../models/work_entry.dart';
 import '../../providers/payments_provider.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
 
@@ -57,6 +58,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     final entriesAsync = ref.watch(entriesProvider);
     final paymentsAsync = ref.watch(paymentsProvider);
     final clientsAsync = ref.watch(clientsProvider);
+    // Watch currency to trigger rebuild when it changes
+    ref.watch(currencyProvider);
 
     final isWide = MediaQuery.of(context).size.width >= 768;
 
@@ -81,21 +84,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     );
   }
 
-  double _getEntryPrice(WorkEntry e) {
-    if (e.totalPrice > 0.0) return e.totalPrice;
-    try {
-      final s = e.startTime.split(':');
-      final end = e.endTime.split(':');
-      final startMin = int.parse(s[0]) * 60 + int.parse(s[1]);
-      final endMin = int.parse(end[0]) * 60 + int.parse(end[1]);
-      final diff = endMin - startMin;
-      final hours = diff > 0 ? diff / 60.0 : 0.0;
-      return hours * (e.hourlyRate > 0.0 ? e.hourlyRate : 0.0);
-    } catch (_) {
-      return 0.0;
-    }
-  }
-
   Widget _buildBody(
     BuildContext context,
     List<WorkEntry> entries,
@@ -104,11 +92,12 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     bool isWide,
   ) {
     final c = AppColors.of(context);
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
 
     // 1. Calculate general stats
     double totalEarned = 0.0;
     for (final e in entries) {
-      totalEarned += _getEntryPrice(e);
+      totalEarned += e.effectivePrice;
     }
 
     double totalReceived = 0.0;
@@ -126,7 +115,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
 
     for (final e in entries) {
       if (clientStatsMap.containsKey(e.clientId)) {
-        clientStatsMap[e.clientId]!.earned += _getEntryPrice(e);
+        clientStatsMap[e.clientId]!.earned += e.effectivePrice;
       }
     }
 
@@ -219,7 +208,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        '${remainingBalance.toStringAsFixed(1)} TL',
+                        '${remainingBalance.toStringAsFixed(1)} $currency',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
@@ -250,7 +239,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${totalEarned.toStringAsFixed(1)} TL',
+                                '${totalEarned.toStringAsFixed(1)} $currency',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -280,7 +269,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${totalReceived.toStringAsFixed(1)} TL',
+                                '${totalReceived.toStringAsFixed(1)} $currency',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -409,6 +398,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
 
   Widget _buildClientBalances(BuildContext context, List<_ClientFinance> list, bool isWide) {
     final c = AppColors.of(context);
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
 
     if (list.isEmpty) {
       return Center(
@@ -462,7 +452,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   ),
                   Text(
                     item.balance > 0
-                        ? '${item.balance.toStringAsFixed(1)} TL Borç'
+                        ? '${item.balance.toStringAsFixed(1)} $currency Borç'
                         : 'Ödendi',
                     style: TextStyle(
                       fontSize: 13,
@@ -479,11 +469,11 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Hakediş: ${item.earned.toStringAsFixed(1)} TL',
+                    'Hakediş: ${item.earned.toStringAsFixed(1)} $currency',
                     style: TextStyle(fontSize: 12, color: c.textMuted, fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    'Alınan: ${item.received.toStringAsFixed(1)} TL',
+                    'Alınan: ${item.received.toStringAsFixed(1)} $currency',
                     style: TextStyle(fontSize: 12, color: c.emerald, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -497,6 +487,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
 
   Widget _buildPaymentsList(BuildContext context, List<Payment> list, bool isWide) {
     final c = AppColors.of(context);
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
 
     if (list.isEmpty) {
       return Center(
@@ -579,7 +570,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 Row(
                   children: [
                     Text(
-                      '+${payment.amount.toStringAsFixed(1)} TL',
+                      '+${payment.amount.toStringAsFixed(1)} $currency',
                       style: TextStyle(fontWeight: FontWeight.bold, color: c.emerald, fontSize: 14),
                     ),
                     const SizedBox(width: 12),
@@ -599,6 +590,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   }
 
   Future<bool?> _showDeletePaymentConfirmDialog(BuildContext context, Payment payment) {
+    final currency = ref.read(currencyProvider).valueOrNull ?? 'TL';
     return showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -610,7 +602,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             side: BorderSide(color: c.cardBorder, width: 1),
           ),
           title: Text('Ödeme Kaydını Sil', style: TextStyle(color: c.textMain)),
-          content: Text('${payment.clientName} müşterisinden alınan ${payment.amount} TL tutarındaki ödeme kaydı silinsin mi?', style: TextStyle(color: c.textMuted)),
+          content: Text('${payment.clientName} müşterisinden alınan ${payment.amount} $currency tutarındaki ödeme kaydı silinsin mi?', style: TextStyle(color: c.textMuted)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -636,6 +628,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       return;
     }
 
+    final currency = ref.read(currencyProvider).valueOrNull ?? 'TL';
     Client? selectedClient = clients.first;
     final amountController = TextEditingController();
     final noteController = TextEditingController();
@@ -728,7 +721,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 // Amount Input
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('TUTAR (TL)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
+                  child: Text('TUTAR ($currency)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                 ),
                 MidnightInput(
                   controller: amountController,

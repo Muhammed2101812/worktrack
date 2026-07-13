@@ -18,6 +18,8 @@ class WorkEntry {
   final String billingType;
   final double hourlyRate;
   final double totalPrice;
+  final String? breakStart;
+  final String? breakEnd;
   final String createdAt;
   final String updatedAt;
   final bool isDeleted;
@@ -38,6 +40,8 @@ class WorkEntry {
     this.billingType = 'hourly',
     this.hourlyRate = 0.0,
     double? totalPrice,
+    this.breakStart,
+    this.breakEnd,
     String? createdAt,
     String? updatedAt,
     this.isDeleted = false,
@@ -47,14 +51,16 @@ class WorkEntry {
         id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now().toIso8601String(),
         updatedAt = updatedAt ?? DateTime.now().toIso8601String(),
-        durationHours = _calcDuration(startTime, endTime),
+        durationHours = _calcNetDuration(startTime, endTime, breakStart, breakEnd),
         totalPrice = totalPrice ??
             (billingType == 'hourly'
-                ? (_calcDuration(startTime, endTime) * hourlyRate)
+                ? (_calcNetDuration(startTime, endTime, breakStart, breakEnd) *
+                    hourlyRate)
                 : 0.0);
 
   /// Parses "HH:mm" into minutes-since-midnight, returning null on bad input.
-  static int? _toMinutes(String s) {
+  static int? _toMinutes(String? s) {
+    if (s == null) return null;
     final parts = s.split(':');
     if (parts.length != 2) return null;
     final h = int.tryParse(parts[0]);
@@ -64,12 +70,36 @@ class WorkEntry {
     return h * 60 + m;
   }
 
-  static double _calcDuration(String start, String end) {
+  /// Calculates gross duration between two "HH:mm" timestamps, correctly
+  /// handling overnight shifts (e.g. 22:00→02:00 = 4 hours, not 0).
+  static double _calcSpan(String start, String end) {
     final startMin = _toMinutes(start);
     final endMin = _toMinutes(end);
     if (startMin == null || endMin == null) return 0.0;
-    final diff = endMin - startMin;
-    return diff > 0 ? diff / 60.0 : 0.0;
+    var diff = endMin - startMin;
+    if (diff == 0) return 0.0;
+    // Overnight shift: end < start means it wraps past midnight.
+    if (diff < 0) diff += 24 * 60;
+    return diff / 60.0;
+  }
+
+  /// Gross work duration (without subtracting break time).
+  static double _calcDuration(String start, String end) => _calcSpan(start, end);
+
+  /// Break duration (also overnight-safe, though breaks rarely span midnight).
+  static double _calcBreakDuration(String? breakStart, String? breakEnd) {
+    if (breakStart == null || breakEnd == null) return 0.0;
+    if (breakStart.isEmpty || breakEnd.isEmpty) return 0.0;
+    return _calcSpan(breakStart, breakEnd);
+  }
+
+  /// Net duration = gross work span minus break time. Never negative.
+  static double _calcNetDuration(
+      String start, String end, String? breakStart, String? breakEnd) {
+    final gross = _calcSpan(start, end);
+    final brk = _calcBreakDuration(breakStart, breakEnd);
+    final net = gross - brk;
+    return net < 0 ? 0.0 : net;
   }
 
   /// Effective monetary value of this entry. Fixed-price entries use
@@ -97,6 +127,8 @@ class WorkEntry {
     String? billingType,
     double? hourlyRate,
     double? totalPrice,
+    Object? breakStart = _sentinel,
+    Object? breakEnd = _sentinel,
     String? createdAt,
     String? updatedAt,
     bool? isDeleted,
@@ -121,6 +153,12 @@ class WorkEntry {
         billingType: billingType ?? this.billingType,
         hourlyRate: hourlyRate ?? this.hourlyRate,
         totalPrice: totalPrice ?? this.totalPrice,
+        breakStart: identical(breakStart, _sentinel)
+            ? this.breakStart
+            : breakStart as String?,
+        breakEnd: identical(breakEnd, _sentinel)
+            ? this.breakEnd
+            : breakEnd as String?,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted ?? this.isDeleted,
@@ -145,6 +183,10 @@ class WorkEntry {
         'billing_type': billingType,
         'hourly_rate': hourlyRate,
         'total_price': totalPrice,
+        if (breakStart != null) 'break_start': breakStart,
+        if (breakEnd != null) 'break_end': breakEnd,
+        'is_deleted': isDeleted,
+        'updated_at': updatedAt,
       };
 
   // SQLite için (synced + is_deleted sütunu var)
@@ -152,6 +194,8 @@ class WorkEntry {
         ...toMap(),
         'project_id': projectId,
         'project_name': projectName,
+        'break_start': breakStart,
+        'break_end': breakEnd,
         'created_at': createdAt,
         'updated_at': updatedAt,
         'synced': synced ? 1 : 0,
@@ -176,6 +220,12 @@ class WorkEntry {
         billingType: m['billing_type'] ?? 'hourly',
         hourlyRate: (m['hourly_rate'] as num?)?.toDouble() ?? 0.0,
         totalPrice: (m['total_price'] as num?)?.toDouble() ?? 0.0,
+        breakStart: (m['break_start'] as String?)?.isNotEmpty == true
+            ? m['break_start'] as String?
+            : null,
+        breakEnd: (m['break_end'] as String?)?.isNotEmpty == true
+            ? m['break_end'] as String?
+            : null,
         createdAt: m['created_at'],
         updatedAt: m['updated_at'],
         isDeleted: (m['is_deleted'] == 1) || (m['is_deleted'] == true),

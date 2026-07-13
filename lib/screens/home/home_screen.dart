@@ -79,6 +79,16 @@ class HomeShell extends ConsumerWidget {
                   bottom: 110,
                   child: AdBannerWidget(shouldShow: showBanner),
                 ),
+              if (currentIndex == 0 || currentIndex == 1)
+                Positioned(
+                  right: 24,
+                  bottom: showBanner ? 175 : 115,
+                  child: FloatingActionButton(
+                    onPressed: () => context.go('/home/add'),
+                    backgroundColor: c.primary,
+                    child: Icon(Icons.add, color: c.onPrimary),
+                  ),
+                ),
             ],
           );
         },
@@ -581,155 +591,158 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           backgroundColor: Colors.transparent, // Let HomeShell handle bg
           extendBodyBehindAppBar: true,
           appBar: null,
-          body: entriesAsync.when(
-            data: (entries) => Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(
-                    24,
-                    24,
-                    24,
-                    isWide ? 40 : 120,
-                  ),
-                  children: [
-                    // Welcome Header Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Merhaba,',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: c.textMuted,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                            Text(
-                              displayName,
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.5,
-                                color: c.textMain,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: c.primary.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              avatarLetter,
-                              style: TextStyle(
-                                color: c.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+          body: SafeArea(
+            bottom: false,
+            child: entriesAsync.when(
+              data: (entries) => Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      16,
+                      24,
+                      isWide ? 40 : 120,
                     ),
-                    const SizedBox(height: 32),
-                    const TodaySummaryCard(),
-                    const SizedBox(height: 35),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Son Kayıtlar',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: c.textMain,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => context.go('/home/history'),
-                          child: Text(
-                            'Tümünü Gör',
-                            style: TextStyle(
-                              color: c.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (entries.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Welcome Header Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(28),
-                                decoration: BoxDecoration(
-                                  color: c.primary.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.edit_note_rounded,
-                                  size: 56,
-                                  color: c.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
                               Text(
-                                'Henüz kaydınız bulunmuyor',
+                                'Merhaba,',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: c.textMain,
+                                  fontSize: 14,
+                                  color: c.textMuted,
+                                  fontWeight: FontWeight.normal,
                                 ),
                               ),
-                              const SizedBox(height: 6),
                               Text(
-                                'İlk çalışma kaydınızı oluşturun',
-                                style: TextStyle(color: c.textMuted, fontSize: 13),
-                              ),
-                              const SizedBox(height: 20),
-                              MidnightButton(
-                                onPressed: () => context.go('/home/add'),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.add, color: c.onPrimary, size: 18),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'İlk Kaydını Oluştur',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: c.onPrimary,
-                                      ),
-                                    ),
-                                  ],
+                                displayName,
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.5,
+                                  color: c.textMain,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      )
-                    else
-                      ...entries.take(5).map((entry) => EntryListTile(entry: entry)).toList(),
-                  ],
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: c.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                avatarLetter,
+                                style: TextStyle(
+                                  color: c.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      const TodaySummaryCard(),
+                      const SizedBox(height: 35),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Son Kayıtlar',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: c.textMain,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/home/history'),
+                            child: Text(
+                              'Tümünü Gör',
+                              style: TextStyle(
+                                color: c.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (entries.isEmpty)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(28),
+                                  decoration: BoxDecoration(
+                                    color: c.primary.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.edit_note_rounded,
+                                    size: 56,
+                                    color: c.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Henüz kaydınız bulunmuyor',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: c.textMain,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'İlk çalışma kaydınızı oluşturun',
+                                  style: TextStyle(color: c.textMuted, fontSize: 13),
+                                ),
+                                const SizedBox(height: 20),
+                                MidnightButton(
+                                  onPressed: () => context.go('/home/add'),
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add, color: c.onPrimary, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'İlk Kaydını Oluştur',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: c.onPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        ...entries.take(5).map((entry) => EntryListTile(entry: entry)).toList(),
+                    ],
+                  ),
                 ),
               ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => Center(child: Text('Hata: $e')),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Center(child: Text('Hata: $e')),
           ),
           floatingActionButton: isWide
               ? FloatingActionButton(
@@ -737,14 +750,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   backgroundColor: c.primary,
                   child: Icon(Icons.add, color: c.onPrimary),
                 )
-              : Padding(
-                  padding: const EdgeInsets.only(bottom: 80.0),
-                  child: FloatingActionButton(
-                    onPressed: () => context.go('/home/add'),
-                    backgroundColor: c.primary,
-                    child: Icon(Icons.add, color: c.onPrimary),
-                  ),
-                ),
+              : null,
         );
       },
     );

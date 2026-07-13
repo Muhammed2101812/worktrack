@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/payments_provider.dart';
+import '../../providers/core_providers.dart';
 import '../../providers/sync_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -61,6 +62,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _buildDataSyncSection(context, syncAsync, unsyncedEntriesAsync, unsyncedPaymentsAsync, syncEnabled, currentUser),
               _buildAccountSection(context, currentUser),
               _buildFinanceSection(context),
+              _buildDataManagementSection(context),
               _buildAboutSection(context),
             ],
           ),
@@ -536,12 +538,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   final clientsVal = ref.read(clientsProvider);
                   if (entriesVal.value != null && clientsVal.value != null) {
                     try {
-                      await ExportService.exportToExcel(
+                      final success = await ExportService.exportToExcel(
                         entriesVal.value!,
                         clientsVal.value!,
                       );
                       if (context.mounted) {
-                        CustomToast.show(context, 'Excel dosyası hazır');
+                        if (success) {
+                          CustomToast.show(context, 'Excel dosyası kaydedildi');
+                        } else {
+                          CustomToast.show(context, 'Excel kaydetme iptal edildi');
+                        }
                       }
                     } catch (e) {
                       if (context.mounted) {
@@ -666,6 +672,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final c = AppColors.of(context);
     final defaultRateAsync = ref.watch(defaultHourlyRateProvider);
     final defaultRate = defaultRateAsync.valueOrNull ?? 0.0;
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -690,10 +697,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _buildSettingsItem(
                 context: context,
                 icon: PhosphorIcons.currencyCircleDollar(),
-                title: 'Varsayılan Saatlik Ücret: ${defaultRate.toStringAsFixed(1)} TL',
+                title: 'Varsayılan Saatlik Ücret: ${defaultRate.toStringAsFixed(1)} $currency',
                 iconColor: c.emerald,
                 onTap: () => _showHourlyRateDialog(context, defaultRate),
                 trailingIcon: PhosphorIcons.pencilSimple(),
+              ),
+              _divider(),
+              _buildSettingsItem(
+                context: context,
+                icon: PhosphorIcons.currencyCircleDollar(),
+                title: 'Para Birimi: $currency',
+                iconColor: c.emerald,
+                onTap: () => _showCurrencyDialog(context, currency),
+                trailingIcon: PhosphorIcons.caretRight(),
               ),
             ],
           ),
@@ -702,7 +718,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _showCurrencyDialog(BuildContext context, String currentCurrency) async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: dc.cardBorder, width: 1),
+          ),
+          title: Text('Para Birimi Seçin', style: TextStyle(color: dc.textMain)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: AppConstants.currencies.map((currency) {
+              final isCurrent = currency == currentCurrency;
+              return InkWell(
+                onTap: () => Navigator.pop(ctx, currency),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isCurrent ? dc.primary.withValues(alpha: 0.12) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isCurrent ? dc.primary : Colors.transparent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        currency,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                          color: dc.textMain,
+                        ),
+                      ),
+                      if (isCurrent)
+                        Icon(Icons.check_circle, color: dc.primary, size: 20),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('İptal', style: TextStyle(color: dc.textMuted)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selected == null || selected == currentCurrency || !mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: dc.cardBorder, width: 1),
+          ),
+          title: Text('Para Birimi Değiştirilsin mi?', style: TextStyle(color: dc.textMain)),
+          content: Text(
+            'Para birimini değiştirmek mevcut tutarları dönüştürmez. Örn. 100 TL kaydı 100 USD olarak gösterilir. Devam edilsin mi?',
+            style: TextStyle(color: dc.textMuted, fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('İptal', style: TextStyle(color: dc.textMuted)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: dc.primary),
+              child: const Text('Değiştir', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(currencyProvider.notifier).setCurrency(selected);
+      if (mounted) {
+        CustomToast.show(context, 'Para birimi güncellendi');
+      }
+    }
+  }
+
   Future<void> _showHourlyRateDialog(BuildContext context, double currentRate) async {
+    final currency = ref.read(currencyProvider).valueOrNull ?? 'TL';
     final controller = TextEditingController(text: currentRate > 0 ? currentRate.toStringAsFixed(1) : '');
     final result = await showDialog<double>(
       context: context,
@@ -725,7 +841,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 16),
               MidnightInput(
                 controller: controller,
-                hintText: 'Saatlik Ücret (TL)',
+                hintText: 'Saatlik Ücret ($currency)',
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: dc.primary),
               ),
@@ -755,6 +871,263 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         CustomToast.show(context, 'Varsayılan saatlik ücret güncellendi');
       }
     }
+  }
+
+  Widget _buildDataManagementSection(BuildContext context) {
+    final c = AppColors.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Text(
+            'VERİ YÖNETİMİ',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              color: c.textMuted,
+            ),
+          ),
+        ),
+        MidnightCard(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              _buildSettingsItem(
+                context: context,
+                icon: PhosphorIcons.trash(),
+                title: 'Verileri Sıfırla / Temizle',
+                iconColor: c.error,
+                onTap: () => _showResetDataDialog(context),
+                trailingIcon: PhosphorIcons.caretRight(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showResetDataDialog(BuildContext context) async {
+    final c = AppColors.of(context);
+    
+    // First, show selection dialog
+    final selectedOption = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: dc.cardBorder, width: 1),
+          ),
+          title: Row(
+            children: [
+              Icon(PhosphorIcons.trash(), color: dc.error),
+              const SizedBox(width: 12),
+              Text('Verileri Sıfırla', style: TextStyle(fontWeight: FontWeight.bold, color: dc.textMain)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sıfırlamak istediğiniz verileri seçin. Bu işlem geri alınamaz.',
+                style: TextStyle(fontSize: 13, color: dc.textMuted, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              _buildResetOptionItem(
+                context: ctx,
+                icon: PhosphorIcons.rows(),
+                title: 'Sadece İş Kayıtlarını Sil',
+                subtitle: 'Tüm iş kayıtlarını temizler. Ödemeler korunur.',
+                onTap: () => Navigator.pop(ctx, 'entries'),
+              ),
+              const SizedBox(height: 8),
+              _buildResetOptionItem(
+                context: ctx,
+                icon: PhosphorIcons.wallet(),
+                title: 'Sadece Ödemeleri Sil',
+                subtitle: 'Tüm ödeme kayıtlarını temizler. İşler korunur.',
+                onTap: () => Navigator.pop(ctx, 'payments'),
+              ),
+              const SizedBox(height: 8),
+              _buildResetOptionItem(
+                context: ctx,
+                icon: PhosphorIcons.trash(),
+                title: 'Tüm Kayıtları Sıfırla',
+                subtitle: 'İş kayıtları ve ödemelerin tamamını temizler.',
+                isAll: true,
+                onTap: () => Navigator.pop(ctx, 'all'),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: dc.error.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: dc.error.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(PhosphorIcons.info(), color: dc.error, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Bulut senkronizasyonu aktifse, silme işlemleri buluttaki hesabınızdan da temizlenecektir.',
+                        style: TextStyle(fontSize: 11, color: dc.error, height: 1.3),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('İptal', style: TextStyle(color: dc.textMuted)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedOption == null || !mounted) return;
+
+    // Show secondary confirmation dialog
+    String confirmTitle = '';
+    String confirmContent = '';
+    if (selectedOption == 'all') {
+      confirmTitle = 'Tüm Kayıtları Sıfırla';
+      confirmContent = 'Tüm iş kayıtlarını ve ödemeleri kalıcı olarak silmek istediğinizden emin misiniz?';
+    } else if (selectedOption == 'entries') {
+      confirmTitle = 'İş Kayıtlarını Sil';
+      confirmContent = 'Tüm iş kayıtlarını kalıcı olarak silmek istediğinizden emin misiniz?';
+    } else if (selectedOption == 'payments') {
+      confirmTitle = 'Ödemeleri Sil';
+      confirmContent = 'Tüm ödeme kayıtlarını kalıcı olarak silmek istediğinizden emin misiniz?';
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final dc = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: dc.navBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: dc.cardBorder, width: 1),
+          ),
+          title: Text(confirmTitle, style: TextStyle(fontWeight: FontWeight.bold, color: dc.textMain)),
+          content: Text(
+            confirmContent,
+            style: TextStyle(fontSize: 13, color: dc.textMuted, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('İptal', style: TextStyle(color: dc.textMuted)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: dc.error),
+              child: const Text('Evet, Sil', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final db = ref.read(localDBServiceProvider);
+        
+        if (selectedOption == 'all' || selectedOption == 'entries') {
+          await db.softDeleteAllEntries();
+          await ref.read(syncServiceProvider).syncPendingEntries();
+          ref.invalidate(entriesProvider);
+          ref.invalidate(todayEntriesProvider);
+          ref.invalidate(unsyncedEntriesProvider);
+        }
+        
+        if (selectedOption == 'all' || selectedOption == 'payments') {
+          await db.softDeleteAllPayments();
+          await ref.read(syncServiceProvider).syncPendingPayments();
+          ref.invalidate(paymentsProvider);
+          ref.invalidate(unsyncedPaymentsProvider);
+        }
+        
+        await ref.read(backupServiceProvider).triggerBackup();
+        
+        if (mounted) {
+          CustomToast.show(context, 'Seçilen kayıtlar başarıyla sıfırlandı');
+        }
+      } catch (e) {
+        if (mounted) {
+          CustomToast.show(context, 'Sıfırlama başarısız oldu: $e');
+        }
+      }
+    }
+  }
+
+  Widget _buildResetOptionItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isAll = false,
+  }) {
+    final c = AppColors.of(context);
+    final color = isAll ? c.error : c.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: c.textMain),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 11, color: c.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildAboutSection(BuildContext context) {
@@ -1384,9 +1757,13 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 CustomToast.show(context, 'Örnek dosya oluşturuluyor...');
               }
               try {
-                await ExportService.generateSampleExcel();
+                final success = await ExportService.generateSampleExcel();
                 if (context.mounted) {
-                  CustomToast.show(context, 'Örnek dosya hazır');
+                  if (success) {
+                    CustomToast.show(context, 'Örnek dosya kaydedildi');
+                  } else {
+                    CustomToast.show(context, 'Örnek dosya kaydetme iptal edildi');
+                  }
                 }
               } catch (e) {
                 debugPrint('Sample Excel export error: $e');

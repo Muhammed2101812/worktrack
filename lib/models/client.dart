@@ -35,12 +35,13 @@ class Client {
         isDeleted: isDeleted ?? this.isDeleted,
       );
 
-  /// Minimal map sent to Supabase. Soft-delete/conflict fields are only used
-  /// locally; remote schema is kept simple to avoid breaking existing tables.
+  /// Minimal map sent to Supabase.
   Map<String, dynamic> toMap() => {
         'id': id,
         'name': name,
         'color': color,
+        'is_deleted': isDeleted,
+        'updated_at': updatedAt,
       };
 
   // SQLite için: tüm senkronizasyon alanlarını içerir

@@ -3,6 +3,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:worklog/services/local_db_service.dart';
 import 'package:worklog/models/client.dart';
 import 'package:worklog/models/work_entry.dart';
+import 'package:worklog/models/payment.dart';
 
 void main() {
   setUpAll(() {
@@ -168,6 +169,42 @@ void main() {
 
         await dbService.clearEntries();
         expect(await dbService.getAllEntries(), isEmpty);
+      });
+
+      test('softDeleteAllEntries', () async {
+        await dbService.insertEntry(sampleEntry);
+        await dbService.insertEntry(WorkEntry(
+          id: 'entry-2',
+          clientId: 'client-1',
+          clientName: 'Client A',
+          clientColor: '#FF0000',
+          date: '15.03.2026',
+          startTime: '09:00',
+          endTime: '12:00',
+          workType: 'Software',
+          notes: 'Developing unit tests',
+          synced: true,
+        ));
+
+        await dbService.softDeleteAllEntries();
+        expect(await dbService.getAllEntries(), isEmpty);
+      });
+
+      test('softDeleteAllPayments', () async {
+        final payment = Payment(
+          id: 'payment-1',
+          clientId: 'client-1',
+          clientName: 'Client A',
+          clientColor: '#4A90D9',
+          amount: 500,
+          date: '15.03.2026',
+          createdAt: DateTime.now().toIso8601String(),
+        );
+        await dbService.insertPayment(payment);
+        expect(await dbService.getAllPayments(), hasLength(1));
+
+        await dbService.softDeleteAllPayments();
+        expect(await dbService.getAllPayments(), isEmpty);
       });
     });
 

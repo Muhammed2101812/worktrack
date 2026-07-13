@@ -64,3 +64,27 @@ class IsPremiumNotifier extends AsyncNotifier<bool> {
   Future<void> enablePremium() => setPremium(true);
   Future<void> disablePremium() => setPremium(false);
 }
+
+/// Global currency code used across the app for displaying monetary amounts.
+/// Stored as a string in SharedPreferences. NOTE: changing the currency only
+/// relabels existing amounts — it does NOT convert them (e.g. 100 stored
+/// units shown as "100 TL" will become "100 USD" after switching). The UI
+/// warns the user about this before applying the change.
+final currencyProvider =
+    AsyncNotifierProvider<CurrencyNotifier, String>(CurrencyNotifier.new);
+
+class CurrencyNotifier extends AsyncNotifier<String> {
+  static const _key = 'currency';
+
+  @override
+  Future<String> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_key) ?? 'TL';
+  }
+
+  Future<void> setCurrency(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, code);
+    state = AsyncData(code);
+  }
+}

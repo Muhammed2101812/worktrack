@@ -33,9 +33,9 @@ class TimePickerRow extends StatelessWidget {
     final c = AppColors.of(context);
     final startMin = _toMinutes(startTime);
     final endMin = _toMinutes(endTime);
-    final duration = (startMin != null && endMin != null)
-        ? (endMin - startMin) / 60.0
-        : 0.0;
+    final diff = (endMin != null && startMin != null) ? endMin - startMin : 0;
+    final adjusted = diff < 0 ? diff + 24 * 60 : diff;
+    final duration = adjusted / 60.0;
 
     return Column(
       children: [

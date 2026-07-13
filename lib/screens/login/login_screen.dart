@@ -82,10 +82,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final c = AppColors.of(context);
     return Scaffold(
       backgroundColor: c.bgColor,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 64),
-          child: Column(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
@@ -248,6 +249,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

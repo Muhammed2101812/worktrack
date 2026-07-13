@@ -142,14 +142,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               backgroundColor: c.primary,
               child: Icon(Icons.add, color: c.onPrimary),
             )
-          : Padding(
-              padding: const EdgeInsets.only(bottom: 80.0),
-              child: FloatingActionButton(
-                onPressed: () => context.go('/home/add'),
-                backgroundColor: c.primary,
-                child: Icon(Icons.add, color: c.onPrimary),
-              ),
-            ),
+          : null,
     );
   }
 

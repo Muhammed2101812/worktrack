@@ -69,6 +69,8 @@ class Payment {
         'date': date,
         'notes': notes,
         'created_at': createdAt,
+        'is_deleted': isDeleted,
+        'updated_at': updatedAt,
       };
 
   Map<String, dynamic> toLocalMap() => {

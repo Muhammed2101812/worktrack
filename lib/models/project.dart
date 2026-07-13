@@ -56,6 +56,8 @@ class Project {
         'description': description,
         'status': status,
         'created_at': createdAt,
+        'is_deleted': isDeleted,
+        'updated_at': updatedAt,
       };
 
   // SQLite için (synced + is_deleted sütunları var)
