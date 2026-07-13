@@ -4,16 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
+import '../../providers/payments_provider.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/ad_service.dart';
 import 'widgets/today_summary_card.dart';
-import 'widgets/entry_list_tile.dart';
+import 'widgets/finance_summary_card.dart';
+import 'widgets/recent_entries_section.dart';
+import 'widgets/recent_payments_section.dart';
 
 class HomeShell extends ConsumerWidget {
   const HomeShell({super.key, required this.child});
@@ -23,21 +25,18 @@ class HomeShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = AppColors.of(context);
     final location = GoRouterState.of(context).matchedLocation;
+    // History and Finance are now sub-pages reached from the Overview; they do
+    // not map to a navbar tab, so they leave the navbar with no active item.
     int currentIndex = 0;
-    if (location.contains('/history')) {
+    if (location.contains('/stats')) {
       currentIndex = 1;
-    } else if (location.contains('/finance')) {
-      currentIndex = 2;
-    } else if (location.contains('/stats')) {
-      currentIndex = 3;
     } else if (location.contains('/settings')) {
-      currentIndex = 4;
+      currentIndex = 2;
     }
 
     final isPremium = ref.watch(isPremiumProvider).valueOrNull ?? false;
     final adLoaded = ref.watch(adBannerLoadedProvider);
-    final showBanner = !isPremium;
-    final showBannerSpace = showBanner && adLoaded;
+    final showBanner = !isPremium && adLoaded;
 
     return Scaffold(
       backgroundColor: c.bgColor,
@@ -62,9 +61,9 @@ class HomeShell extends ConsumerWidget {
             );
           }
 
-          // Narrow: floating navbar stays at bottom:30 as before. The banner
-          // (when loaded) sits ABOVE the floating navbar at bottom: 110,
-          // without disturbing the existing floating-navbar layout.
+          // Narrow: floating navbar with a centered "+" action in the middle
+          // (Instagram/WhatsApp style). The banner (when loaded) sits ABOVE the
+          // floating navbar at bottom: 110, without disturbing the navbar.
           return Stack(
             children: [
               child,
@@ -80,16 +79,6 @@ class HomeShell extends ConsumerWidget {
                   right: 0,
                   bottom: 110,
                   child: AdBannerWidget(shouldShow: showBanner),
-                ),
-              if (currentIndex == 0 || currentIndex == 1)
-                Positioned(
-                  right: 24,
-                  bottom: showBannerSpace ? 160 : 100,
-                  child: FloatingActionButton(
-                    onPressed: () => context.go('/home/add'),
-                    backgroundColor: c.primary,
-                    child: Icon(Icons.add, color: c.onPrimary),
-                  ),
                 ),
             ],
           );
@@ -118,32 +107,17 @@ class HomeShell extends ConsumerWidget {
         route: '/home',
       ),
       _NavItemData(
-        label: 'İş Geçmişi',
-        icon: PhosphorIcons.clockCounterClockwise(),
-        activeIcon:
-            PhosphorIcons.clockCounterClockwise(PhosphorIconsStyle.fill),
-        index: 1,
-        route: '/home/history',
-      ),
-      _NavItemData(
-        label: 'Finans',
-        icon: PhosphorIcons.wallet(),
-        activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
-        index: 2,
-        route: '/home/finance',
-      ),
-      _NavItemData(
         label: 'Raporlar',
         icon: PhosphorIcons.chartPie(),
         activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
-        index: 3,
+        index: 1,
         route: '/home/stats',
       ),
       _NavItemData(
         label: 'Ayarlar',
         icon: PhosphorIcons.gear(),
         activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
-        index: 4,
+        index: 2,
         route: '/home/settings',
       ),
     ];
@@ -360,43 +334,53 @@ class HomeShell extends ConsumerWidget {
                       onTap: () => context.go('/home'),
                     ),
                   ),
+                  // Center "+" action — sits in the middle, raised circular
+                  // button (Instagram/WhatsApp style).
+                  Expanded(
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () => context.go('/home/add'),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: c.primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: c.primary.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.add,
+                            color: c.onPrimary,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: _buildNavItem(
                       context,
                       index: 1,
-                      icon: PhosphorIcons.clockCounterClockwise(),
-                      activeIcon: PhosphorIcons.clockCounterClockwise(PhosphorIconsStyle.fill),
-                      isActive: currentIndex == 1,
-                      onTap: () => context.go('/home/history'),
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildNavItem(
-                      context,
-                      index: 2,
-                      icon: PhosphorIcons.wallet(),
-                      activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
-                      isActive: currentIndex == 2,
-                      onTap: () => context.go('/home/finance'),
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildNavItem(
-                      context,
-                      index: 3,
                       icon: PhosphorIcons.chartPie(),
                       activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
-                      isActive: currentIndex == 3,
+                      isActive: currentIndex == 1,
                       onTap: () => context.go('/home/stats'),
                     ),
                   ),
                   Expanded(
                     child: _buildNavItem(
                       context,
-                      index: 4,
+                      index: 2,
                       icon: PhosphorIcons.gear(),
                       activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
-                      isActive: currentIndex == 4,
+                      isActive: currentIndex == 2,
                       onTap: () => context.go('/home/settings'),
                     ),
                   ),
@@ -418,7 +402,7 @@ class HomeShell extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     final c = AppColors.of(context);
-    const navLabels = ['Ana Sayfa', 'Geçmiş', 'Finans', 'Raporlar', 'Ayarlar'];
+    const navLabels = ['Ana Sayfa', 'Raporlar', 'Ayarlar'];
     return Tooltip(
       message: navLabels[index],
       child: SizedBox(
@@ -576,7 +560,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final entriesAsync = ref.watch(entriesProvider);
+    final paymentsAsync = ref.watch(paymentsProvider);
     final currentUser = ref.watch(authNotifierProvider);
+    final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
     final metadata = currentUser?.userMetadata;
     String displayName = metadata?['full_name'] as String? ??
         metadata?['name'] as String? ??
@@ -596,151 +582,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           body: SafeArea(
             bottom: false,
             child: entriesAsync.when(
-              data: (entries) => Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(
-                      24,
-                      16,
-                      24,
-                      isWide ? 40 : 120,
-                    ),
-                    children: [
-                      // Welcome Header Row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Merhaba,',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: c.textMuted,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                              Text(
-                                displayName,
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.5,
-                                  color: c.textMain,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: c.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                avatarLetter,
-                                style: TextStyle(
-                                  color: c.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+              data: (entries) => paymentsAsync.when(
+                data: (payments) => Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        16,
+                        24,
+                        isWide ? 40 : 120,
                       ),
-                      const SizedBox(height: 32),
-                      const TodaySummaryCard(),
-                      const SizedBox(height: 35),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Son Kayıtlar',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: c.textMain,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => context.go('/home/history'),
-                            child: Text(
-                              'Tümünü Gör',
-                              style: TextStyle(
-                                color: c.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      if (entries.isEmpty)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 40),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Welcome Header Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(28),
-                                  decoration: BoxDecoration(
-                                    color: c.primary.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.edit_note_rounded,
-                                    size: 56,
-                                    color: c.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
                                 Text(
-                                  'Henüz kaydınız bulunmuyor',
+                                  'Merhaba,',
                                   style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: c.textMain,
+                                    fontSize: 14,
+                                    color: c.textMuted,
+                                    fontWeight: FontWeight.normal,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
                                 Text(
-                                  'İlk çalışma kaydınızı oluşturun',
-                                  style: TextStyle(color: c.textMuted, fontSize: 13),
-                                ),
-                                const SizedBox(height: 20),
-                                MidnightButton(
-                                  onPressed: () => context.go('/home/add'),
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.add, color: c.onPrimary, size: 18),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'İlk Kaydını Oluştur',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: c.onPrimary,
-                                        ),
-                                      ),
-                                    ],
+                                  displayName,
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.5,
+                                    color: c.textMain,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        )
-                      else
-                        ...entries.take(5).map((entry) => EntryListTile(entry: entry)).toList(),
-                    ],
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: c.primary.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  avatarLetter,
+                                  style: TextStyle(
+                                    color: c.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        // Today summary
+                        const TodaySummaryCard(),
+                        const SizedBox(height: 24),
+                        // Financial summary card (tappable → Finance)
+                        FinanceSummaryCard(
+                          entries: entries,
+                          payments: payments,
+                          currency: currency,
+                          onTap: () => context.go('/home/finance'),
+                        ),
+                        const SizedBox(height: 32),
+                        // Recent entries
+                        RecentEntriesSection(
+                          entries: entries,
+                          limit: 5,
+                          emptyState: true,
+                        ),
+                        const SizedBox(height: 32),
+                        // Recent payments
+                        RecentPaymentsSection(
+                          payments: payments,
+                          currency: currency,
+                          limit: 3,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Ödemeler yüklenemedi: $e')),
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Center(child: Text('Hata: $e')),

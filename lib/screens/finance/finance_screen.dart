@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/payment.dart';
+import '../add_entry/widgets/client_dropdown.dart';
 import '../../models/client.dart';
 import '../../models/work_entry.dart';
 import '../../providers/payments_provider.dart';
@@ -11,6 +13,7 @@ import '../../providers/clients_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
+import '../home/widgets/finance_summary_card.dart';
 
 class FinanceScreen extends ConsumerStatefulWidget {
   const FinanceScreen({super.key});
@@ -94,20 +97,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     final c = AppColors.of(context);
     final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
 
-    // 1. Calculate general stats
-    double totalEarned = 0.0;
-    for (final e in entries) {
-      totalEarned += e.effectivePrice;
-    }
-
-    double totalReceived = 0.0;
-    for (final p in payments) {
-      totalReceived += p.amount;
-    }
-
-    final double remainingBalance = totalEarned - totalReceived;
-
-    // 2. Calculate balance per client
+    // 1. Calculate balance per client
     final clientStatsMap = <String, _ClientFinance>{};
     for (final c in clients) {
       clientStatsMap[c.id] = _ClientFinance(client: c);
@@ -133,19 +123,28 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         constraints: const BoxConstraints(maxWidth: 800),
         child: Column(
           children: [
-            // Page Header
+            // Page Header with back button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Finansal Durum',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: c.textMain,
-                    ),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.go('/home'),
+                        child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Finansal Durum',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: c.textMain,
+                        ),
+                      ),
+                    ],
                   ),
                   MidnightButton(
                     onPressed: () => _showAddPaymentSheet(context, clients),
@@ -167,122 +166,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               ),
             ),
 
-            // Financial Summary Card
+            // Financial Summary Card (reused widget)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: MidnightCard(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Kalan Alacak',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: c.textMuted,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: remainingBalance > 0
-                                ? c.orange.withValues(alpha: 0.1)
-                                : c.emerald.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            remainingBalance > 0 ? 'Ödeme Bekliyor' : 'Tümü Tahsil Edildi',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: remainingBalance > 0 ? c.orange : c.emerald,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '${remainingBalance.toStringAsFixed(1)} $currency',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: remainingBalance > 0 ? c.orange : c.textMain,
-                          letterSpacing: -1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      height: 1,
-                      color: c.cardBorder,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Toplam Hakediş',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: c.textMuted,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${totalEarned.toStringAsFixed(1)} $currency',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: c.textMain,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 32,
-                          color: c.cardBorder,
-                        ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Alınan Ödeme',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: c.textMuted,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${totalReceived.toStringAsFixed(1)} $currency',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: c.emerald,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              child: FinanceSummaryCard(
+                entries: entries,
+                payments: payments,
+                currency: currency,
               ),
             ),
 
@@ -678,44 +568,20 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
                   child: Text('MÜŞTERİ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: sc.cardBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: sc.cardBorder),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButtonFormField<Client>(
-                      initialValue: selectedClient,
-                      dropdownColor: sc.navBg,
-                      icon: Icon(PhosphorIcons.caretDown(), color: sc.textMuted),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        fillColor: Colors.transparent,
-                      ),
-                      items: clients.map((client) {
-                        final color = _parseColor(client.color, sc.primary);
-                        return DropdownMenuItem<Client>(
-                          value: client,
-                          child: Row(
-                            children: [
-                              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                              const SizedBox(width: 10),
-                              Text(client.name, style: TextStyle(fontSize: 14, color: sc.textMain, fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setSheetState(() {
-                          selectedClient = val;
-                        });
-                      },
-                    ),
-                  ),
-                ),
+                 ClientDropdown(
+                   clients: clients,
+                   selectedClient: selectedClient,
+                   onClientSelected: (client) {
+                     setSheetState(() {
+                       selectedClient = client;
+                     });
+                   },
+                   onAddClient: () {
+                     Navigator.pop(dialogCtx);
+                     context.go('/settings');
+                     CustomToast.show(context, 'Yeni müşteri eklemek için Ayarlar sayfasını kullanın.');
+                   },
+                 ),
                 const SizedBox(height: 20),
 
                 // Amount Input

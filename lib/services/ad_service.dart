@@ -2,7 +2,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants.dart';
+
+final adBannerLoadedProvider = StateProvider<bool>((ref) => false);
 
 /// Centralised AdMob wrapper. Ads are mobile-only: on web/desktop all calls
 /// no-op and [buildBannerAd] returns null so the UI can skip rendering.
@@ -134,15 +137,15 @@ class AdService {
 
 /// Widget that displays the AdMob banner when one is available, and renders
 /// nothing (zero size) on web/desktop or when [shouldShow] is false.
-class AdBannerWidget extends StatefulWidget {
+class AdBannerWidget extends ConsumerStatefulWidget {
   final bool shouldShow;
   const AdBannerWidget({super.key, required this.shouldShow});
 
   @override
-  State<AdBannerWidget> createState() => _AdBannerWidgetState();
+  ConsumerState<AdBannerWidget> createState() => _AdBannerWidgetState();
 }
 
-class _AdBannerWidgetState extends State<AdBannerWidget> {
+class _AdBannerWidgetState extends ConsumerState<AdBannerWidget> {
   BannerAd? _ad;
   bool _loaded = false;
 
@@ -161,7 +164,12 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       } else {
         _ad?.dispose();
         _ad = null;
-        if (mounted) setState(() => _loaded = false);
+        if (mounted) {
+          setState(() => _loaded = false);
+        }
+        Future.microtask(() {
+          if (mounted) ref.read(adBannerLoadedProvider.notifier).state = false;
+        });
       }
     }
   }
@@ -176,12 +184,18 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     if (ad != null) {
       _ad = ad;
       setState(() => _loaded = true);
+      Future.microtask(() {
+        if (mounted) ref.read(adBannerLoadedProvider.notifier).state = true;
+      });
     }
   }
 
   @override
   void dispose() {
     _ad?.dispose();
+    Future.microtask(() {
+      ref.read(adBannerLoadedProvider.notifier).state = false;
+    });
     super.dispose();
   }
 

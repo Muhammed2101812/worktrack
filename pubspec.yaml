@@ -45,7 +45,9 @@ dependencies:
   sqflite_common_ffi_web: ^1.1.1
   google_fonts: ^6.2.1
   flutter_inset_shadow: ^2.0.1
-  phosphor_flutter: ^2.1.0
+  phosphor_flutter:
+    git:
+      url: https://github.com/PurpleSoftSrl/phosphor-flutter.git
   excel: ^4.0.6
   file_picker: ^8.1.7
   google_sign_in: ^6.2.1

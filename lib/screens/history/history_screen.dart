@@ -16,7 +16,7 @@ class HistoryScreen extends ConsumerStatefulWidget {
 }
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
-  DateTime? _selectedMonth = DateTime.now();
+  DateTime? _selectedMonth;
   String _searchQuery = '';
   String _selectedFilter = 'Tümü';
   String _selectedSort = 'Tarih (En Yeni)';
@@ -118,6 +118,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 children: [
                   Row(
                     children: [
+                      GestureDetector(
+                        onTap: () => context.go('/home'),
+                        child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
+                      ),
+                      const SizedBox(width: 12),
                       Text(
                         'İş Geçmişi',
                         style: TextStyle(
