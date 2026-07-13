@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'dart:typed_data';
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/client.dart';
 import '../models/work_entry.dart';
 
@@ -21,13 +23,17 @@ class PdfExportService {
   }) async {
     final bytes = await buildReportBytes(entries: entries, clients: clients, month: month);
     final monthLabel = DateFormat('MMMM_yyyy', 'tr').format(month);
-    final fileName = 'WorkTrack_Rapor_$monthLabel';
-    await FileSaver.instance.saveFile(
-      name: fileName,
-      bytes: bytes,
-      fileExtension: 'pdf',
-      mimeType: MimeType.other,
-    );
+    final fileName = 'WorkTrack_Rapor_$monthLabel.pdf';
+    
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+    
+    try {
+      await Share.shareXFiles([XFile(file.path)], subject: 'WorkTrack Raporu');
+    } catch (e) {
+      // Ignore or log error
+    }
     return fileName;
   }
 

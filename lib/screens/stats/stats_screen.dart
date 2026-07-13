@@ -83,7 +83,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                               month: _selectedMonth,
                             );
                             if (context.mounted) {
-                              CustomToast.show(context, 'PDF kaydedildi');
+                              CustomToast.show(context, 'PDF hazır');
                             }
                           } catch (e) {
                             debugPrint('PDF export error: $e');

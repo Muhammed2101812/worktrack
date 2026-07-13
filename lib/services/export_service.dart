@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
 
@@ -11,25 +13,30 @@ class ExportService {
       List<WorkEntry> entries, List<Client> clients) async {
     final bytes = buildExcelBytes(entries, clients);
     final fileName =
-        'WorkLog_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}';
-    await FileSaver.instance.saveFile(
-      name: fileName,
-      bytes: bytes,
-      fileExtension: 'xlsx',
-      mimeType: MimeType.other,
-    );
+        'WorkLog_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx';
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+    try {
+      await Share.shareXFiles([XFile(file.path)], subject: 'WorkLog Excel');
+    } catch (e) {
+      // Ignore or log error
+    }
   }
 
   static Future<void> generateSampleExcel() async {
     final sample = <WorkEntry>[];
     final sampleClients = <Client>[];
     final bytes = buildExcelBytes(sample, sampleClients, isSample: true);
-    await FileSaver.instance.saveFile(
-      name: 'WorkLog_Ornek',
-      bytes: bytes,
-      fileExtension: 'xlsx',
-      mimeType: MimeType.other,
-    );
+    final fileName = 'WorkLog_Ornek.xlsx';
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+    try {
+      await Share.shareXFiles([XFile(file.path)], subject: 'WorkLog Örnek Excel');
+    } catch (e) {
+      // Ignore or log error
+    }
   }
 
   @visibleForTesting

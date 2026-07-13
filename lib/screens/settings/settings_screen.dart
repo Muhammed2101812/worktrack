@@ -541,7 +541,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         clientsVal.value!,
                       );
                       if (context.mounted) {
-                        CustomToast.show(context, 'Excel dosyası indiriliyor...');
+                        CustomToast.show(context, 'Excel dosyası hazır');
                       }
                     } catch (e) {
                       if (context.mounted) {
@@ -1384,7 +1384,7 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
               try {
                 await ExportService.generateSampleExcel();
                 if (context.mounted) {
-                  CustomToast.show(context, 'Örnek dosya indirildi');
+                  CustomToast.show(context, 'Örnek dosya hazır');
                 }
               } catch (e) {
                 debugPrint('Sample Excel export error: $e');

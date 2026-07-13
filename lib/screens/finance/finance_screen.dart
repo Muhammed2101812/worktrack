@@ -831,7 +831,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        CustomToast.show(context, 'Hata: $e');
+                        CustomToast.show(context, 'Ödeme kaydedilemedi, lütfen tekrar deneyin');
                       }
                     }
                   },

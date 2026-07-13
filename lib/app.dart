@@ -32,11 +32,11 @@ class _AppState extends ConsumerState<App> {
   Future<void> _initApp() async {
     try {
       Intl.defaultLocale = 'tr_TR';
-      // Locale verilerini başlat
-      await initializeDateFormatting();
-
-      // Load environment configuration from the bundled .env asset.
-      await AppConstants.load();
+      // Start loading both locales and constants in parallel.
+      await Future.wait([
+        initializeDateFormatting(),
+        AppConstants.load(),
+      ]);
 
       // Platformlara göre sqflite başlatma
       if (kIsWeb) {
@@ -52,9 +52,6 @@ class _AppState extends ConsumerState<App> {
         url: AppConstants.supabaseUrl,
         anonKey: AppConstants.supabaseAnonKey,
       );
-
-      // Initialise ads. Runs only on mobile; no-op on web/desktop.
-      await AdService.instance.init();
     } catch (e) {
       debugPrint('Initialization error: $e');
     }
@@ -62,6 +59,10 @@ class _AppState extends ConsumerState<App> {
     if (mounted) {
       setState(() {
         _initialized = true;
+      });
+      // Initialise ads. Runs only on mobile; no-op on web/desktop.
+      AdService.instance.init().catchError((e) {
+        debugPrint('AdService initialization error: $e');
       });
       // Connect to the store and restore any previous premium purchase.
       // Runs only on mobile; no-op on web/desktop.

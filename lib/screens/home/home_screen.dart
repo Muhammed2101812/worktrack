@@ -319,22 +319,21 @@ class HomeShell extends ConsumerWidget {
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          height: 70,
-          decoration: BoxDecoration(
-            color: c.cardBg.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: c.cardBorder.withValues(alpha: 0.5), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
+        child: RepaintBoundary(
+          child: Container(
+            height: 70,
+            decoration: BoxDecoration(
+              color: c.cardBg.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: c.cardBorder.withValues(alpha: 0.5), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 32,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
@@ -413,9 +412,9 @@ class HomeShell extends ConsumerWidget {
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,
-        child: InkWell(
+        child: GestureDetector(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          behavior: HitTestBehavior.opaque,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
