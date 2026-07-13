@@ -127,28 +127,25 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.go('/home'),
-                        child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Finansal Durum',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: c.textMain,
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Finansal Durum',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: c.textMain,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   MidnightButton(
                     onPressed: () => _showAddPaymentSheet(context, clients),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     borderRadius: 12,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

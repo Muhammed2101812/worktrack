@@ -119,7 +119,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: () => context.go('/home'),
+                        onTap: () => context.pop(),
                         child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
                       ),
                       const SizedBox(width: 12),
@@ -143,7 +143,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       ),
       floatingActionButton: isWide
           ? FloatingActionButton(
-              onPressed: () => context.go('/home/add'),
+              onPressed: () => context.push('/home/add'),
               backgroundColor: c.primary,
               child: Icon(Icons.add, color: c.onPrimary),
             )
@@ -655,7 +655,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           child: MidnightButton(
                             onPressed: () {
                               Navigator.pop(context);
-                              context.go('/home/add', extra: entry);
+                              context.push('/home/add', extra: entry);
                             },
                             child: Text('Düzenle', style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary)),
                           ),

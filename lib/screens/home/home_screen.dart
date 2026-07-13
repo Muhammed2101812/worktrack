@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -15,12 +16,19 @@ import '../../services/ad_service.dart';
 import 'widgets/today_summary_card.dart';
 import 'widgets/entry_list_tile.dart';
 
-class HomeShell extends ConsumerWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key, required this.child});
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends ConsumerState<HomeShell> {
+  DateTime? _lastBackPress;
+
+  @override
+  Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final location = GoRouterState.of(context).matchedLocation;
     // History and Finance are sub-pages reached from Overview; they don't map
@@ -38,51 +46,72 @@ class HomeShell extends ConsumerWidget {
     final adLoaded = ref.watch(adBannerLoadedProvider);
     final showBanner = !isPremium && adLoaded;
 
-    return Scaffold(
-      backgroundColor: c.bgColor,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 768;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        // Only the root tab ("/home") confirms before exit; sub-pages within
+        // the shell pop normally via their own navigation.
+        final isRoot = location == '/home' || location == '/home/overview';
+        if (!isRoot) {
+          context.pop();
+          return;
+        }
+        final now = DateTime.now();
+        if (_lastBackPress == null ||
+            now.difference(_lastBackPress!) > const Duration(seconds: 2)) {
+          _lastBackPress = now;
+          CustomToast.show(context, 'Çıkmak için tekrar geri basın');
+        } else {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: c.bgColor,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 768;
 
-          if (isWide) {
-            return Column(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      _buildSidebar(context, ref, currentIndex),
-                      Expanded(child: child),
-                    ],
+            if (isWide) {
+              return Column(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildSidebar(context, ref, currentIndex),
+                        Expanded(child: widget.child),
+                      ],
+                    ),
                   ),
+                  if (showBanner)
+                    AdBannerWidget(shouldShow: showBanner),
+                ],
+              );
+            }
+
+            // Narrow: floating navbar with a centered "+" action in the middle
+            // (Instagram/WhatsApp style). The banner (when loaded) sits ABOVE the
+            // floating navbar at bottom: 110, without disturbing the navbar.
+            return Stack(
+              children: [
+                widget.child,
+                Positioned(
+                  left: 24,
+                  right: 24,
+                  bottom: 30,
+                  child: _buildCustomNavbar(context, currentIndex),
                 ),
                 if (showBanner)
-                  AdBannerWidget(shouldShow: showBanner),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 110,
+                    child: AdBannerWidget(shouldShow: showBanner),
+                  ),
               ],
             );
-          }
-
-          // Narrow: floating navbar with a centered "+" action in the middle
-          // (Instagram/WhatsApp style). The banner (when loaded) sits ABOVE the
-          // floating navbar at bottom: 110, without disturbing the navbar.
-          return Stack(
-            children: [
-              child,
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: 30,
-                child: _buildCustomNavbar(context, currentIndex),
-              ),
-              if (showBanner)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 110,
-                  child: AdBannerWidget(shouldShow: showBanner),
-                ),
-            ],
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -178,7 +207,7 @@ class HomeShell extends ConsumerWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => context.go('/home/add'),
+                onPressed: () => context.push('/home/add'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: c.primary,
                   foregroundColor: c.onPrimary,
@@ -308,103 +337,117 @@ class HomeShell extends ConsumerWidget {
 
   Widget _buildCustomNavbar(BuildContext context, int currentIndex) {
     final c = AppColors.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: RepaintBoundary(
-          child: Container(
-            height: 70,
-            decoration: BoxDecoration(
-              color: c.cardBg.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: c.cardBorder.withValues(alpha: 0.5), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 32,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildNavItem(
-                        context,
-                        index: 0,
-                        icon: PhosphorIcons.house(),
-                        activeIcon: PhosphorIcons.house(PhosphorIconsStyle.fill),
-                        isActive: currentIndex == 0,
-                        onTap: () => context.go('/home'),
+    // The "+" button is placed in a Stack ABOVE the clipped navbar bar so the
+    // ClipRRect/BackdropFilter don't crop it when it overflows the top edge.
+    return SizedBox(
+      height: 70,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          // The navbar bar itself (clipped for blur + rounded corners).
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: RepaintBoundary(
+                child: Container(
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: c.cardBg.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: c.cardBorder.withValues(alpha: 0.5), width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 32,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
-                    Expanded(
-                      child: _buildNavItem(
-                        context,
-                        index: 1,
-                        icon: PhosphorIcons.squaresFour(),
-                        activeIcon: PhosphorIcons.squaresFour(PhosphorIconsStyle.fill),
-                        isActive: currentIndex == 1,
-                        onTap: () => context.go('/home/overview'),
-                      ),
-                    ),
-                    // Center "+" action — raised circular button.
-                    Expanded(
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () => context.go('/home/add'),
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: c.primary,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: c.primary.withValues(alpha: 0.35),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.add,
-                              color: c.onPrimary,
-                              size: 28,
-                            ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildNavItem(
+                            context,
+                            index: 0,
+                            icon: PhosphorIcons.house(),
+                            activeIcon: PhosphorIcons.house(PhosphorIconsStyle.fill),
+                            isActive: currentIndex == 0,
+                            onTap: () => context.go('/home'),
                           ),
                         ),
-                      ),
+                        Expanded(
+                          child: _buildNavItem(
+                            context,
+                            index: 1,
+                            icon: PhosphorIcons.squaresFour(),
+                            activeIcon: PhosphorIcons.squaresFour(PhosphorIconsStyle.fill),
+                            isActive: currentIndex == 1,
+                            onTap: () => context.go('/home/overview'),
+                          ),
+                        ),
+                        // Spacer for the center "+" (handled by the Stack).
+                        const Expanded(child: SizedBox()),
+                        Expanded(
+                          child: _buildNavItem(
+                            context,
+                            index: 2,
+                            icon: PhosphorIcons.chartPie(),
+                            activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
+                            isActive: currentIndex == 2,
+                            onTap: () => context.go('/home/stats'),
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildNavItem(
+                            context,
+                            index: 3,
+                            icon: PhosphorIcons.gear(),
+                            activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
+                            isActive: currentIndex == 3,
+                            onTap: () => context.go('/home/settings'),
+                          ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: _buildNavItem(
-                        context,
-                        index: 2,
-                        icon: PhosphorIcons.chartPie(),
-                        activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
-                        isActive: currentIndex == 2,
-                        onTap: () => context.go('/home/stats'),
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildNavItem(
-                        context,
-                        index: 3,
-                        icon: PhosphorIcons.gear(),
-                        activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
-                        isActive: currentIndex == 3,
-                        onTap: () => context.go('/home/settings'),
-                      ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Center "+" action — sits above the bar, not clipped.
+          Positioned(
+            top: -22,
+            child: GestureDetector(
+              onTap: () => context.push('/home/add'),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: c.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: c.cardBg, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: c.primary.withValues(alpha: 0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
+                child: Icon(
+                  Icons.add,
+                  color: c.onPrimary,
+                  size: 32,
+                ),
               ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -715,7 +758,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 const SizedBox(height: 20),
                                 MidnightButton(
-                                  onPressed: () => context.go('/home/add'),
+                                  onPressed: () => context.push('/home/add'),
                                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -748,7 +791,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           floatingActionButton: isWide
               ? FloatingActionButton(
-                  onPressed: () => context.go('/home/add'),
+                  onPressed: () => context.push('/home/add'),
                   backgroundColor: c.primary,
                   child: Icon(Icons.add, color: c.onPrimary),
                 )

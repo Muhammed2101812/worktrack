@@ -143,7 +143,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => context.go('/home'),
+                    onTap: () => context.pop(),
                     child: Icon(PhosphorIcons.x(), color: c.textMain, size: 24),
                   ),
                   const SizedBox(width: 16),
@@ -1195,7 +1195,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               ? 'Kayıt başarıyla eklendi'
               : 'Kayıt başarıyla güncellendi',
         );
-        context.go('/home');
+        context.pop();
       }
     } catch (e) {
       if (mounted) {

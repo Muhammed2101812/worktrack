@@ -42,7 +42,7 @@ class RecentEntriesSection extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => context.go('/home/history'),
+                onPressed: () => context.push('/home/history'),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   minimumSize: const Size(0, 0),
