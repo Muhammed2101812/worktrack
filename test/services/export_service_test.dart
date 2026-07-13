@@ -41,7 +41,8 @@ void main() {
       final excel = Excel.decodeBytes(bytes);
 
       final sheet = excel.tables['İş Kayıtları']!;
-      expect(sheet.rows.length, equals(2)); // header + 1 sample row
+      // header + 2 sample rows (hourly + fixed)
+      expect(sheet.rows.length, equals(3));
 
       final sampleRow = sheet.rows[1].map(getCellValue).toList();
       expect(sampleRow, equals([
@@ -55,6 +56,16 @@ void main() {
         'Saatlik',
         '150',
       ]));
+
+      // Second sample row (fixed price)
+      final fixedRow = sheet.rows[2].map(getCellValue).toList();
+      expect(fixedRow[7], 'Sabit');
+      expect(fixedRow[8], '5000');
+
+      // A payments sheet should also exist in the sample file.
+      expect(excel.tables.containsKey('Ödemeler'), isTrue);
+      final paymentsSheet = excel.tables['Ödemeler']!;
+      expect(paymentsSheet.rows.length, equals(2)); // header + 1 sample
     });
 
     test('buildExcelBytes - should map work entries with clients correctly', () {

@@ -1357,7 +1357,7 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Örnek dosya formatı:',
+                  'İş Kayıtları sayfası — sütunlar:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: c.textMain,
@@ -1370,8 +1370,24 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 _formatRow(context, 'Başlangıç', 'HH:mm (örn: 09:00)'),
                 _formatRow(context, 'Bitiş', 'HH:mm (örn: 17:00)'),
                 _formatRow(context, 'İş Türü', 'İsteğe bağlı (boşsa "Diğer" atanır)'),
-                _formatRow(context, 'Proje', 'Proje adı'),
+                _formatRow(context, 'Proje', 'Proje adı (boşsa "Genel")'),
                 _formatRow(context, 'Notlar', 'İsteğe bağlı notlar'),
+                _formatRow(context, 'Ücret Tipi', '"Saatlik" veya "Sabit"'),
+                _formatRow(context, 'Ücret', 'Saatlik ücret veya sabit tutar'),
+                const SizedBox(height: 12),
+                Text(
+                  'Ödemeler sayfası — sütunlar:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: c.textMain,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _formatRow(context, 'Tarih', 'dd.MM.yyyy (örn: 15.03.2026)'),
+                _formatRow(context, 'Müşteri', 'Müşteri adı'),
+                _formatRow(context, 'Tutar', 'Tutar (örn: 1500)'),
+                _formatRow(context, 'Not', 'İsteğe bağlı not'),
               ],
             ),
           ),

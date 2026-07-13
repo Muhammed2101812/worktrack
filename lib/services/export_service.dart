@@ -64,7 +64,7 @@ class ExportService {
     sheet.appendRow(headers.map((h) => TextCellValue(h)).toList());
 
     if (isSample) {
-      // Add one sample row
+      // Add sample rows for the work-entries sheet.
       sheet.appendRow([
         TextCellValue('15.03.2026'),
         TextCellValue('Örnek Müşteri'),
@@ -75,6 +75,32 @@ class ExportService {
         TextCellValue('Örnek not'),
         TextCellValue('Saatlik'),
         TextCellValue('150'),
+      ]);
+      sheet.appendRow([
+        TextCellValue('20.03.2026'),
+        TextCellValue('Örnek Müşteri'),
+        TextCellValue('10:00'),
+        TextCellValue('14:00'),
+        TextCellValue('Yazılım'),
+        TextCellValue('Web Sitesi'),
+        TextCellValue('Sabit ücretli iş'),
+        TextCellValue('Sabit'),
+        TextCellValue('5000'),
+      ]);
+
+      // Second sheet: sample payments (so users know the payment format too).
+      final paymentsSheet = excel['Ödemeler'];
+      paymentsSheet.appendRow([
+        TextCellValue('Tarih'),
+        TextCellValue('Müşteri'),
+        TextCellValue('Tutar'),
+        TextCellValue('Not'),
+      ]);
+      paymentsSheet.appendRow([
+        TextCellValue('16.03.2026'),
+        TextCellValue('Örnek Müşteri'),
+        TextCellValue('1500'),
+        TextCellValue('Peşinat'),
       ]);
     } else {
       final clientMap = {for (final client in clients) client.id: client};

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -43,7 +44,16 @@ class PdfExportService {
     required List<Client> clients,
     required DateTime month,
   }) async {
-    final pdf = pw.Document();
+    // Load Roboto TTF (bundled in assets) so Turkish characters (ç ğ ı ö ş ü)
+    // render correctly. The pdf package's default Type1 font lacks them.
+    final regularFontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+    final boldFontData = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
+    final regularFont = pw.Font.ttf(regularFontData);
+    final boldFont = pw.Font.ttf(boldFontData);
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
+    );
     final monthTitle = DateFormat('MMMM yyyy', 'tr').format(month);
 
     // Filter entries to the selected month.
