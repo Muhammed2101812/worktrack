@@ -35,7 +35,9 @@ class HomeShell extends ConsumerWidget {
     }
 
     final isPremium = ref.watch(isPremiumProvider).valueOrNull ?? false;
+    final adLoaded = ref.watch(adBannerLoadedProvider);
     final showBanner = !isPremium;
+    final showBannerSpace = showBanner && adLoaded;
 
     return Scaffold(
       backgroundColor: c.bgColor,
@@ -82,7 +84,7 @@ class HomeShell extends ConsumerWidget {
               if (currentIndex == 0 || currentIndex == 1)
                 Positioned(
                   right: 24,
-                  bottom: showBanner ? 175 : 115,
+                  bottom: showBannerSpace ? 160 : 100,
                   child: FloatingActionButton(
                     onPressed: () => context.go('/home/add'),
                     backgroundColor: c.primary,
