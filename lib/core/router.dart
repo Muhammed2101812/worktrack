@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/overview/overview_screen.dart';
 import '../screens/add_entry/add_entry_screen.dart';
 import '../models/work_entry.dart';
 import '../screens/history/history_screen.dart';
@@ -37,6 +38,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => HomeShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+          GoRoute(path: '/home/overview', builder: (_, __) => const OverviewScreen()),
           GoRoute(path: '/home/history', builder: (_, __) => const HistoryScreen()),
           GoRoute(path: '/home/finance', builder: (_, __) => const FinanceScreen()),
           GoRoute(path: '/home/stats', builder: (_, __) => const StatsScreen()),
