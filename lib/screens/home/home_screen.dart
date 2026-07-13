@@ -337,49 +337,58 @@ class HomeShell extends ConsumerWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildNavItem(
-                  context,
-                  index: 0,
-                  icon: PhosphorIcons.house(),
-                  activeIcon: PhosphorIcons.house(PhosphorIconsStyle.fill),
-                  isActive: currentIndex == 0,
-                  onTap: () => context.go('/home'),
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 0,
+                    icon: PhosphorIcons.house(),
+                    activeIcon: PhosphorIcons.house(PhosphorIconsStyle.fill),
+                    isActive: currentIndex == 0,
+                    onTap: () => context.go('/home'),
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 1,
-                  icon: PhosphorIcons.clockCounterClockwise(),
-                  activeIcon: PhosphorIcons.clockCounterClockwise(PhosphorIconsStyle.fill),
-                  isActive: currentIndex == 1,
-                  onTap: () => context.go('/home/history'),
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 1,
+                    icon: PhosphorIcons.clockCounterClockwise(),
+                    activeIcon: PhosphorIcons.clockCounterClockwise(PhosphorIconsStyle.fill),
+                    isActive: currentIndex == 1,
+                    onTap: () => context.go('/home/history'),
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 2,
-                  icon: PhosphorIcons.wallet(),
-                  activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
-                  isActive: currentIndex == 2,
-                  onTap: () => context.go('/home/finance'),
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 2,
+                    icon: PhosphorIcons.wallet(),
+                    activeIcon: PhosphorIcons.wallet(PhosphorIconsStyle.fill),
+                    isActive: currentIndex == 2,
+                    onTap: () => context.go('/home/finance'),
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 3,
-                  icon: PhosphorIcons.chartPie(),
-                  activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
-                  isActive: currentIndex == 3,
-                  onTap: () => context.go('/home/stats'),
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 3,
+                    icon: PhosphorIcons.chartPie(),
+                    activeIcon: PhosphorIcons.chartPie(PhosphorIconsStyle.fill),
+                    isActive: currentIndex == 3,
+                    onTap: () => context.go('/home/stats'),
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  index: 4,
-                  icon: PhosphorIcons.gear(),
-                  activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
-                  isActive: currentIndex == 4,
-                  onTap: () => context.go('/home/settings'),
+                Expanded(
+                  child: _buildNavItem(
+                    context,
+                    index: 4,
+                    icon: PhosphorIcons.gear(),
+                    activeIcon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
+                    isActive: currentIndex == 4,
+                    onTap: () => context.go('/home/settings'),
+                  ),
                 ),
               ],
             ),
@@ -398,32 +407,37 @@ class HomeShell extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     final c = AppColors.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: SizedBox(
-        width: 50,
-        height: 50,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? c.primary : c.textMuted,
-              size: 24,
-            ),
-            if (isActive) ...[
-              const SizedBox(height: 4),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: c.primary,
-                  shape: BoxShape.circle,
-                ),
+    const navLabels = ['Ana Sayfa', 'Geçmiş', 'Finans', 'Raporlar', 'Ayarlar'];
+    return Tooltip(
+      message: navLabels[index],
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 52,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                color: isActive ? c.primary : c.textMuted,
+                size: 24,
               ),
+              if (isActive) ...[
+                const SizedBox(height: 4),
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: c.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

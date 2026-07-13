@@ -87,10 +87,35 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                         setState(() => _selectedDate = picked);
                       }
                     },
-                    child: Icon(
-                      PhosphorIcons.calendarBlank(),
-                      color: isToday ? c.textMuted : c.primary,
-                      size: 18,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: c.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: c.primary.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            PhosphorIcons.calendarBlank(),
+                            color: c.primary,
+                            size: 15,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isToday ? 'Tarih Seç' : 'Değiştir',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: c.primary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
