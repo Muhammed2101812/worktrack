@@ -23,17 +23,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      // AddEntryScreen is a full-screen route OUTSIDE the ShellRoute so it is
+      // not overlapped by the floating navbar / FAB (which were blocking the
+      // "Kaydı Tamamla" button hit area). It provides its own Scaffold.
+      GoRoute(
+        path: '/home/add',
+        builder: (context, state) {
+          final entryToEdit = state.extra as WorkEntry?;
+          return AddEntryScreen(entryToEdit: entryToEdit);
+        },
+      ),
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-          GoRoute(
-            path: '/home/add',
-            builder: (context, state) {
-              final entryToEdit = state.extra as WorkEntry?;
-              return AddEntryScreen(entryToEdit: entryToEdit);
-            },
-          ),
           GoRoute(path: '/home/history', builder: (_, __) => const HistoryScreen()),
           GoRoute(path: '/home/finance', builder: (_, __) => const FinanceScreen()),
           GoRoute(path: '/home/stats', builder: (_, __) => const StatsScreen()),
