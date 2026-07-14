@@ -11,6 +11,7 @@ import '../../providers/payments_provider.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
 import '../home/widgets/finance_summary_card.dart';
@@ -31,16 +32,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   void dispose() {
     _paymentSearchController.dispose();
     super.dispose();
-  }
-
-  /// Parses a `#RRGGBB` / `0xFFRRGGBB` colour string into a [Color], falling
-  /// back to [fallback] if the value is malformed.
-  Color _parseColor(String hex, Color fallback) {
-    try {
-      return Color(int.parse(hex.replaceAll('#', '0xFF')));
-    } catch (_) {
-      return fallback;
-    }
   }
 
   /// Filters payments by the current search query (client name or notes).
@@ -94,7 +85,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     List<Client> clients,
     bool isWide,
   ) {
-    final c = AppColors.of(context);
     final currency = ref.watch(currencyProvider).valueOrNull ?? 'TL';
 
     // 1. Calculate balance per client
@@ -124,42 +114,21 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         child: Column(
           children: [
             // Page Header with back button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Finansal Durum',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: c.textMain,
-                      ),
-                    ),
-                  ),
-                  MidnightButton(
-                    onPressed: () => _showAddPaymentSheet(context, clients),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    borderRadius: 12,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold), color: c.onPrimary, size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Ödeme Ekle',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: c.onPrimary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            ScreenHeader(
+              title: 'Finansal Durum',
+              onBack: () => context.go('/home/overview'),
+              action: AppButton(
+                onPressed: () => _showAddPaymentSheet(context, clients),
+                variant: ButtonVariant.solid,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold), size: 16),
+                    const SizedBox(width: 6),
+                    const Text('Ödeme Ekle', style: TextStyle(fontSize: 13)),
+                  ],
+                ),
               ),
             ),
 
@@ -176,76 +145,10 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             // Tab bar selector
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: c.shimmer1,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _activeTab = 0),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: _activeTab == 0 ? c.cardBg : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: _activeTab == 0
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    )
-                                  ]
-                                : null,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Müşteri Durumu',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: _activeTab == 0 ? FontWeight.bold : FontWeight.w600,
-                              color: _activeTab == 0 ? c.textMain : c.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _activeTab = 1),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: _activeTab == 1 ? c.cardBg : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: _activeTab == 1
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    )
-                                  ]
-                                : null,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Ödemeler Geçmişi',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: _activeTab == 1 ? FontWeight.bold : FontWeight.w600,
-                              color: _activeTab == 1 ? c.textMain : c.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: SegmentedControl(
+                selected: _activeTab,
+                onChanged: (i) => setState(() => _activeTab = i),
+                labels: const ['Müşteri Durumu', 'Ödemeler Geçmişi'],
               ),
             ),
 
@@ -308,9 +211,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       itemCount: list.length,
       itemBuilder: (context, index) {
         final item = list[index];
-        final clientColor = _parseColor(item.client.color, c.primary);
 
-        return MidnightCard(
+        return AppCard(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -318,13 +220,10 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: clientColor,
-                      shape: BoxShape.circle,
-                    ),
+                  AppAvatar(
+                    name: item.client.name,
+                    hexColor: item.client.color,
+                    dot: true,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -397,7 +296,6 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       itemCount: list.length,
       itemBuilder: (context, index) {
         final payment = list[index];
-        final color = _parseColor(payment.clientColor, c.primary);
 
         return Dismissible(
           key: Key(payment.id),
@@ -409,18 +307,19 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               color: c.error,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+            child: Icon(Icons.delete_outline,
+                color: Theme.of(context).extension<AppPalette>()!.onPrimary, size: 28),
           ),
           confirmDismiss: (direction) => _showDeletePaymentConfirmDialog(context, payment),
-          child: MidnightCard(
+          child: AppCard(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                AppAvatar(
+                  name: payment.clientName,
+                  hexColor: payment.clientColor,
+                  dot: true,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -483,11 +382,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       builder: (ctx) {
         final c = AppColors.of(ctx);
         return AlertDialog(
-          backgroundColor: c.navBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: c.cardBorder, width: 1),
-          ),
+          backgroundColor: AppDialog.background(context),
+          shape: AppDialog.shape(context),
           title: Text('Ödeme Kaydını Sil', style: TextStyle(color: c.textMain)),
           content: Text('${payment.clientName} müşterisinden alınan ${payment.amount} $currency tutarındaki ödeme kaydı silinsin mi?', style: TextStyle(color: c.textMuted)),
           actions: [
@@ -529,181 +425,174 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       builder: (sheetCtx) => StatefulBuilder(
         builder: (dialogCtx, setSheetState) {
           final sc = AppColors.of(dialogCtx);
-          return Container(
-            decoration: BoxDecoration(
-              color: sc.navBg,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(color: sc.cardBorder, width: 1),
-            ),
-            padding: EdgeInsets.only(
-              left: 24,
-              right: 24,
-              top: 24,
-              bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 32,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Ödeme Alındı Ekle',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: sc.textMain),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(dialogCtx),
-                      icon: Icon(PhosphorIcons.x(), color: sc.textMuted),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Client Dropdown
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('MÜŞTERİ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
-                ),
-                 ClientDropdown(
-                   clients: clients,
-                   selectedClient: selectedClient,
-                   onClientSelected: (client) {
-                     setSheetState(() {
-                       selectedClient = client;
-                     });
-                   },
-                   onAddClient: () {
-                     Navigator.pop(dialogCtx);
-                     context.go('/settings');
-                     CustomToast.show(context, 'Yeni müşteri eklemek için Ayarlar sayfasını kullanın.');
-                   },
-                 ),
-                const SizedBox(height: 20),
-
-                // Amount Input
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('TUTAR ($currency)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
-                ),
-                MidnightInput(
-                  controller: amountController,
-                  hintText: 'Örn: 2500',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: sc.primary),
-                ),
-                const SizedBox(height: 20),
-
-                // Date Picker Button
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('TARİH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
-                ),
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: dialogCtx,
-                      initialDate: selectedDate,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                      builder: (dpCtx, child) {
-                        final dpc = AppColors.of(dpCtx);
-                        return Theme(
-                          data: Theme.of(dpCtx).copyWith(
-                            colorScheme: ColorScheme.fromSeed(
-                              seedColor: dpc.primary,
-                              brightness: Theme.of(dpCtx).brightness,
-                            ),
-                          ),
-                          child: child!,
-                        );
-                      },
-                    );
-                    if (picked != null) {
-                      setSheetState(() {
-                        selectedDate = picked;
-                      });
-                    }
-                  },
-                  child: MidnightCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      children: [
-                        Icon(PhosphorIcons.calendar(), color: sc.textMuted, size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          DateFormat('dd.MM.yyyy').format(selectedDate),
-                          style: TextStyle(color: sc.textMain, fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                        const Spacer(),
-                        Icon(PhosphorIcons.caretRight(), color: sc.textMuted, size: 16),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Notes Input
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text('NOT (İSTEĞE BAĞLI)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
-                ),
-                MidnightInput(
-                  controller: noteController,
-                  hintText: 'Örn: İlk peşinat / Banka havalesi',
-                  prefixIcon: Icon(PhosphorIcons.note(), color: sc.primary),
-                ),
-                const SizedBox(height: 32),
-
-                // Submit Button
-                MidnightButton(
-                  onPressed: () async {
-                    final amountText = amountController.text.trim().replaceAll(',', '.');
-                    final amountVal = double.tryParse(amountText) ?? 0.0;
-                    if (amountVal <= 0) {
-                      CustomToast.show(dialogCtx, 'Lütfen geçerli bir tutar girin');
-                      return;
-                    }
-
-                    if (selectedClient == null) {
-                      CustomToast.show(dialogCtx, 'Müşteri seçilmelidir');
-                      return;
-                    }
-
-                    final payment = Payment(
-                      clientId: selectedClient!.id,
-                      clientName: selectedClient!.name,
-                      clientColor: selectedClient!.color,
-                      amount: amountVal,
-                      date: DateFormat('dd.MM.yyyy').format(selectedDate),
-                      notes: noteController.text.trim(),
-                    );
-
-                    Navigator.pop(dialogCtx);
-                    try {
-                      await ref.read(paymentsProvider.notifier).addPayment(payment);
-                      if (context.mounted) {
-                        CustomToast.show(context, 'Ödeme kaydı başarıyla eklendi');
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        CustomToast.show(context, 'Ödeme kaydedilemedi, lütfen tekrar deneyin');
-                      }
-                    }
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          return AppSheet.decoration(
+            dialogCtx,
+            title: 'Ödeme Ekle',
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 32,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Icon(PhosphorIcons.checkCircle(), color: sc.onPrimary),
-                      const SizedBox(width: 10),
-                      Text(
-                        'KAYDET',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: sc.onPrimary, letterSpacing: 1.2),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        icon: Icon(PhosphorIcons.x(), color: sc.textMuted),
                       ),
                     ],
                   ),
-                ),
-              ],
+
+                  // Client Dropdown
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text('MÜŞTERİ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
+                  ),
+                  ClientDropdown(
+                    clients: clients,
+                    selectedClient: selectedClient,
+                    onClientSelected: (client) {
+                      setSheetState(() {
+                        selectedClient = client;
+                      });
+                    },
+                    onAddClient: () {
+                      Navigator.pop(dialogCtx);
+                      context.go('/settings');
+                      CustomToast.show(context, 'Yeni müşteri eklemek için Ayarlar sayfasını kullanın.');
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Amount Input
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text('TUTAR ($currency)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
+                  ),
+                  MidnightInput(
+                    controller: amountController,
+                    hintText: 'Örn: 2500',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    prefixIcon: Icon(PhosphorIcons.currencyCircleDollar(), color: sc.primary),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Date Picker Button
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text('TARİH', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: dialogCtx,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        builder: (dpCtx, child) {
+                          final dpc = AppColors.of(dpCtx);
+                          return Theme(
+                            data: Theme.of(dpCtx).copyWith(
+                              colorScheme: ColorScheme.fromSeed(
+                                seedColor: dpc.primary,
+                                brightness: Theme.of(dpCtx).brightness,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setSheetState(() {
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+                    child: AppCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Icon(PhosphorIcons.calendar(), color: sc.textMuted, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            DateFormat('dd.MM.yyyy').format(selectedDate),
+                            style: TextStyle(color: sc.textMain, fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                          const Spacer(),
+                          Icon(PhosphorIcons.caretRight(), color: sc.textMuted, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Notes Input
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text('NOT (İSTEĞE BAĞLI)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
+                  ),
+                  MidnightInput(
+                    controller: noteController,
+                    hintText: 'Örn: İlk peşinat / Banka havalesi',
+                    prefixIcon: Icon(PhosphorIcons.note(), color: sc.primary),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Submit Button
+                  MidnightButton(
+                    onPressed: () async {
+                      final amountText = amountController.text.trim().replaceAll(',', '.');
+                      final amountVal = double.tryParse(amountText) ?? 0.0;
+                      if (amountVal <= 0) {
+                        CustomToast.show(dialogCtx, 'Lütfen geçerli bir tutar girin');
+                        return;
+                      }
+
+                      if (selectedClient == null) {
+                        CustomToast.show(dialogCtx, 'Müşteri seçilmelidir');
+                        return;
+                      }
+
+                      final payment = Payment(
+                        clientId: selectedClient!.id,
+                        clientName: selectedClient!.name,
+                        clientColor: selectedClient!.color,
+                        amount: amountVal,
+                        date: DateFormat('dd.MM.yyyy').format(selectedDate),
+                        notes: noteController.text.trim(),
+                      );
+
+                      Navigator.pop(dialogCtx);
+                      try {
+                        await ref.read(paymentsProvider.notifier).addPayment(payment);
+                        if (context.mounted) {
+                          CustomToast.show(context, 'Ödeme kaydı başarıyla eklendi');
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          CustomToast.show(context, 'Ödeme kaydedilemedi, lütfen tekrar deneyin');
+                        }
+                      }
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(PhosphorIcons.checkCircle(), color: sc.onPrimary),
+                        const SizedBox(width: 10),
+                        Text(
+                          'KAYDET',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: sc.onPrimary, letterSpacing: 1.2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
