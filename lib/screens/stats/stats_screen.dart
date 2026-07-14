@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/pdf_export_service.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/midnight_widgets.dart';
+import '../../core/dimens.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -52,78 +54,65 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             constraints: const BoxConstraints(maxWidth: 800),
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Aylık Rapor',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: c.textMain,
-                        ),
+                ScreenHeader(
+                  title: 'Aylık Rapor',
+                  action: GestureDetector(
+                    onTap: () async {
+                      final entriesVal = ref.read(entriesProvider).valueOrNull;
+                      final clientsVal = ref.read(clientsProvider).valueOrNull;
+                      if (entriesVal == null || clientsVal == null) {
+                        if (context.mounted) {
+                          CustomToast.show(context, 'Veriler henüz hazır değil');
+                        }
+                        return;
+                      }
+                      if (context.mounted) {
+                        CustomToast.show(context, 'PDF oluşturuluyor...');
+                      }
+                      try {
+                        final success = await PdfExportService.exportMonthlyReport(
+                          entries: entriesVal,
+                          clients: clientsVal,
+                          month: _selectedMonth,
+                          currency: currency,
+                        );
+                        if (context.mounted) {
+                          if (success) {
+                            CustomToast.show(context, 'PDF kaydedildi');
+                          } else {
+                            CustomToast.show(context, 'PDF kaydetme iptal edildi');
+                          }
+                        }
+                      } catch (e) {
+                        debugPrint('PDF export error: $e');
+                        if (context.mounted) {
+                          CustomToast.show(context, 'Hata: $e');
+                        }
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: c.primary.withValues(alpha: 0.1),
+                        borderRadius: Radii.smBr,
+                        border: Border.all(color: c.primary.withValues(alpha: 0.3)),
                       ),
-                      GestureDetector(
-                        onTap: () async {
-                          final entriesVal = ref.read(entriesProvider).valueOrNull;
-                          final clientsVal = ref.read(clientsProvider).valueOrNull;
-                          if (entriesVal == null || clientsVal == null) {
-                            if (context.mounted) {
-                              CustomToast.show(context, 'Veriler henüz hazır değil');
-                            }
-                            return;
-                          }
-                          if (context.mounted) {
-                            CustomToast.show(context, 'PDF oluşturuluyor...');
-                          }
-                          try {
-                            final success = await PdfExportService.exportMonthlyReport(
-                              entries: entriesVal,
-                              clients: clientsVal,
-                              month: _selectedMonth,
-                              currency: currency,
-                            );
-                            if (context.mounted) {
-                              if (success) {
-                                CustomToast.show(context, 'PDF kaydedildi');
-                              } else {
-                                CustomToast.show(context, 'PDF kaydetme iptal edildi');
-                              }
-                            }
-                          } catch (e) {
-                            debugPrint('PDF export error: $e');
-                            if (context.mounted) {
-                              CustomToast.show(context, 'Hata: $e');
-                            }
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: c.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: c.primary.withValues(alpha: 0.3)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(PhosphorIcons.filePdf(), color: c.primary, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'PDF İndir',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: c.primary,
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(PhosphorIcons.filePdf(), color: c.primary, size: 18),
-                              const SizedBox(width: 6),
-                              Text(
-                                'PDF İndir',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: c.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 MonthFilter(
@@ -146,30 +135,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
                       if (monthEntries.isEmpty) {
                         return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                  color: c.shimmer1.withValues(alpha: 0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  PhosphorIcons.chartPieSlice(),
-                                  size: 64,
-                                  color: c.primary.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Bu ay için kayıt bulunamadı.',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: c.textMain,
-                                ),
-                              ),
-                            ],
+                          child: EmptyState(
+                            icon: PhosphorIcons.chartPieSlice(),
+                            title: 'Bu ay için kayıt bulunamadı.',
                           ),
                         );
                       }
@@ -181,102 +149,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 24, vertical: 8),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: c.shimmer1,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onTap: () => setState(
-                                            () => _selectedView = 0),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 10),
-                                          decoration: BoxDecoration(
-                                            color: _selectedView == 0
-                                                ? c.cardBg
-                                                : Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            boxShadow: _selectedView == 0
-                                                ? [
-                                                    BoxShadow(
-                                                      color: Colors.black
-                                                          .withValues(
-                                                              alpha: 0.05),
-                                                      blurRadius: 4,
-                                                      offset:
-                                                          const Offset(0, 2),
-                                                    )
-                                                  ]
-                                                : null,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            'Saatler',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight:
-                                                  _selectedView == 0
-                                                      ? FontWeight.bold
-                                                      : FontWeight.w600,
-                                              color: _selectedView == 0
-                                                  ? c.textMain
-                                                  : c.textMuted,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onTap: () => setState(
-                                            () => _selectedView = 1),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 10),
-                                          decoration: BoxDecoration(
-                                            color: _selectedView == 1
-                                                ? c.cardBg
-                                                : Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            boxShadow: _selectedView == 1
-                                                ? [
-                                                    BoxShadow(
-                                                      color: Colors.black
-                                                          .withValues(
-                                                              alpha: 0.05),
-                                                      blurRadius: 4,
-                                                      offset:
-                                                          const Offset(0, 2),
-                                                    )
-                                                  ]
-                                                : null,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            'Gelir',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight:
-                                                  _selectedView == 1
-                                                      ? FontWeight.bold
-                                                      : FontWeight.w600,
-                                              color: _selectedView == 1
-                                                  ? c.textMain
-                                                  : c.textMuted,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              child: SegmentedControl(
+                                selected: _selectedView,
+                                onChanged: (i) =>
+                                    setState(() => _selectedView = i),
+                                labels: const ['Saatler', 'Gelir'],
                               ),
                             ),
                             Expanded(
@@ -368,21 +245,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             children: [
               Text(
                 'TOPLAM ÇALIŞMA',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: c.primary,
-                ),
+                style: AppTexts.eyebrow(context).copyWith(color: c.primary),
               ),
               const SizedBox(height: 8),
               Text(
                 '${totalHours.toStringAsFixed(1)} Saat',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: c.textMain,
-                ),
+                style: AppTexts.figureLg(context),
               ),
               const SizedBox(height: 32),
               Stack(
@@ -439,12 +307,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         children: [
                           Text(
                             '${totalHours.toInt()}s',
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: c.textMain,
-                              letterSpacing: -2,
-                            ),
+                            style: AppTexts.figureLg(context),
                           ),
                           Text(
                             DateFormat('MMMM', 'tr')
@@ -470,12 +333,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
           child: Text(
             'MÜŞTERİ BAZLI DAĞILIM',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
         ...sortedClientIds.asMap().entries.map((entry) {
@@ -490,7 +348,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           final percentage = (hours / totalHours) * 100;
           final color = colors[index % colors.length];
 
-          return MidnightCard(
+          return AppCard(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -573,12 +431,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
             child: Text(
               'PROJE BAZLI DAĞILIM',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
-                color: c.textMuted,
-              ),
+              style: AppTexts.eyebrow(context),
             ),
           ),
           Padding(
@@ -623,7 +476,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             final name = projectNames[pId]!;
             final percentage = (hours / projectTotalHours) * 100;
             final color = colors[index % colors.length];
-            return MidnightCard(
+            return AppCard(
               margin: const EdgeInsets.symmetric(
                   horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(12),
@@ -728,42 +581,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     // Gelir yoksa (tüm entries için effectivePrice 0)
     if (totalEarnings == 0) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: c.shimmer1.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  PhosphorIcons.currencyCircleDollar(),
-                  size: 64,
-                  color: c.primary.withValues(alpha: 0.5),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Bu ay için gelir kaydı yok.',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: c.textMain,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Sabit fiyat veya saatlik ücret tanımlanmış kayıt bulunamadı.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: c.textMuted,
-                ),
-              ),
-            ],
-          ),
+        child: EmptyState(
+          icon: PhosphorIcons.currencyCircleDollar(),
+          title: 'Bu ay için gelir kaydı yok.',
+          subtitle:
+              'Sabit fiyat veya saatlik ücret tanımlanmış kayıt bulunamadı.',
         ),
       );
     }
@@ -796,21 +618,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             children: [
               Text(
                 'TOPLAM GELİR',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: c.primary,
-                ),
+                style: AppTexts.eyebrow(context).copyWith(color: c.primary),
               ),
               const SizedBox(height: 8),
               Text(
                 '${totalEarnings.toStringAsFixed(0)} $currency',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: c.textMain,
-                ),
+                style: AppTexts.figureLg(context),
               ),
               const SizedBox(height: 32),
               Stack(
@@ -868,12 +681,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         children: [
                           Text(
                             '${totalEarnings.toStringAsFixed(0)} $currency',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: c.textMain,
-                              letterSpacing: -1,
-                            ),
+                            style: AppTexts.figureLg(context),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -901,12 +709,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
           child: Text(
             'MÜŞTERİ BAZLI DAĞILIM',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
         ...sortedClientIds.asMap().entries.map((entry) {
@@ -923,7 +726,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           final percentage = (earning / totalEarnings) * 100;
           final color = colors[index % colors.length];
 
-          return MidnightCard(
+          return AppCard(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -1033,20 +836,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
           child: Text(
             'GÜNLÜK GELİR',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
         if (hasDailyData)
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: MidnightCard(
-              padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+            child: AppCard(
+              padding: const EdgeInsets.all(Spacing.s16),
               child: SizedBox(
                 height: 200,
                 child: Padding(
@@ -1163,7 +961,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: MidnightCard(
+            child: AppCard(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
