@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:worklog/core/theme.dart';
 import 'package:worklog/screens/home/widgets/entry_list_tile.dart';
 import 'package:worklog/models/work_entry.dart';
 
@@ -23,6 +24,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            theme: AppTheme.light,
             home: Scaffold(
               body: EntryListTile(entry: entry),
             ),
@@ -52,6 +54,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            theme: AppTheme.light,
             home: Scaffold(
               body: EntryListTile(entry: entry),
             ),

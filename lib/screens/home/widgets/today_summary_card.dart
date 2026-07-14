@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/dimens.dart';
 import '../../../core/theme.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../providers/entries_provider.dart';
 
 class TodaySummaryCard extends ConsumerStatefulWidget {
@@ -35,20 +37,10 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
         final minutes = ((totalHours - hours) * 60).round();
         final hasUnsynced = entries.any((e) => !e.synced);
 
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: c.cardBg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: c.cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+        return AppCard(
+          variant: CardVariant.hero,
+          padding: const EdgeInsets.all(Spacing.s24),
+          ledgerLine: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -120,18 +112,16 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.s16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     '$hours',
-                    style: TextStyle(
-                      fontSize: 52,
-                      fontWeight: FontWeight.w300,
+                    style: AppTexts.figureLg(context).copyWith(
                       color: c.primary,
-                      letterSpacing: -2,
+                      fontWeight: FontWeight.w300,
                       height: 1,
                     ),
                   ),
@@ -149,11 +139,9 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                   const SizedBox(width: 10),
                   Text(
                     '$minutes',
-                    style: TextStyle(
-                      fontSize: 52,
-                      fontWeight: FontWeight.w300,
+                    style: AppTexts.figureLg(context).copyWith(
                       color: c.primary,
-                      letterSpacing: -2,
+                      fontWeight: FontWeight.w300,
                       height: 1,
                     ),
                   ),
@@ -170,7 +158,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: Spacing.s20),
               Row(
                 children: [
                   Container(
@@ -180,7 +168,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                       color: hasUnsynced
                           ? c.orange.withValues(alpha: 0.1)
                           : c.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(Radii.xs),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

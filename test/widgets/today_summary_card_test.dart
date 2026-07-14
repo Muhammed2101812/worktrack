@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:worklog/core/theme.dart';
 import 'package:worklog/screens/home/widgets/today_summary_card.dart';
 import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/providers/entries_provider.dart';
@@ -32,8 +33,9 @@ void main() {
           overrides: [
             entriesProvider.overrideWith(() => FakeLoadingEntriesNotifier()),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
+          child: MaterialApp(
+            theme: AppTheme.light,
+            home: const Scaffold(
               body: TodaySummaryCard(),
             ),
           ),
@@ -76,8 +78,9 @@ void main() {
           overrides: [
             entriesProvider.overrideWith(() => FakeEntriesNotifier(entries)),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
+          child: MaterialApp(
+            theme: AppTheme.light,
+            home: const Scaffold(
               body: TodaySummaryCard(),
             ),
           ),
@@ -100,8 +103,9 @@ void main() {
           overrides: [
             entriesProvider.overrideWith(() => FakeEntriesNotifier([])),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
+          child: MaterialApp(
+            theme: AppTheme.light,
+            home: const Scaffold(
               body: TodaySummaryCard(),
             ),
           ),

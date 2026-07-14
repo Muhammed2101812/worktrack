@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/dimens.dart';
 import '../../../core/theme.dart';
-import '../../../core/widgets/midnight_widgets.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../models/payment.dart';
 
 /// "Son Ödemeler" section reused by the Overview screen. Shows a header with a
@@ -21,17 +21,6 @@ class RecentPaymentsSection extends StatelessWidget {
     this.limit = 3,
   });
 
-  Color _parseColor(String hex, AppPalette c) {
-    try {
-      final clean = hex.replaceAll('#', '');
-      if (clean.isEmpty) return c.primary;
-      final value = int.parse(clean.length == 6 ? 'FF$clean' : clean);
-      return Color(value);
-    } catch (_) {
-      return c.primary;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -44,52 +33,17 @@ class RecentPaymentsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Son Ödemeler',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: c.textMain,
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.push('/home/finance'),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tümünü Gör',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: c.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    Icon(
-                      PhosphorIcons.caretRight(),
-                      color: c.primary,
-                      size: 14,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.s4),
+          child: SectionHeader(
+            title: 'Son Ödemeler',
+            actionLabel: 'Tümünü Gör',
+            onAction: () => context.push('/home/finance'),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Spacing.s8),
         if (recent.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: Spacing.s16),
             child: Center(
               child: Text(
                 'Henüz ödeme yok',
@@ -104,32 +58,16 @@ class RecentPaymentsSection extends StatelessWidget {
   }
 
   Widget _buildPaymentTile(Payment payment, AppPalette c) {
-    final color = _parseColor(payment.clientColor, c);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: MidnightCard(
+      child: AppCard(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: Text(
-                  payment.clientName.isNotEmpty
-                      ? payment.clientName[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
+            AppAvatar(
+              name: payment.clientName,
+              hexColor: payment.clientColor,
+              size: AvatarSize.sm,
             ),
             const SizedBox(width: 12),
             Expanded(

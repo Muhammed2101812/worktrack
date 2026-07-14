@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/dimens.dart';
 import '../../../core/theme.dart';
-import '../../../core/widgets/midnight_widgets.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../models/payment.dart';
 import '../../../models/work_entry.dart';
 
@@ -41,8 +42,8 @@ class FinanceSummaryCard extends StatelessWidget {
 
     final double remainingBalance = totalEarned - totalReceived;
 
-    final card = MidnightCard(
-      padding: const EdgeInsets.all(20),
+    final card = AppCard(
+      padding: const EdgeInsets.all(Spacing.s20),
       child: Column(
         children: [
           Row(
@@ -50,11 +51,7 @@ class FinanceSummaryCard extends StatelessWidget {
             children: [
               Text(
                 'Kalan Alacak',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: c.textMuted,
-                ),
+                style: AppTexts.eyebrow(context),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -62,7 +59,7 @@ class FinanceSummaryCard extends StatelessWidget {
                   color: remainingBalance > 0
                       ? c.orange.withValues(alpha: 0.1)
                       : c.emerald.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: Radii.xsBr,
                 ),
                 child: Text(
                   remainingBalance > 0 ? 'Ödeme Bekliyor' : 'Tümü Tahsil Edildi',
@@ -80,20 +77,17 @@ class FinanceSummaryCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               '${remainingBalance.toStringAsFixed(1)} $currency',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
+              style: AppTexts.figureLg(context).copyWith(
                 color: remainingBalance > 0 ? c.orange : c.textMain,
-                letterSpacing: -1,
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spacing.s20),
           Container(
             height: 1,
             color: c.cardBorder,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Spacing.s16),
           Row(
             children: [
               Expanded(
@@ -125,7 +119,7 @@ class FinanceSummaryCard extends StatelessWidget {
                 height: 32,
                 color: c.cardBorder,
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: Spacing.s24),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

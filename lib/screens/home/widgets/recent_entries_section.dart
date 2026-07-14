@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/dimens.dart';
 import '../../../core/theme.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../models/work_entry.dart';
 import 'entry_list_tile.dart';
 
@@ -22,56 +23,20 @@ class RecentEntriesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = AppColors.of(context);
     final recent = entries.take(limit).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Son Kayıtlar',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: c.textMain,
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.push('/home/history'),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tümünü Gör',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: c.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    Icon(
-                      PhosphorIcons.caretRight(),
-                      color: c.primary,
-                      size: 14,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.s4),
+          child: SectionHeader(
+            title: 'Son Kayıtlar',
+            actionLabel: 'Tümünü Gör',
+            onAction: () => context.push('/home/history'),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Spacing.s8),
         if (recent.isEmpty && emptyState)
           _buildEmptyState(context)
         else
@@ -83,7 +48,7 @@ class RecentEntriesSection extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final c = AppColors.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: Spacing.s24),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -93,7 +58,7 @@ class RecentEntriesSection extends StatelessWidget {
               size: 40,
               color: c.textMuted,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.s8),
             Text(
               'Henüz kayıt yok',
               style: TextStyle(color: c.textMuted, fontSize: 13),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/dimens.dart';
+import '../../../core/theme.dart';
+import '../../../core/utils.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../models/work_entry.dart';
 import '../../../providers/entries_provider.dart';
-import '../../../core/theme.dart';
 
 class EntryListTile extends ConsumerWidget {
   final WorkEntry entry;
@@ -12,7 +15,7 @@ class EntryListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = AppColors.of(context);
-    final clientColor = _parseColor(entry.clientColor, c.primary);
+    final clientColor = parseHexColor(entry.clientColor, c.primary);
     final hasProject =
         entry.projectName != null && entry.projectName!.isNotEmpty;
     final displayTitle = hasProject
@@ -23,13 +26,13 @@ class EntryListTile extends ConsumerWidget {
       key: Key(entry.id),
       direction: DismissDirection.endToStart,
       background: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
+        margin: const EdgeInsets.symmetric(vertical: Spacing.s4),
         decoration: BoxDecoration(
           color: c.error,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Radii.md),
         ),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: Spacing.s20),
         child: Icon(Icons.delete_outline_rounded,
             color: c.onPrimary, size: 22),
       ),
@@ -37,8 +40,8 @@ class EntryListTile extends ConsumerWidget {
         return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+            backgroundColor: AppDialog.background(context),
+            shape: AppDialog.shape(context),
             title: const Text('Kaydı Sil'),
             content: const Text('Bu kaydı silmek istediğinize emin misiniz?'),
             actions: [
@@ -57,21 +60,11 @@ class EntryListTile extends ConsumerWidget {
       },
       onDismissed: (_) =>
           ref.read(entriesProvider.notifier).deleteEntry(entry.id),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: c.cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: c.cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
+      child: AppCard(
+        margin: const EdgeInsets.symmetric(vertical: Spacing.s4),
+        padding: const EdgeInsets.all(Spacing.s16),
+        ledgerLine: true,
+        ledgerColor: clientColor,
         child: Row(
           children: [
             Container(
@@ -79,7 +72,7 @@ class EntryListTile extends ConsumerWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: clientColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(Radii.sm),
               ),
               child: Center(
                 child: Text(
@@ -154,13 +147,5 @@ class EntryListTile extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Color _parseColor(String hex, Color fallback) {
-    try {
-      return Color(int.parse(hex.replaceAll('#', '0xFF')));
-    } catch (_) {
-      return fallback;
-    }
   }
 }
