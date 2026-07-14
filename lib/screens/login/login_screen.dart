@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sync_provider.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/dimens.dart';
 import '../../core/theme.dart';
@@ -125,14 +124,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 48),
-              MidnightInput(
+              AppInput(
                 controller: _emailController,
                 hintText: 'E-posta',
                 prefixIcon: Icon(PhosphorIcons.envelope(), color: c.textMuted, size: 20),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
-              MidnightInput(
+              AppInput(
                 controller: _passwordController,
                 hintText: 'Şifre',
                 prefixIcon: Icon(PhosphorIcons.lock(), color: c.textMuted, size: 20),

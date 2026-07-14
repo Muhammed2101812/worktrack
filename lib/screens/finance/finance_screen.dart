@@ -12,7 +12,6 @@ import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/widgets/app_widgets.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../core/theme.dart';
 import '../home/widgets/finance_summary_card.dart';
 
@@ -156,7 +155,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             if (_activeTab == 1 && payments.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                child: MidnightInput(
+                child: AppInput(
                   controller: _paymentSearchController,
                   hintText: 'Ödemelerde ara (müşteri, not)...',
                   prefixIcon: Icon(PhosphorIcons.magnifyingGlass(),
@@ -474,7 +473,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     padding: const EdgeInsets.only(left: 4, bottom: 8),
                     child: Text('TUTAR ($currency)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                   ),
-                  MidnightInput(
+                  AppInput(
                     controller: amountController,
                     hintText: 'Örn: 2500',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -536,7 +535,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                     padding: const EdgeInsets.only(left: 4, bottom: 8),
                     child: Text('NOT (İSTEĞE BAĞLI)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: sc.textMuted)),
                   ),
-                  MidnightInput(
+                  AppInput(
                     controller: noteController,
                     hintText: 'Örn: İlk peşinat / Banka havalesi',
                     prefixIcon: Icon(PhosphorIcons.note(), color: sc.primary),
@@ -544,7 +543,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   const SizedBox(height: 32),
 
                   // Submit Button
-                  MidnightButton(
+                  AppButton(
+                    variant: ButtonVariant.solid,
                     onPressed: () async {
                       final amountText = amountController.text.trim().replaceAll(',', '.');
                       final amountVal = double.tryParse(amountText) ?? 0.0;

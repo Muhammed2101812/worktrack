@@ -5,7 +5,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/dimens.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/app_widgets.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/payments_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -59,7 +58,8 @@ class OverviewScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
 
                       // Hero balance card
-                      MidnightCard(
+                      AppCard(
+                        variant: CardVariant.elevated,
                         padding: const EdgeInsets.all(24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,7 +210,7 @@ class _MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return MidnightCard(
+    return AppCard(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +270,7 @@ class _NavCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: MidnightCard(
+      child: AppCard(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

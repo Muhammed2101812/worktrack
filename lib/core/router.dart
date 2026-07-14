@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,6 +11,19 @@ import '../screens/history/history_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/stats/stats_screen.dart';
 import '../screens/finance/finance_screen.dart';
+
+/// Builds a [CustomTransitionPage] with an instant (no animation) swap so the
+/// background colour doesn't flash a lighter tint during route transitions.
+/// The default Material fade-in briefly shows scaffoldBackgroundColor before
+/// the page's own (transparent) background settles, which looks like a flash.
+Page<void> _noFlashPage(Widget child) {
+  return CustomTransitionPage(
+    child: child,
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+    transitionsBuilder: (_, __, ___, child) => child,
+  );
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -29,20 +43,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       // "Kaydı Tamamla" button hit area). It provides its own Scaffold.
       GoRoute(
         path: '/home/add',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final entryToEdit = state.extra as WorkEntry?;
-          return AddEntryScreen(entryToEdit: entryToEdit);
+          return _noFlashPage(AddEntryScreen(entryToEdit: entryToEdit));
         },
       ),
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
         routes: [
-          GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-          GoRoute(path: '/home/overview', builder: (_, __) => const OverviewScreen()),
-          GoRoute(path: '/home/history', builder: (_, __) => const HistoryScreen()),
-          GoRoute(path: '/home/finance', builder: (_, __) => const FinanceScreen()),
-          GoRoute(path: '/home/stats', builder: (_, __) => const StatsScreen()),
-          GoRoute(path: '/home/settings', builder: (_, __) => const SettingsScreen()),
+          GoRoute(path: '/home', pageBuilder: (_, __) => _noFlashPage(const HomeScreen())),
+          GoRoute(path: '/home/overview', pageBuilder: (_, __) => _noFlashPage(const OverviewScreen())),
+          GoRoute(path: '/home/history', pageBuilder: (_, __) => _noFlashPage(const HistoryScreen())),
+          GoRoute(path: '/home/finance', pageBuilder: (_, __) => _noFlashPage(const FinanceScreen())),
+          GoRoute(path: '/home/stats', pageBuilder: (_, __) => _noFlashPage(const StatsScreen())),
+          GoRoute(path: '/home/settings', pageBuilder: (_, __) => _noFlashPage(const SettingsScreen())),
         ],
       ),
     ],

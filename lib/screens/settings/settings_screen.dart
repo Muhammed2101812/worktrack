@@ -12,7 +12,6 @@ import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/client.dart';
 import '../../core/constants.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/dimens.dart';
 import '../../core/theme.dart';
@@ -188,7 +187,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            MidnightButton(
+            AppButton(
+              variant: ButtonVariant.solid,
               onPressed: () => _showPaywallDialog(context),
               width: double.infinity,
               child: Text('YÜKSELT',
@@ -819,7 +819,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 style: TextStyle(fontSize: 13, color: dc.textMuted),
               ),
               const SizedBox(height: 16),
-              MidnightInput(
+              AppInput(
                 controller: controller,
                 hintText: 'Saatlik Ücret ($currency)',
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1330,7 +1330,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      MidnightInput(
+                      AppInput(
                         controller: nameController,
                         hintText: 'Müşteri Adı',
                         prefixIcon: Icon(PhosphorIcons.buildings(), color: sc.primary),
@@ -1387,15 +1387,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: MidnightButton(
+                            child: AppButton(
+                              variant: ButtonVariant.outline,
                               onPressed: () =>
                                   Navigator.pop(context, false),
-                              child: Text('İptal', style: TextStyle(color: sc.onPrimary)),
+                              child: const Text('İptal'),
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: MidnightButton(
+                            child: AppButton(
+                              variant: ButtonVariant.solid,
                               onPressed: () {
                                 if (nameController.text.trim().isEmpty) {
                                   return;
@@ -1590,7 +1592,8 @@ class _ClientManagementSheet extends ConsumerWidget {
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: MidnightButton(
+            child: AppButton(
+              variant: ButtonVariant.solid,
               onPressed: () {
                 Navigator.pop(context);
                 onAddOrEdit(null);
@@ -1692,7 +1695,8 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          MidnightButton(
+          AppButton(
+            variant: ButtonVariant.ghost,
             onPressed: () async {
               if (context.mounted) {
                 CustomToast.show(context, 'Örnek dosya oluşturuluyor...');
@@ -1713,7 +1717,6 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 }
               }
             },
-            color: c.primary.withValues(alpha: 0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1743,7 +1746,8 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 ),
               ),
             ),
-          MidnightButton(
+          AppButton(
+            variant: ButtonVariant.solid,
             onPressed: _isLoading ? null : () => _pickAndImport(context),
             child: _isLoading
                 ? SizedBox(

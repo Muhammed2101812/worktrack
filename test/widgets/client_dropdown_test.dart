@@ -50,7 +50,7 @@ void main() {
       expect(find.text('T'), findsOneWidget);
     });
 
-    testWidgets('should render trigger as AppCard (not MidnightCard)',
+    testWidgets('should render trigger as AppCard',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -141,7 +141,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('YENİ MÜŞTERİ EKLE'), findsOneWidget);
-      // The add-client CTA is now an AppButton (not a MidnightButton).
+      // The add-client CTA is an AppButton.
       expect(find.byType(AppButton), findsOneWidget);
     });
   });

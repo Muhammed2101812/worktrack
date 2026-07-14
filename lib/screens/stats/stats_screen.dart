@@ -5,7 +5,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/pdf_export_service.dart';
 import '../../core/widgets/app_widgets.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../core/dimens.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';

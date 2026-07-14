@@ -657,3 +657,117 @@ class AppDialog {
   static Color background(BuildContext context) =>
       Theme.of(context).extension<AppPalette>()!.cardBg;
 }
+
+// ===========================================================================
+// CustomToast — minimal bottom-anchored snack (spec §5)
+// ===========================================================================
+class CustomToast extends StatefulWidget {
+  final String message;
+  final Duration duration;
+  final VoidCallback? onDismiss;
+
+  const CustomToast({
+    super.key,
+    required this.message,
+    this.onDismiss,
+    this.duration = const Duration(milliseconds: 3000),
+  });
+
+  static void show(BuildContext context, String message) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => CustomToast(
+        message: message,
+        onDismiss: () => entry.remove(),
+      ),
+    );
+    overlay.insert(entry);
+  }
+
+  @override
+  State<CustomToast> createState() => _CustomToastState();
+}
+
+class _CustomToastState extends State<CustomToast>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<Offset> _slide;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        duration: const Duration(milliseconds: 280), vsync: this);
+    _slide = Tween<Offset>(begin: const Offset(0, 1.5), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _fade = Tween<double>(begin: 0, end: 1)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    _ctrl.forward();
+    Future.delayed(widget.duration, () {
+      if (mounted) _ctrl.reverse().then((_) => widget.onDismiss?.call());
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Theme.of(context).extension<AppPalette>()!;
+    return Positioned(
+      bottom: 100,
+      left: 24,
+      right: 24,
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, child) => SlideTransition(
+            position: _slide,
+            child: FadeTransition(opacity: _fade, child: child),
+          ),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: p.textMain,
+              borderRadius: BorderRadius.circular(Radii.sm), // 12 (was 14)
+              boxShadow: AppShadows.dialog(context),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: p.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.check,
+                      size: 12, color: p.bgColor),
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    widget.message,
+                    style: TextStyle(
+                      color: p.bgColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

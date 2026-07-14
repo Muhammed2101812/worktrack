@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../../core/widgets/midnight_widgets.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../core/dimens.dart';
 import '../../../core/theme.dart';
 
@@ -17,7 +17,7 @@ class MonthFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MidnightCard(
+    return AppCard(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(

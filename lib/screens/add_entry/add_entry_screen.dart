@@ -11,7 +11,6 @@ import '../../models/client.dart';
 import '../../models/project.dart';
 import '../../core/constants.dart';
 import '../../providers/settings_provider.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/dimens.dart';
 import '../../core/utils.dart';
@@ -213,7 +212,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               style: AppTexts.eyebrow(context),
             ),
           ),
-          MidnightInput(
+          AppInput(
             initialValue: _workType,
             hintText: 'Örn: Arayüz tasarımı',
             onChanged: (value) {
@@ -278,7 +277,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                           });
                         }
                       },
-                      child: MidnightCard(
+                      child: AppCard(
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                         child: Center(
                           child: Text(
@@ -320,7 +319,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                           });
                         }
                       },
-                      child: MidnightCard(
+                      child: AppCard(
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                         child: Center(
                           child: Text(
@@ -468,7 +467,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             Row(
               children: [
                 Expanded(
-                  child: MidnightInput(
+                  child: AppInput(
                     controller: _hourlyRateController,
                     hintText: 'Saatlik Ücret ($currency)',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -503,7 +502,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               ],
             ),
           ] else ...[
-            MidnightInput(
+            AppInput(
               controller: _fixedPriceController,
               hintText: 'Sabit Ücret Tutarı ($currency)',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -523,7 +522,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               style: AppTexts.eyebrow(context),
             ),
           ),
-          MidnightInput(
+          AppInput(
             initialValue: _notes,
             hintText: 'Geliştirme detayları...',
             maxLines: 3,
@@ -564,7 +563,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     final projectsAsync = ref.watch(projectsProvider);
     return GestureDetector(
       onTap: () => _showProjectSelector(projectsAsync),
-      child: MidnightCard(
+      child: AppCard(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
@@ -661,7 +660,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                                   _selectedProject?.id == project.id;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
-                                child: MidnightCard(
+                                child: AppCard(
                                   onTap: () {
                                     Navigator.pop(dsContext);
                                     setState(() {
@@ -830,7 +829,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     style: AppTexts.eyebrow(dialogContext),
                   ),
                   const SizedBox(height: 20),
-                  MidnightInput(
+                  AppInput(
                     controller: nameController,
                     hintText: 'Proje Adı',
                     prefixIcon: Icon(PhosphorIcons.folderSimple(),
@@ -954,7 +953,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                         style: AppTexts.eyebrow(sbContext),
                       ),
                       const SizedBox(height: 24),
-                      MidnightInput(
+                      AppInput(
                         controller: nameController,
                         hintText: 'Müşteri Adı',
                         prefixIcon: Icon(PhosphorIcons.buildings(), color: sc.primary),

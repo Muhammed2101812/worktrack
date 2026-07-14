@@ -44,7 +44,6 @@ dependencies:
   cupertino_icons: ^1.0.6
   sqflite_common_ffi_web: ^1.1.1
   google_fonts: ^6.2.1
-  flutter_inset_shadow: ^2.0.1
   phosphor_flutter:
     git:
       url: https://github.com/PurpleSoftSrl/phosphor-flutter.git

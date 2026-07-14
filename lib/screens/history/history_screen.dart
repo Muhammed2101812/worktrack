@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../providers/entries_provider.dart';
 import '../../core/widgets/app_widgets.dart';
-import '../../core/widgets/midnight_widgets.dart';
 import '../../core/dimens.dart';
 import '../../core/theme.dart';
 import '../history/widgets/month_filter.dart';
@@ -36,7 +35,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           child: Column(
             children: [
               const SizedBox(height: 16),
-              MidnightInput(
+              AppInput(
                 hintText: 'Müşteri veya iş ara...',
                 prefixIcon: Icon(PhosphorIcons.magnifyingGlass(), color: c.primary),
                 onChanged: (value) {
