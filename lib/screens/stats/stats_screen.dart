@@ -114,13 +114,20 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     ),
                   ),
                 ),
-                MonthFilter(
-                  selectedMonth: _selectedMonth,
-                  onMonthChanged: (month) {
-                    setState(() {
-                      _selectedMonth = month;
-                    });
-                  },
+                Padding(
+                  // Align MonthFilter with ScreenHeader's horizontal padding
+                  // (fromLTRB(24,8,24,8)) so it doesn't span edge-to-edge while
+                  // the title above is inset. MonthFilter's AppCard owns its
+                  // own vertical margin (8).
+                  padding: const EdgeInsets.symmetric(horizontal: Spacing.s24),
+                  child: MonthFilter(
+                    selectedMonth: _selectedMonth,
+                    onMonthChanged: (month) {
+                      setState(() {
+                        _selectedMonth = month;
+                      });
+                    },
+                  ),
                 ),
                 Expanded(
                   child: entriesAsync.when(

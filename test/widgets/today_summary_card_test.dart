@@ -117,5 +117,51 @@ void main() {
       expect(find.text('0'), findsNWidgets(2));
       expect(find.text('0 Çalışma'), findsOneWidget);
     });
+
+    // Regression for "Anasayfa boş": HomeScreen renders TodaySummaryCard
+    // directly inside a ListView (unbounded vertical height). In that context
+    // the AppCard ledger Row must not collapse the content to zero height.
+    testWidgets(
+        'renders summary content inside a ListView (home-screen layout)',
+        (WidgetTester tester) async {
+      final todayStr = DateFormat('dd.MM.yyyy').format(DateTime.now());
+      final entries = [
+        WorkEntry(
+          id: '1',
+          clientId: 'client1',
+          clientName: 'Test Client',
+          clientColor: '#4A90D9',
+          date: todayStr,
+          startTime: '09:00',
+          endTime: '11:00',
+          workType: 'Yazılım',
+          synced: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entriesProvider.overrideWith(() => FakeEntriesNotifier(entries)),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            home: Scaffold(
+              body: ListView(
+                children: const [TodaySummaryCard()],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // These texts live inside the ledger AppCard's Column; if the ledger
+      // Row collapses the height they will not paint / be findable.
+      expect(find.text('Bugün'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget); // 2 hours
+      expect(find.text('1 Çalışma'), findsOneWidget);
+    });
   });
 }

@@ -69,11 +69,22 @@ class AppCard extends StatelessWidget {
           boxShadow: _shadow(context),
         ),
         child: ledgerLine
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            ? Stack(
                 children: [
-                  Container(width: 3, color: ledgerColor ?? p.primary),
-                  if (child != null) Expanded(child: child!),
+                  // The real content sizes the card; the stripe is just an
+                  // overlay so no cross-axis (height) constraint is ever
+                  // negotiated against the Row. This is essential when the
+                  // card lives in a ListView (unbounded vertical height) — a
+                  // stretch-axis Row would otherwise throw "BoxConstraints
+                  // forces an infinite height" and render nothing (the root
+                  // cause of the empty home screen).
+                  if (child != null) child!,
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(width: 3, color: ledgerColor ?? p.primary),
+                    ),
+                  ),
                 ],
               )
             : child,
