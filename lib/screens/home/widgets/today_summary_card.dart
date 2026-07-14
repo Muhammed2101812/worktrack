@@ -121,7 +121,6 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                     '$hours',
                     style: AppTexts.figureLg(context).copyWith(
                       color: c.primary,
-                      fontWeight: FontWeight.w300,
                       height: 1,
                     ),
                   ),
@@ -141,7 +140,6 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                     '$minutes',
                     style: AppTexts.figureLg(context).copyWith(
                       color: c.primary,
-                      fontWeight: FontWeight.w300,
                       height: 1,
                     ),
                   ),
