@@ -12,6 +12,9 @@ import '../../models/project.dart';
 import '../../core/constants.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/widgets/midnight_widgets.dart';
+import '../../core/widgets/app_widgets.dart';
+import '../../core/dimens.dart';
+import '../../core/utils.dart';
 import '../../core/theme.dart';
 import 'widgets/client_dropdown.dart';
 import 'widgets/time_picker_row.dart';
@@ -111,19 +114,6 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     }
   }
 
-  /// Safely parses a `#RRGGBB` / `0xFFRRGGBB` hex colour into a [Color].
-  /// Falls back to the theme primary on any error.
-  Color _parseColor(String hex, AppPalette c) {
-    try {
-      final clean = hex.replaceAll('#', '');
-      if (clean.isEmpty) return c.primary;
-      final value = int.parse(clean.length == 6 ? 'FF$clean' : clean);
-      return Color(value);
-    } catch (_) {
-      return c.primary;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -144,16 +134,22 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: Icon(PhosphorIcons.x(), color: c.textMain, size: 24),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: c.cardBg,
+                        borderRadius: Radii.smBr,
+                        border: Border.all(color: c.cardBorder, width: 1),
+                      ),
+                      child: Icon(PhosphorIcons.x(), color: c.textMain, size: 20),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Text(
                     widget.entryToEdit == null ? 'Yeni Kayıt' : 'Kaydı Düzenle',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: c.textMain,
-                    ),
+                    style: AppTexts.screenTitle(context),
                   ),
                 ],
               ),
@@ -209,12 +205,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
               padding: const EdgeInsets.only(left: 4, bottom: 8),
               child: Text(
                 'PROJE (İSTEĞE BAĞLI)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: c.textMuted,
-                ),
+                style: AppTexts.eyebrow(context),
               ),
             ),
             _buildProjectSelector(),
@@ -291,7 +282,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Başlangıç',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: c.textMuted),
+                        style: AppTexts.eyebrow(context),
                       ),
                     ),
                     GestureDetector(
@@ -333,7 +324,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
                         'Bitiş',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: c.textMuted),
+                        style: AppTexts.eyebrow(context),
                       ),
                     ),
                     GestureDetector(
@@ -451,7 +442,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                         color: _billingType == 'hourly' ? c.primary : c.cardBorder,
                         width: 1,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: Radii.smBr,
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -482,7 +473,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                         color: _billingType == 'fixed' ? c.primary : c.cardBorder,
                         width: 1,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: Radii.smBr,
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -521,7 +512,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     decoration: BoxDecoration(
                       color: c.shimmer1.withValues(alpha: 0.15),
                       border: Border.all(color: c.cardBorder),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: Radii.smBr,
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -573,12 +564,14 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             },
           ),
           const SizedBox(height: 40),
-          MidnightButton(
+          AppButton(
             onPressed: _saveEntry,
+            variant: ButtonVariant.solid,
+            width: double.infinity,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(PhosphorIcons.checkCircle(), color: c.onPrimary),
+                Icon(PhosphorIcons.checkCircle()),
                 const SizedBox(width: 12),
                 Text(
                   widget.entryToEdit == null ? 'KAYDI TAMAMLA' : 'DEĞİŞİKLİKLERİ KAYDET',
@@ -791,15 +784,17 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    child: MidnightButton(
+                    child: AppButton(
                       onPressed: () {
                         Navigator.pop(dsContext);
                         _showAddProjectDialog();
                       },
+                      variant: ButtonVariant.solid,
+                      width: double.infinity,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(PhosphorIcons.plus(), color: sc.onPrimary, size: 18),
+                          Icon(PhosphorIcons.plus(), size: 18),
                           const SizedBox(width: 10),
                           Text(
                             'YENİ PROJE OLUŞTUR',
@@ -853,7 +848,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     height: 48,
                     decoration: BoxDecoration(
                       color: dc.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: Radii.smBr,
                     ),
                     child: Center(
                       child: Icon(
@@ -885,20 +880,20 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: MidnightButton(
+                        child: AppButton(
                           onPressed: () => Navigator.pop(dialogContext),
-                          color: dc.shimmer1.withValues(alpha: 0.5),
-                          child: Text('İPTAL',
-                              style: TextStyle(color: dc.textMain)),
+                          variant: ButtonVariant.outline,
+                          child: const Text('İPTAL'),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: MidnightButton(
+                        child: AppButton(
                           onPressed: () {
                             if (nameController.text.trim().isEmpty) return;
                             Navigator.pop(dialogContext, nameController.text.trim());
                           },
+                          variant: ButtonVariant.solid,
                           child: Text(isEditing ? 'KAYDET' : 'OLUŞTUR',
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -1012,12 +1007,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                       const SizedBox(height: 24),
                       Text(
                         'RENK SEÇİN',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                          color: sc.textMain,
-                        ),
+                        style: AppTexts.eyebrow(context),
                       ),
                       const SizedBox(height: 12),
                       Wrap(
@@ -1025,7 +1015,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                         runSpacing: 12,
                         alignment: WrapAlignment.center,
                         children: AppConstants.clientColors.map((color) {
-                          final colorVal = _parseColor(color, sc);
+                          final colorVal = parseHexColor(color);
                           final isSelected = selectedColor == color;
                           return GestureDetector(
                             onTap: () {
@@ -1060,18 +1050,20 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: MidnightButton(
+                            child: AppButton(
                               onPressed: () => Navigator.pop(dialogContext, false),
-                              child: Text('İPTAL', style: TextStyle(color: sc.onPrimary)),
+                              variant: ButtonVariant.outline,
+                              child: const Text('İPTAL'),
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: MidnightButton(
+                            child: AppButton(
                               onPressed: () {
                                 if (nameController.text.trim().isEmpty) return;
                                 Navigator.pop(dialogContext, true);
                               },
+                              variant: ButtonVariant.solid,
                               child: Text('EKLE', style: TextStyle(fontWeight: FontWeight.bold, color: sc.onPrimary)),
                             ),
                           ),

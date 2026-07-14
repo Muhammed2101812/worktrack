@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../../core/widgets/midnight_widgets.dart';
+import '../../../core/widgets/app_widgets.dart';
+import '../../../core/dimens.dart';
 import '../../../core/theme.dart';
 
 class TimePickerRow extends StatelessWidget {
@@ -42,18 +43,18 @@ class TimePickerRow extends StatelessWidget {
         Row(
           children: [
             Expanded(child: _buildTimePicker(context, 'BAŞLANGIÇ', startTime, onStartTimeChanged, c)),
-            const SizedBox(width: 12),
+            const SizedBox(width: Spacing.s12),
             Expanded(child: _buildTimePicker(context, 'BİTİŞ', endTime, onEndTimeChanged, c)),
           ],
         ),
-        const SizedBox(height: 16),
-        MidnightCard(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        const SizedBox(height: Spacing.s16),
+        AppCard(
+          padding: const EdgeInsets.symmetric(vertical: Spacing.s12, horizontal: Spacing.s20),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(PhosphorIcons.clock(), size: 16, color: c.primary),
-              const SizedBox(width: 10),
+              const SizedBox(width: Spacing.s8),
               Text(
                 'Toplam: ${duration > 0 ? duration.toStringAsFixed(1) : "0.0"} saat',
                 style: TextStyle(
@@ -80,15 +81,10 @@ class TimePickerRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          padding: const EdgeInsets.only(left: Spacing.s4, bottom: Spacing.s8),
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
         GestureDetector(
@@ -104,8 +100,8 @@ class TimePickerRow extends StatelessWidget {
               );
             }
           },
-          child: MidnightCard(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          child: AppCard(
+            padding: const EdgeInsets.symmetric(vertical: Spacing.s16, horizontal: Spacing.s12),
             child: Center(
               child: Text(
                 time,
