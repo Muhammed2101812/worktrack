@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../core/dimens.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/payments_provider.dart';
@@ -50,26 +52,9 @@ class OverviewScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
                     children: [
                       // Header
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => context.go('/home'),
-                              child: Icon(PhosphorIcons.arrowLeft(),
-                                  color: c.textMain, size: 24),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Genel Bakış',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: c.textMain,
-                              ),
-                            ),
-                          ],
-                        ),
+                      ScreenHeader(
+                        title: 'Genel Bakış',
+                        onBack: () => context.go('/home'),
                       ),
                       const SizedBox(height: 24),
 
@@ -81,21 +66,13 @@ class OverviewScreen extends ConsumerWidget {
                           children: [
                             Text(
                               'Kalan Alacak',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: c.textMuted,
-                                letterSpacing: 0.5,
-                              ),
+                              style: AppTexts.eyebrow(context),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               '${remaining.toStringAsFixed(1)} $currency',
-                              style: TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.w900,
+                              style: AppTexts.figureLg(context).copyWith(
                                 color: remaining > 0 ? c.orange : c.emerald,
-                                letterSpacing: -1.5,
                                 height: 1,
                               ),
                             ),
@@ -107,7 +84,7 @@ class OverviewScreen extends ConsumerWidget {
                                 color: remaining > 0
                                     ? c.orange.withValues(alpha: 0.1)
                                     : c.emerald.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: Radii.xsBr,
                               ),
                               child: Text(
                                 remaining > 0
@@ -193,14 +170,20 @@ class OverviewScreen extends ConsumerWidget {
                 ),
               );
             },
-            loading: () =>
-                Center(child: CircularProgressIndicator(color: c.primary)),
+            loading: () => Center(
+                child: CircularProgressIndicator(
+                    color: Theme.of(context)
+                        .extension<AppPalette>()!
+                        .primary)),
             error: (e, _) => Center(
                 child: Text('Ödemeler yüklenemedi: $e',
                     style: TextStyle(color: c.textMain))),
           ),
-          loading: () =>
-              Center(child: CircularProgressIndicator(color: c.primary)),
+          loading: () => Center(
+              child: CircularProgressIndicator(
+                  color: Theme.of(context)
+                      .extension<AppPalette>()!
+                      .primary)),
           error: (e, _) => Center(
               child: Text('İş kayıtları yüklenemedi: $e',
                   style: TextStyle(color: c.textMain))),
