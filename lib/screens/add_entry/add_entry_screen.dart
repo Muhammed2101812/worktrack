@@ -179,12 +179,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'MÜŞTERİ',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: c.textMuted,
-              ),
+              style: AppTexts.eyebrow(context),
             ),
           ),
           ClientDropdown(
@@ -215,12 +210,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'YAPILAN İŞ (İSTEĞE BAĞLI)',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: c.textMuted,
-              ),
+              style: AppTexts.eyebrow(context),
             ),
           ),
           MidnightInput(
@@ -237,12 +227,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'SAAT',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: c.textMuted,
-              ),
+              style: AppTexts.eyebrow(context),
             ),
           ),
           TimePickerRow(
@@ -264,12 +249,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'MOLA (İSTEĞE BAĞLI)',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: c.textMuted,
-              ),
+              style: AppTexts.eyebrow(context),
             ),
           ),
           Row(
@@ -415,12 +395,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'ÜCRETLENDİRME',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: c.textMuted,
-              ),
+              style: AppTexts.eyebrow(context),
             ),
           ),
           Row(
@@ -545,12 +520,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'NOTLAR (İSTEĞE BAĞLI)',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: c.textMuted,
-              ),
+              style: AppTexts.eyebrow(context),
             ),
           ),
           MidnightInput(
@@ -666,12 +636,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     padding: const EdgeInsets.all(20),
                     child: Text(
                       'PROJE SEÇİN',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        color: sc.textMuted,
-                      ),
+                      style: AppTexts.eyebrow(sheetContext),
                     ),
                   ),
                   Expanded(
@@ -862,12 +827,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                   const SizedBox(height: 16),
                   Text(
                     isEditing ? 'PROJEYİ DÜZENLE' : 'YENİ PROJE',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      color: dc.textMain,
-                    ),
+                    style: AppTexts.eyebrow(dialogContext),
                   ),
                   const SizedBox(height: 20),
                   MidnightInput(
@@ -991,12 +951,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                     children: [
                       Text(
                         'YENİ MÜŞTERİ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: sc.textMain,
-                        ),
+                        style: AppTexts.eyebrow(sbContext),
                       ),
                       const SizedBox(height: 24),
                       MidnightInput(
