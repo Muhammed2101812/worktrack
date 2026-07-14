@@ -84,7 +84,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
                         color: c.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: Radii.xsBr,
                         border: Border.all(
                           color: c.primary.withValues(alpha: 0.25),
                         ),

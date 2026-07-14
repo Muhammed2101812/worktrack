@@ -72,7 +72,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         Expanded(
           child: entriesAsync.when(
             data: (entries) => _buildHistoryList(entries, isWide),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => Center(
+                child: CircularProgressIndicator(
+                    color: Theme.of(context).extension<AppPalette>()!.primary)),
             error: (error, _) => Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

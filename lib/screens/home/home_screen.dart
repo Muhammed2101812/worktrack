@@ -209,6 +209,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               variant: ButtonVariant.solid,
               onPressed: () => context.push('/home/add'),
               width: double.infinity,
+              height: 50,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -740,7 +741,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Center(
+                  child: CircularProgressIndicator(
+                      color: Theme.of(context).extension<AppPalette>()!.primary)),
               error: (e, s) => Center(child: Text('Hata: $e')),
             ),
           ),

@@ -89,6 +89,7 @@ class ClientDropdown extends StatelessWidget {
                       },
                       variant: ButtonVariant.solid,
                       width: double.infinity,
+                      height: 50,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

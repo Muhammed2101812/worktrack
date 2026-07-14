@@ -191,6 +191,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               variant: ButtonVariant.solid,
               onPressed: () => _showPaywallDialog(context),
               width: double.infinity,
+              height: 50,
               child: Text('YÜKSELT',
                   style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary)),
             ),
@@ -1737,7 +1738,7 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: c.emerald.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: Radii.xsBr,
                   border: Border.all(color: c.emerald.withValues(alpha: 0.3)),
                 ),
                 child: Text(

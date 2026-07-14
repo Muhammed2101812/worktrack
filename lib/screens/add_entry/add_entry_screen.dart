@@ -537,6 +537,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             onPressed: _saveEntry,
             variant: ButtonVariant.solid,
             width: double.infinity,
+            height: 50,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -676,7 +677,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                                         decoration: BoxDecoration(
                                           color: sc.primary
                                               .withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius: Radii.xsBr,
                                           border: Border.all(
                                             color: sc.primary
                                                 .withValues(alpha: 0.4),
@@ -755,6 +756,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                       },
                       variant: ButtonVariant.solid,
                       width: double.infinity,
+                      height: 50,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

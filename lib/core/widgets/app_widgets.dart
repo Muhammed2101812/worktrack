@@ -531,7 +531,8 @@ class SegmentedControl extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: active ? p.primary : Colors.transparent,
-                  borderRadius: Radii.xsBr, // 8
+                  // Nested radius: outer sm(12) minus 4px padding = 8 (snaps to xs).
+                  borderRadius: BorderRadius.circular(innerRadius(Radii.sm, Spacing.s4)),
                   boxShadow: active && Theme.of(context).brightness == Brightness.light
                       ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
                       : null,
