@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/widgets/midnight_widgets.dart';
+import '../../../core/dimens.dart';
 import '../../../core/theme.dart';
 
 class MonthFilter extends StatelessWidget {
@@ -16,7 +17,6 @@ class MonthFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = AppColors.of(context);
     return MidnightCard(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -31,12 +31,7 @@ class MonthFilter extends StatelessWidget {
           ),
           Text(
             DateFormat('MMMM yyyy', 'tr').format(selectedMonth).toUpperCase(),
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              letterSpacing: 1.1,
-              color: c.textMain,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
           _NavButton(
             icon: PhosphorIcons.caretRight(),
@@ -66,7 +61,7 @@ class _NavButton extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           color: c.bgColor,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: Radii.smBr,
           border: Border.all(color: c.cardBorder),
         ),
         child: Icon(icon, size: 16, color: c.textMuted),

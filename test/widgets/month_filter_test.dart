@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:worklog/core/theme.dart';
 import 'package:worklog/screens/history/widgets/month_filter.dart';
 
 void main() {
@@ -17,6 +18,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: AppTheme.light,
           home: Scaffold(
             body: MonthFilter(
               selectedMonth: now,
@@ -27,6 +29,28 @@ void main() {
       );
 
       expect(find.byType(GestureDetector), findsWidgets);
+    });
+
+    testWidgets('should display the formatted selected month label',
+        (WidgetTester tester) async {
+      final march2026 = DateTime(2026, 3, 15);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: MonthFilter(
+              selectedMonth: march2026,
+              onMonthChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.text(DateFormat('MMMM yyyy', 'tr').format(march2026).toUpperCase()),
+        findsOneWidget,
+      );
     });
   });
 }

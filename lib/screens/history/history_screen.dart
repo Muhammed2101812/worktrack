@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../providers/entries_provider.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/midnight_widgets.dart';
+import '../../core/dimens.dart';
 import '../../core/theme.dart';
 import '../history/widgets/month_filter.dart';
 
@@ -20,17 +22,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'Tümü';
   String _selectedSort = 'Tarih (En Yeni)';
-
-  /// Safely parse a `#RRGGBB` / `#AARRGGBB` hex color. Falls back to [fallback]
-  /// (typically the theme primary) on any parse error — prevents crashes when
-  /// an entry has a malformed stored color.
-  Color _parseColor(String hex, Color fallback) {
-    try {
-      return Color(int.parse(hex.replaceAll('#', '0xFF')));
-    } catch (_) {
-      return fallback;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,31 +102,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'İş Geçmişi',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: c.textMain,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildSortDropdown(),
-                ],
-              ),
+            ScreenHeader(
+              title: 'İş Geçmişi',
+              onBack: () => context.go('/home/overview'),
+              action: _buildSortDropdown(),
             ),
             Expanded(child: mainContent),
           ],
@@ -169,15 +139,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         });
       },
       child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        margin: const EdgeInsets.only(right: Spacing.s12),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.s20, vertical: Spacing.s8),
         decoration: BoxDecoration(
           color: isSelected ? c.primary.withValues(alpha: 0.1) : Colors.transparent,
           border: Border.all(
             color: isSelected ? c.primary.withValues(alpha: 0.4) : c.cardBorder,
             width: 1,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: Radii.lgBr,
           boxShadow: isSelected ? [
             BoxShadow(
               color: c.primary.withValues(alpha: 0.12),
@@ -222,32 +192,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
 
     if (filteredEntries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: c.shimmer1.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                PhosphorIcons.clockCounterClockwise(),
-                size: 64,
-                color: c.primary.withValues(alpha: 0.5),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Henüz kayıt yok',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: c.textMain,
-                fontSize: 18,
-              ),
-            ),
-          ],
+      return const Center(
+        child: EmptyState(
+          icon: Icons.history,
+          title: 'Henüz kayıt yok',
+          subtitle: 'Seçili ay için iş geçmişin burada görünecek.',
         ),
       );
     }
@@ -325,42 +274,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   Widget _buildEntryCard(dynamic entry) {
     final c = AppColors.of(context);
-    final clientColor = _parseColor(entry.clientColor as String, c.primary);
     final hasProject =
         entry.projectName != null && entry.projectName.toString().isNotEmpty;
     final clientLabel = hasProject
         ? '${entry.clientName} • ${entry.projectName}'
         : entry.clientName;
 
-    return MidnightCard(
+    return AppCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       onTap: () => _showEntryDetails(entry),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: clientColor.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: clientColor.withValues(alpha: 0.4),
-                width: 1,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                entry.clientName.isNotEmpty
-                    ? entry.clientName[0].toUpperCase()
-                    : '?',
-                style: TextStyle(
-                  color: clientColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ),
+          AppAvatar(
+            name: entry.clientName as String,
+            hexColor: entry.clientColor as String,
+            size: AvatarSize.md,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -488,7 +417,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           decoration: BoxDecoration(
             color: c.shimmer1.withValues(alpha: 0.1),
             border: Border.all(color: c.cardBorder, width: 1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: Radii.smBr,
           ),
           child: Icon(
             getSortIcon(),
@@ -575,131 +504,118 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         final c = AppColors.of(context);
-        return Container(
-          decoration: BoxDecoration(
-            color: c.navBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: c.cardBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        return AppSheet.decoration(
+          context,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 0,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Kayıt Detayları',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: c.textMain,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(PhosphorIcons.x(), color: c.textMain),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    Divider(height: 32, color: c.cardBorder),
-                    _buildDetailRow(PhosphorIcons.user(), 'Müşteri', entry.clientName),
-                    if (entry.projectName != null &&
-                        entry.projectName.toString().isNotEmpty)
-                      _buildDetailRow(
-                          PhosphorIcons.folderSimple(), 'Proje', entry.projectName),
-                    _buildDetailRow(PhosphorIcons.calendarBlank(), 'Tarih', entry.date),
-                    _buildDetailRow(PhosphorIcons.clock(), 'Saat', '${entry.startTime} - ${entry.endTime}'),
-                    _buildDetailRow(PhosphorIcons.timer(), 'Süre', '${entry.durationHours.toStringAsFixed(1)} saat'),
-                    _buildDetailRow(PhosphorIcons.briefcase(), 'Tür', entry.workType),
-                    if (entry.notes.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        'Notlar',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: c.textMain,
-                        ),
+                    Text(
+                      'Kayıt Detayları',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: c.textMain,
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: c.shimmer1.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(entry.notes, style: TextStyle(color: c.textMain)),
-                      ),
-                    ],
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: MidnightButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              context.push('/home/add', extra: entry);
-                            },
-                            child: Text('Düzenle', style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary)),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: MidnightButton(
-                            onPressed: () async {
-                              final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  backgroundColor: c.navBg,
-                                  title: Text('Kaydı Sil', style: TextStyle(color: c.textMain)),
-                                  content: Text('Bu kaydı silmek istediğinize emin misiniz?', style: TextStyle(color: c.textMuted)),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
-                                      child: Text('İptal', style: TextStyle(color: c.primary)),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      style: TextButton.styleFrom(foregroundColor: c.error),
-                                      child: const Text('Sil'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirmed == true) {
-                                Navigator.pop(context);
-                                ref.read(entriesProvider.notifier).deleteEntry(entry.id);
-                                CustomToast.show(context, 'Kayıt silindi');
-                              }
-                            },
-                            color: c.error.withValues(alpha: 0.1),
-                            child: Text('Sil', style: TextStyle(color: c.error, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
                     ),
-                    const SizedBox(height: 16),
+                    IconButton(
+                      icon: Icon(PhosphorIcons.x(), color: c.textMain),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ],
                 ),
-              ),
-            ],
+                Divider(height: 32, color: c.cardBorder),
+                _buildDetailRow(PhosphorIcons.user(), 'Müşteri', entry.clientName),
+                if (entry.projectName != null &&
+                    entry.projectName.toString().isNotEmpty)
+                  _buildDetailRow(
+                      PhosphorIcons.folderSimple(), 'Proje', entry.projectName),
+                _buildDetailRow(PhosphorIcons.calendarBlank(), 'Tarih', entry.date),
+                _buildDetailRow(PhosphorIcons.clock(), 'Saat', '${entry.startTime} - ${entry.endTime}'),
+                _buildDetailRow(PhosphorIcons.timer(), 'Süre', '${entry.durationHours.toStringAsFixed(1)} saat'),
+                _buildDetailRow(PhosphorIcons.briefcase(), 'Tür', entry.workType),
+                if (entry.notes.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Notlar',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: c.textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: c.shimmer1.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(entry.notes, style: TextStyle(color: c.textMain)),
+                  ),
+                ],
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        variant: ButtonVariant.ghost,
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.push('/home/add', extra: entry);
+                        },
+                        child: const Text('Düzenle'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: AppButton(
+                        variant: ButtonVariant.danger,
+                        onPressed: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: c.navBg,
+                              title: Text('Kaydı Sil', style: TextStyle(color: c.textMain)),
+                              content: Text('Bu kaydı silmek istediğinize emin misiniz?', style: TextStyle(color: c.textMuted)),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: Text('İptal', style: TextStyle(color: c.primary)),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  style: TextButton.styleFrom(foregroundColor: c.error),
+                                  child: const Text('Sil'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true) {
+                            Navigator.pop(context);
+                            ref.read(entriesProvider.notifier).deleteEntry(entry.id);
+                            CustomToast.show(context, 'Kayıt silindi');
+                          }
+                        },
+                        child: const Text('Sil'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },
