@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dimens.dart';
 
 /// Theme extension carrying the app's semantic palette. Access from widgets via
 /// `Theme.of(context).extension<AppPalette>()!`. Both light and dark instances
@@ -45,17 +47,17 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.onPrimary,
   });
 
-  /// Light palette — minimal white (legacy AppColors/MidnightColors values).
+  /// Light palette — warm neutrals.
   static const light = AppPalette(
     primary: Color(0xFF10B981),
     primaryHover: Color(0xFF059669),
-    bgColor: Color(0xFFF9FAFB),
+    bgColor: Color(0xFFF7F6F3), // warm off-white (was cold gray #F9FAFB)
     cardBg: Color(0xFFFFFFFF),
-    cardBorder: Color(0xFFE5E7EB),
-    textMain: Color(0xFF111827),
-    textMuted: Color(0xFF6B7280),
-    shimmer1: Color(0xFFF3F4F6),
-    shimmer2: Color(0xFFF9FAFB),
+    cardBorder: Color(0xFFE8E5DE), // warm border (was cold #E5E7EB)
+    textMain: Color(0xFF1C1B19), // warm near-black (was #111827)
+    textMuted: Color(0xFF7A766E), // warm muted (was #6B7280)
+    shimmer1: Color(0xFFEFEDE7),
+    shimmer2: Color(0xFFF7F6F3),
     emerald: Color(0xFF10B981),
     purple: Color(0xFF8B5CF6),
     orange: Color(0xFFF59E0B),
@@ -65,24 +67,24 @@ class AppPalette extends ThemeExtension<AppPalette> {
     onPrimary: Color(0xFFFFFFFF),
   );
 
-  /// Dark palette — slate-based dark surfaces with the same emerald accent.
+  /// Dark palette — warm dark surfaces with the same emerald accent.
   static const dark = AppPalette(
     primary: Color(0xFF34D399),
     primaryHover: Color(0xFF10B981),
-    bgColor: Color(0xFF0F172A), // slate-900
-    cardBg: Color(0xFF1E293B), // slate-800
-    cardBorder: Color(0xFF334155), // slate-700
-    textMain: Color(0xFFF1F5F9), // slate-100
-    textMuted: Color(0xFF94A3B8), // slate-400
-    shimmer1: Color(0xFF1E293B),
-    shimmer2: Color(0xFF0F172A),
+    bgColor: Color(0xFF1A1814), // warm dark (was cold slate #0F172A)
+    cardBg: Color(0xFF26231D), // warm dark surface (was #1E293B)
+    cardBorder: Color(0xFF3A3630), // warm border (was #334155)
+    textMain: Color(0xFFF4F2EC), // warm off-white (was #F1F5F9)
+    textMuted: Color(0xFFA39E92), // warm muted (was #94A3B8)
+    shimmer1: Color(0xFF26231D),
+    shimmer2: Color(0xFF1A1814),
     emerald: Color(0xFF34D399),
     purple: Color(0xFFA78BFA),
     orange: Color(0xFFFBBF24),
     error: Color(0xFFF87171),
     success: Color(0xFF34D399),
-    navBg: Color(0xFF1E293B),
-    onPrimary: Color(0xFF0F172A),
+    navBg: Color(0xFF26231D),
+    onPrimary: Color(0xFF1A1814),
   );
 
   @override
@@ -175,14 +177,18 @@ class AppTheme {
         iconTheme: IconThemeData(color: p.textMain),
       ),
 
-      textTheme: TextTheme(
+      textTheme: GoogleFonts.spaceGroteskTextTheme(
+        ThemeData(brightness: Brightness.light).textTheme,
+      ).copyWith(
         headlineMedium: TextStyle(
           color: p.textMain,
+          fontSize: 24,
           fontWeight: FontWeight.bold,
           letterSpacing: -0.5,
         ),
         titleLarge: TextStyle(
           color: p.textMain,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
         bodyLarge: TextStyle(color: p.textMain),
@@ -194,7 +200,7 @@ class AppTheme {
         elevation: 0,
         shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Radii.md), // 16
           side: BorderSide(color: p.cardBorder, width: 1),
         ),
       ),
@@ -216,15 +222,15 @@ class AppTheme {
         filled: true,
         fillColor: p.cardBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.sm), // 12
           borderSide: BorderSide(color: p.cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.sm),
           borderSide: BorderSide(color: p.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.sm),
           borderSide: BorderSide(color: p.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -259,14 +265,18 @@ class AppTheme {
         iconTheme: IconThemeData(color: p.textMain),
       ),
 
-      textTheme: TextTheme(
+      textTheme: GoogleFonts.spaceGroteskTextTheme(
+        ThemeData(brightness: Brightness.dark).textTheme,
+      ).copyWith(
         headlineMedium: TextStyle(
           color: p.textMain,
+          fontSize: 24,
           fontWeight: FontWeight.bold,
           letterSpacing: -0.5,
         ),
         titleLarge: TextStyle(
           color: p.textMain,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
         bodyLarge: TextStyle(color: p.textMain),
@@ -278,7 +288,7 @@ class AppTheme {
         elevation: 0,
         shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Radii.md), // 16
           side: BorderSide(color: p.cardBorder, width: 1),
         ),
       ),
@@ -300,15 +310,15 @@ class AppTheme {
         filled: true,
         fillColor: p.cardBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.sm), // 12
           borderSide: BorderSide(color: p.cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.sm),
           borderSide: BorderSide(color: p.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.sm),
           borderSide: BorderSide(color: p.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
