@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 String decodeHtmlEntities(String s) {
   if (s.isEmpty) return s;
   var decoded = s
@@ -46,4 +48,21 @@ int compareDisplayDates(String a, String b) {
   final sb = displayDateToSortable(b);
   if (sa != null && sb != null) return sa.compareTo(sb);
   return a.compareTo(b);
+}
+
+/// Parses a hex color string into a [Color]. Accepts `#RRGGBB`,
+/// `#AARRGGBB`, `RRGGBB`, `AARRGGBB` (case-insensitive). Returns [fallback]
+/// for null, empty, or malformed input so callers never throw.
+///
+/// Consolidates the 7 duplicated `_parseColor` implementations across screens.
+Color parseHexColor(String? hex, [Color fallback = const Color(0xFF9CA3AF)]) {
+  if (hex == null || hex.isEmpty) return fallback;
+  var h = hex.trim();
+  if (h.startsWith('#')) h = h.substring(1);
+  // Normalize to AARRGGBB.
+  if (h.length == 6) h = 'FF$h';
+  if (h.length != 8) return fallback;
+  final value = int.tryParse(h, radix: 16);
+  if (value == null) return fallback;
+  return Color(value);
 }
