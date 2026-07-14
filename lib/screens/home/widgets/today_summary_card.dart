@@ -40,7 +40,6 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard> {
         return AppCard(
           variant: CardVariant.hero,
           padding: const EdgeInsets.all(Spacing.s24),
-          ledgerLine: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

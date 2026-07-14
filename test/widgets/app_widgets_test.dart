@@ -24,21 +24,11 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('ledgerLine renders a thin left container', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.light,
-        home: const Scaffold(
-            body: AppCard(ledgerLine: true, child: Text('X'))),
-      ));
-      // The card + a ledger stripe container exist.
-      expect(find.byType(AppCard), findsOneWidget);
-    });
-
-    // Regression for "Anasayfa boş": when a ledgerLine AppCard is placed inside
-    // a ListView (unbounded vertical height) — exactly how HomeScreen renders
-    // TodaySummaryCard — the content must still paint with a non-zero height.
+    // Regression for "Anasayfa boş": an AppCard placed inside a ListView
+    // (unbounded vertical height) — exactly how HomeScreen renders
+    // TodaySummaryCard — must still paint with a non-zero height.
     testWidgets(
-        'ledgerLine renders content with non-zero height in a ListView '
+        'renders content with non-zero height in a ListView '
         '(unbounded height context)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -47,7 +37,6 @@ void main() {
             body: ListView(
               children: const [
                 AppCard(
-                  ledgerLine: true,
                   variant: CardVariant.hero,
                   padding: EdgeInsets.all(24),
                   child: Column(
@@ -67,12 +56,10 @@ void main() {
       expect(find.text('Hero Title'), findsOneWidget);
       expect(find.text('Hero Body'), findsOneWidget);
 
-      // The card must occupy vertical space — not collapse to 0 because the
-      // ledger Row's cross-axis (stretch) was forced to the stripe's natural
-      // height (0) in an unbounded parent.
+      // The card must occupy vertical space — not collapse to 0.
       final cardBox = tester.getRect(find.byType(AppCard));
       expect(cardBox.height, greaterThan(0),
-          reason: 'ledgerLine card collapsed to zero height in a ListView');
+          reason: 'card collapsed to zero height in a ListView');
     });
   });
 

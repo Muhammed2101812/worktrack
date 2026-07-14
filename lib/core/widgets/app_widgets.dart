@@ -10,16 +10,13 @@ import '../utils.dart';
 // ===========================================================================
 enum CardVariant { flat, elevated, hero }
 
-/// One card recipe. border(1px) + consistent shadow. [ledgerLine] draws the
-/// signature left-edge accent stripe (spec §3.3).
+/// One card recipe. border(1px) + consistent shadow.
 class AppCard extends StatelessWidget {
   final Widget? child;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
   final CardVariant variant;
-  final bool ledgerLine;
-  final Color? ledgerColor;
 
   const AppCard({
     super.key,
@@ -28,8 +25,6 @@ class AppCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.variant = CardVariant.flat,
-    this.ledgerLine = false,
-    this.ledgerColor,
   });
 
   BorderRadius get _radius {
@@ -68,26 +63,7 @@ class AppCard extends StatelessWidget {
           border: Border.all(color: p.cardBorder, width: 1),
           boxShadow: _shadow(context),
         ),
-        child: ledgerLine
-            ? Stack(
-                children: [
-                  // The real content sizes the card; the stripe is just an
-                  // overlay so no cross-axis (height) constraint is ever
-                  // negotiated against the Row. This is essential when the
-                  // card lives in a ListView (unbounded vertical height) — a
-                  // stretch-axis Row would otherwise throw "BoxConstraints
-                  // forces an infinite height" and render nothing (the root
-                  // cause of the empty home screen).
-                  if (child != null) child!,
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(width: 3, color: ledgerColor ?? p.primary),
-                    ),
-                  ),
-                ],
-              )
-            : child,
+        child: child,
       ),
     );
   }

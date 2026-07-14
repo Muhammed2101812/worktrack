@@ -63,8 +63,6 @@ class EntryListTile extends ConsumerWidget {
       child: AppCard(
         margin: const EdgeInsets.symmetric(vertical: Spacing.s4),
         padding: const EdgeInsets.all(Spacing.s16),
-        ledgerLine: true,
-        ledgerColor: clientColor,
         child: Row(
           children: [
             Container(
