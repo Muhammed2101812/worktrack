@@ -13,7 +13,10 @@ import '../../providers/theme_provider.dart';
 import '../../models/client.dart';
 import '../../core/constants.dart';
 import '../../core/widgets/midnight_widgets.dart';
+import '../../core/widgets/app_widgets.dart';
+import '../../core/dimens.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
 import '../../services/export_service.dart';
 import '../../services/import_service.dart';
 import '../../services/iap_service.dart';
@@ -92,8 +95,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (isPremium) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: MidnightCard(
-          padding: const EdgeInsets.all(16),
+        child: AppCard(
+          padding: const EdgeInsets.all(Spacing.s20),
           child: Row(
             children: [
               Container(
@@ -101,7 +104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: c.emerald.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: Radii.mdBr,
                   border: Border.all(color: c.emerald.withValues(alpha: 0.3)),
                 ),
                 child: Icon(PhosphorIcons.crown(PhosphorIconsStyle.fill), color: c.emerald, size: 22),
@@ -128,8 +131,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: MidnightCard(
-        padding: const EdgeInsets.all(20),
+      child: AppCard(
+        padding: const EdgeInsets.all(Spacing.s20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -140,7 +143,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   height: 48,
                   decoration: BoxDecoration(
                     color: c.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: Radii.mdBr,
                   ),
                   child: Icon(PhosphorIcons.crown(), color: c.primary, size: 24),
                 ),
@@ -188,7 +191,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             MidnightButton(
               onPressed: () => _showPaywallDialog(context),
               width: double.infinity,
-              child: Text('ŞİMDİ YÜKSELTT',
+              child: Text('YÜKSELT',
                   style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary)),
             ),
             const SizedBox(height: 8),
@@ -233,11 +236,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (ctx) {
         final dc = AppColors.of(ctx);
         return AlertDialog(
-          backgroundColor: dc.navBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: dc.cardBorder, width: 1),
-          ),
+          backgroundColor: AppDialog.background(ctx),
+          shape: AppDialog.shape(ctx),
           title: Row(
             children: [
               Icon(PhosphorIcons.crown(PhosphorIconsStyle.fill), color: dc.primary),
@@ -264,10 +264,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onPressed: () => Navigator.pop(ctx, false),
               child: Text('Vazgeç', style: TextStyle(color: dc.textMuted)),
             ),
-            MidnightButton(
+            AppButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Satın Al',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: dc.onPrimary)),
+              variant: ButtonVariant.solid,
+              child: const Text('Premium\'a Geç'),
             ),
           ],
         );
@@ -303,18 +303,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(Spacing.s16, Spacing.s16, Spacing.s16, Spacing.s8),
           child: Text(
             'GÖRÜNÜM',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
-        MidnightCard(
+        AppCard(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -328,7 +323,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         color: c.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: Radii.smBr,
                         border: Border.all(
                           color: c.primary.withValues(alpha: 0.2),
                           width: 1,
@@ -379,7 +374,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? c.primary.withValues(alpha: 0.12) : c.bgColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: Radii.smBr,
           border: Border.all(
             color: isSelected ? c.primary : c.cardBorder,
             width: isSelected ? 1.5 : 1,
@@ -422,18 +417,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(Spacing.s16, Spacing.s16, Spacing.s16, Spacing.s8),
           child: Text(
             'VERİ & SENKRONİZASYON',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
-        MidnightCard(
+        AppCard(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -494,7 +484,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: c.emerald.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: Radii.xsBr,
                           border: Border.all(color: c.emerald.withValues(alpha: 0.2)),
                         ),
                         child: Row(
@@ -585,18 +575,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(Spacing.s16, Spacing.s16, Spacing.s16, Spacing.s8),
           child: Text(
             'HESAP YÖNETİMİ',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
-        MidnightCard(
+        AppCard(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -678,18 +663,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(Spacing.s16, Spacing.s16, Spacing.s16, Spacing.s8),
           child: Text(
             'FİNANS VE ÜCRETLENDİRME',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
-        MidnightCard(
+        AppCard(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -736,13 +716,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               final isCurrent = currency == currentCurrency;
               return InkWell(
                 onTap: () => Navigator.pop(ctx, currency),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: Radii.smBr,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   decoration: BoxDecoration(
                     color: isCurrent ? dc.primary.withValues(alpha: 0.12) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: Radii.smBr,
                     border: Border.all(
                       color: isCurrent ? dc.primary : Colors.transparent,
                       width: 1,
@@ -879,18 +859,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(Spacing.s16, Spacing.s16, Spacing.s16, Spacing.s8),
           child: Text(
             'VERİ YÖNETİMİ',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
-        MidnightCard(
+        AppCard(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -1088,12 +1063,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final color = isAll ? c.error : c.primary;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: Radii.mdBr,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: Radii.mdBr,
           border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
         ),
         child: Row(
@@ -1136,15 +1111,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(Spacing.s16, Spacing.s16, Spacing.s16, Spacing.s8),
           child: Text(
             'HAKKINDA',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: c.textMuted,
-            ),
+            style: AppTexts.eyebrow(context),
           ),
         ),
         Padding(
@@ -1210,7 +1180,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               height: 40,
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: Radii.smBr,
                 border: Border.all(
                   color: accent.withValues(alpha: 0.2),
                   width: 1,
@@ -1318,14 +1288,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Color _parseColor(String hex, Color fallback) {
-    try {
-      return Color(int.parse(hex.replaceAll('#', '0xFF')));
-    } catch (_) {
-      return fallback;
-    }
-  }
-
   Future<void> _showAddOrEditClientDialog(BuildContext context,
       {Client? client}) async {
     final nameController =
@@ -1388,7 +1350,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         alignment: WrapAlignment.center,
                         children:
                             AppConstants.clientColors.map((color) {
-                          final colorVal = _parseColor(color, sc.primary);
+                          final colorVal = parseHexColor(color, sc.primary);
                           final isSelected = selectedColor == color;
                           return GestureDetector(
                             onTap: () => setDialogState(
@@ -1507,48 +1469,37 @@ class _ClientManagementSheet extends ConsumerWidget {
     final c = AppColors.of(context);
     final clientsAsync = ref.watch(clientsProvider);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: c.cardBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: c.cardBorder,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Müşteriler',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: c.textMain,
+    return AppSheet.decoration(
+      context,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Müşteriler',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: c.textMain,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close, color: c.textMuted),
-                ),
-              ],
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close, color: c.textMuted),
+                  ),
+                ],
+              ),
             ),
-          ),
-          clientsAsync.when(
+            clientsAsync.when(
             data: (clients) {
               if (clients.isEmpty) {
                 return Padding(
@@ -1578,8 +1529,8 @@ class _ClientManagementSheet extends ConsumerWidget {
                   itemCount: clients.length,
                   itemBuilder: (_, i) {
                     final client = clients[i];
-                    final color = _parseColor(client.color, c.primary);
-                    return MidnightCard(
+                    final color = parseHexColor(client.color, c.primary);
+                    return AppCard(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
@@ -1659,16 +1610,9 @@ class _ClientManagementSheet extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
     );
-  }
-
-  Color _parseColor(String hex, Color fallback) {
-    try {
-      return Color(int.parse(hex.replaceAll('#', '0xFF')));
-    } catch (_) {
-      return fallback;
-    }
   }
 }
 
@@ -1686,39 +1630,36 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: c.cardBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Verileri İçe Aktar',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: c.textMain,
+    return AppSheet.decoration(
+      context,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Verileri İçe Aktar',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: c.textMain,
+                  ),
                 ),
-              ),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.close, color: c.textMuted),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.close, color: c.textMuted),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1823,6 +1764,7 @@ class _ImportSheetState extends ConsumerState<_ImportSheet> {
                   ),
           ),
         ],
+        ),
       ),
     );
   }
