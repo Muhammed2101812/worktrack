@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../core/dimens.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/midnight_widgets.dart';
 import '../../providers/entries_provider.dart';
 import '../../providers/clients_provider.dart';
@@ -50,11 +52,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        // Only the root tab ("/home") confirms before exit; sub-pages within
-        // the shell pop normally via their own navigation.
-        final isRoot = location == '/home' || location == '/home/overview';
+        // Only the root Home tab confirms before exiting the app. Any other tab
+        // (Overview, Stats, Settings) goes back to Home instead of exiting.
+        final isRoot = location == '/home';
         if (!isRoot) {
-          context.pop();
+          context.go('/home');
           return;
         }
         final now = DateTime.now();
@@ -204,24 +206,17 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           // New record button
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: SizedBox(
+            child: AppButton(
+              variant: ButtonVariant.solid,
+              onPressed: () => context.push('/home/add'),
               width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => context.push('/home/add'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: c.primary,
-                  foregroundColor: c.onPrimary,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.add, size: 20),
-                label: const Text(
-                  'Yeni Kayıt',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add, size: 20),
+                  SizedBox(width: Spacing.s8),
+                  Text('Yeni Kayıt'),
+                ],
               ),
             ),
           ),
@@ -562,11 +557,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             builder: (ctx) {
               final c = AppColors.of(ctx);
               return AlertDialog(
-                backgroundColor: c.cardBg,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  side: BorderSide(color: c.cardBorder, width: 1),
-                ),
+                backgroundColor: AppDialog.background(ctx),
+                shape: AppDialog.shape(ctx),
                 title: Row(
                   children: [
                     Icon(Icons.backup_outlined, color: c.primary),
@@ -698,7 +690,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 32),
                       const TodaySummaryCard(),
-                      const SizedBox(height: 35),
+                      const SizedBox(height: Spacing.s32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -722,60 +714,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: Spacing.s8),
                       if (entries.isEmpty)
                         Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 40),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(28),
-                                  decoration: BoxDecoration(
-                                    color: c.primary.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.edit_note_rounded,
-                                    size: 56,
-                                    color: c.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  'Henüz kaydınız bulunmuyor',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: c.textMain,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'İlk çalışma kaydınızı oluşturun',
-                                  style: TextStyle(color: c.textMuted, fontSize: 13),
-                                ),
-                                const SizedBox(height: 20),
-                                MidnightButton(
-                                  onPressed: () => context.push('/home/add'),
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.add, color: c.onPrimary, size: 18),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'İlk Kaydını Oluştur',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: c.onPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                          child: EmptyState(
+                            icon: Icons.edit_note_rounded,
+                            title: 'Henüz kaydınız bulunmuyor',
+                            subtitle: 'İlk çalışma kaydınızı oluşturun',
+                            cta: AppButton(
+                              variant: ButtonVariant.solid,
+                              onPressed: () => context.push('/home/add'),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add, size: 18),
+                                  SizedBox(width: Spacing.s8),
+                                  Text('İlk Kaydını Oluştur'),
+                                ],
+                              ),
                             ),
                           ),
                         )
