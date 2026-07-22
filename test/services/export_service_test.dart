@@ -3,6 +3,7 @@ import 'package:excel/excel.dart';
 import 'package:worklog/services/export_service.dart';
 import 'package:worklog/models/work_entry.dart';
 import 'package:worklog/models/client.dart';
+import 'package:worklog/core/utils.dart';
 
 void main() {
   group('ExportService Tests', () {
@@ -189,6 +190,44 @@ void main() {
 
       print('Export benchmark: built Excel bytes for ${entries.length} entries and ${clients.length} clients in ${stopwatch.elapsedMilliseconds} ms');
       expect(bytes, isNotEmpty);
+    });
+
+    group('isSafePath Validation Tests', () {
+      test('should accept valid safe paths with correct extension', () {
+        expect(isSafePath('/home/user/documents/WorkLog_2026.xlsx', 'xlsx'), isTrue);
+        expect(isSafePath('C:\\Users\\User\\Documents\\WorkLog_2026.xlsx', 'xlsx'), isTrue);
+        expect(isSafePath('WorkLog_2026.xlsx', 'xlsx'), isTrue);
+        expect(isSafePath('/reports/Rapor_2026.pdf', 'pdf'), isTrue);
+      });
+
+      test('should reject null or empty paths', () {
+        expect(isSafePath(null, 'xlsx'), isFalse);
+        expect(isSafePath('', 'xlsx'), isFalse);
+        expect(isSafePath('   ', 'xlsx'), isFalse);
+      });
+
+      test('should reject paths with relative directory traversal sequences', () {
+        expect(isSafePath('/home/user/documents/../../etc/passwd', 'xlsx'), isFalse);
+        expect(isSafePath('C:\\Users\\User\\..\\..\\Windows\\System32\\cmd.exe', 'xlsx'), isFalse);
+        expect(isSafePath('a/../b/file.xlsx', 'xlsx'), isFalse);
+        expect(isSafePath('../file.xlsx', 'xlsx'), isFalse);
+        expect(isSafePath('..\\file.xlsx', 'xlsx'), isFalse);
+        expect(isSafePath('/./file.xlsx', 'xlsx'), isFalse);
+      });
+
+      test('should reject paths with incorrect extensions', () {
+        expect(isSafePath('/home/user/documents/file.png', 'xlsx'), isFalse);
+        expect(isSafePath('/home/user/documents/file.xlsx.png', 'xlsx'), isFalse);
+        expect(isSafePath('/home/user/documents/file.pdf', 'xlsx'), isFalse);
+        expect(isSafePath('/home/user/documents/file.xlsx', 'pdf'), isFalse);
+      });
+
+      test('should handle case-insensitive extension checking', () {
+        expect(isSafePath('/home/user/documents/file.XLSX', 'xlsx'), isTrue);
+        expect(isSafePath('/home/user/documents/file.Xlsx', 'xlsx'), isTrue);
+        expect(isSafePath('/home/user/documents/file.PDF', 'pdf'), isTrue);
+        expect(isSafePath('/home/user/documents/file.xlsx', 'XLSX'), isTrue);
+      });
     });
   });
 }
