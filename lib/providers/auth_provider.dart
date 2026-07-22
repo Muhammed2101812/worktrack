@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 
-final authServiceProvider = Provider((ref) => AuthService());
+final supabaseClientProvider = Provider<SupabaseClient>((ref) => Supabase.instance.client);
+
+final authServiceProvider = Provider((ref) => AuthService(client: ref.watch(supabaseClientProvider)));
 
 final currentUserProvider = Provider<User?>((ref) {
-  return Supabase.instance.client.auth.currentUser;
+  return ref.watch(supabaseClientProvider).auth.currentUser;
 });
 
 /// Translates a Supabase auth exception message into a user-friendly Turkish
@@ -47,7 +49,8 @@ class AuthNotifier extends Notifier<User?> {
     // Keep state in sync with external auth changes (OAuth redirect,
     // token refresh, sign-out from another device, email confirmation, etc.).
     try {
-      _sub = Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+      final client = ref.watch(supabaseClientProvider);
+      _sub = client.auth.onAuthStateChange.listen((state) {
         final user = state.session?.user;
         if (this.state?.id != user?.id) {
           this.state = user;
@@ -57,22 +60,23 @@ class AuthNotifier extends Notifier<User?> {
     } catch (e) {
       debugPrint('AuthNotifier: onAuthStateChange unavailable ($e)');
     }
-    return Supabase.instance.client.auth.currentUser;
+    final client = ref.watch(supabaseClientProvider);
+    return client.auth.currentUser;
   }
 
   Future<void> signIn(String email, String password) async {
     await ref.read(authServiceProvider).signIn(email, password);
-    state = Supabase.instance.client.auth.currentUser;
+    state = ref.read(supabaseClientProvider).auth.currentUser;
   }
 
   Future<void> signUp(String email, String password) async {
     await ref.read(authServiceProvider).signUp(email, password);
-    state = Supabase.instance.client.auth.currentUser;
+    state = ref.read(supabaseClientProvider).auth.currentUser;
   }
 
   Future<void> signInWithGoogle() async {
     await ref.read(authServiceProvider).signInWithGoogle();
-    state = Supabase.instance.client.auth.currentUser;
+    state = ref.read(supabaseClientProvider).auth.currentUser;
   }
 
   Future<void> signOut() async {
