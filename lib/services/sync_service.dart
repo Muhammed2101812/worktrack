@@ -81,13 +81,17 @@ class SyncService {
             unsynced.map((p) => p.id).toList(), true);
       } catch (_) {
         // Fallback to individual upserts on failure
+        final syncedIds = <String>[];
         for (final project in unsynced) {
           try {
             await supabase.upsertProject(project);
-            await localDB.updateProject(project.copyWith(synced: true));
+            syncedIds.add(project.id);
           } catch (_) {
             // Tek proje başarısız olursa diğerlerini işlemeye devam et
           }
+        }
+        if (syncedIds.isNotEmpty) {
+          await localDB.updateProjectsSyncBatch(syncedIds, true);
         }
       }
     } catch (_) {
