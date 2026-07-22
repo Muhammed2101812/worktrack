@@ -182,6 +182,40 @@ void main() {
     ConnectivityPlatform.instance = FakeConnectivityPlatform();
   });
 
+  group('compareUpdatedAt Tests', () {
+    test('null values are treated as equal to empty strings or other nulls', () {
+      expect(compareUpdatedAt(null, null), equals(0));
+      expect(compareUpdatedAt('', ''), equals(0));
+      expect(compareUpdatedAt(null, ''), equals(0));
+      expect(compareUpdatedAt('', null), equals(0));
+    });
+
+    test('valid timestamp is greater than null or empty string', () {
+      const timestamp = '2026-03-15T12:00:00Z';
+      expect(compareUpdatedAt(timestamp, null), isPositive);
+      expect(compareUpdatedAt(timestamp, ''), isPositive);
+      expect(compareUpdatedAt(null, timestamp), isNegative);
+      expect(compareUpdatedAt('', timestamp), isNegative);
+    });
+
+    test('compares correct chronological order of date strings', () {
+      const older = '2026-03-15T12:00:00Z';
+      const newer = '2026-03-15T13:00:00Z';
+
+      expect(compareUpdatedAt(newer, older), isPositive);
+      expect(compareUpdatedAt(older, newer), isNegative);
+      expect(compareUpdatedAt(older, older), equals(0));
+    });
+
+    test('compares typical ISO dates correctly', () {
+      // Lexicographical string comparison aligns with chronological order for ISO-8601
+      const d1 = '2025-10-10T09:00:00';
+      const d2 = '2025-10-11T09:00:00';
+      expect(compareUpdatedAt(d1, d2), isNegative);
+      expect(compareUpdatedAt(d2, d1), isPositive);
+    });
+  });
+
   group('SyncService - fullSync Tests', () {
     test('should push local-only clients to remote in a single bulk upsert call', () async {
       final localDB = FakeLocalDBService();
