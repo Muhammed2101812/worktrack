@@ -47,7 +47,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               const SizedBox(height: 16),
               MidnightInput(
                 hintText: 'Müşteri veya iş ara...',
-                prefixIcon: Icon(PhosphorIcons.magnifyingGlass(), color: c.primary),
+                prefixIcon:
+                    Icon(PhosphorIcons.magnifyingGlass(), color: c.primary),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
@@ -120,7 +121,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     children: [
                       GestureDetector(
                         onTap: () => context.pop(),
-                        child: Icon(PhosphorIcons.arrowLeft(), color: c.textMain, size: 24),
+                        child: Icon(PhosphorIcons.arrowLeft(),
+                            color: c.textMain, size: 24),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -172,18 +174,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? c.primary.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSelected
+              ? c.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
           border: Border.all(
             color: isSelected ? c.primary.withValues(alpha: 0.4) : c.cardBorder,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: c.primary.withValues(alpha: 0.12),
-              blurRadius: 10,
-            ),
-          ] : [],
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: c.primary.withValues(alpha: 0.12),
+                    blurRadius: 10,
+                  ),
+                ]
+              : [],
         ),
         child: Text(
           label,
@@ -203,8 +209,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     if (_searchQuery.isNotEmpty) {
       filteredEntries = filteredEntries.where((entry) {
-        return entry.clientName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-               entry.workType.toLowerCase().contains(_searchQuery.toLowerCase());
+        return entry.clientName
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()) ||
+            entry.workType.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
 
@@ -307,9 +315,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       // Sort by duration flat list
       final sortedEntries = List.from(filteredEntries);
       if (_selectedSort == 'Süre (En Uzun)') {
-        sortedEntries.sort((a, b) => b.durationHours.compareTo(a.durationHours));
+        sortedEntries
+            .sort((a, b) => b.durationHours.compareTo(a.durationHours));
       } else {
-        sortedEntries.sort((a, b) => a.durationHours.compareTo(b.durationHours));
+        sortedEntries
+            .sort((a, b) => a.durationHours.compareTo(b.durationHours));
       }
 
       return ListView.builder(
@@ -423,42 +433,39 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   Map<DateTime, List> _groupByDate(List entries) {
-    final grouped = <DateTime, List>{};
+    final helpers = <_SortHelper>[];
     for (final entry in entries) {
       try {
         final parts = entry.date.split('.');
         if (parts.length == 3) {
-          final entryDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
-          final date = DateTime(entryDate.year, entryDate.month, entryDate.day);
-          grouped.putIfAbsent(date, () => []).add(entry);
+          final date = DateTime(
+              int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+          helpers.add(_SortHelper(entry, date, entry.startTime));
         }
-      } catch (e) {
-      }
+      } catch (_) {}
     }
 
-    // Sort keys based on selectedSort
-    final sortedKeys = grouped.keys.toList();
-    if (_selectedSort == 'Tarih (En Eski)') {
-      sortedKeys.sort((a, b) => a.compareTo(b)); // oldest first
-    } else {
-      sortedKeys.sort((a, b) => b.compareTo(a)); // newest first (default)
-    }
-
-    final sortedGrouped = <DateTime, List>{};
-    for (final key in sortedKeys) {
-      final list = grouped[key]!;
-      // Sort entries within the same day by start time
-      list.sort((a, b) {
-        if (_selectedSort == 'Tarih (En Eski)') {
-          return a.startTime.compareTo(b.startTime);
-        } else {
-          return b.startTime.compareTo(a.startTime);
-        }
+    final isOldestFirst = _selectedSort == 'Tarih (En Eski)';
+    if (isOldestFirst) {
+      helpers.sort((a, b) {
+        final dateCompare = a.parsedDate.compareTo(b.parsedDate);
+        if (dateCompare != 0) return dateCompare;
+        return a.startTime.compareTo(b.startTime);
       });
-      sortedGrouped[key] = list;
+    } else {
+      helpers.sort((a, b) {
+        final dateCompare = b.parsedDate.compareTo(a.parsedDate);
+        if (dateCompare != 0) return dateCompare;
+        return b.startTime.compareTo(a.startTime);
+      });
     }
 
-    return sortedGrouped;
+    final grouped = <DateTime, List>{};
+    for (final helper in helpers) {
+      grouped.putIfAbsent(helper.parsedDate, () => []).add(helper.entry);
+    }
+
+    return grouped;
   }
 
   Widget _buildSortDropdown() {
@@ -508,17 +515,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           });
         },
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-          _buildPopupItem('Tarih (En Yeni)', 'En Yeni Tarih', PhosphorIcons.sortDescending()),
-          _buildPopupItem('Tarih (En Eski)', 'En Eski Tarih', PhosphorIcons.sortAscending()),
+          _buildPopupItem('Tarih (En Yeni)', 'En Yeni Tarih',
+              PhosphorIcons.sortDescending()),
+          _buildPopupItem('Tarih (En Eski)', 'En Eski Tarih',
+              PhosphorIcons.sortAscending()),
           const PopupMenuDivider(height: 1),
-          _buildPopupItem('Süre (En Uzun)', 'En Uzun Süre', PhosphorIcons.trendUp()),
-          _buildPopupItem('Süre (En Kısa)', 'En Kısa Süre', PhosphorIcons.trendDown()),
+          _buildPopupItem(
+              'Süre (En Uzun)', 'En Uzun Süre', PhosphorIcons.trendUp()),
+          _buildPopupItem(
+              'Süre (En Kısa)', 'En Kısa Süre', PhosphorIcons.trendDown()),
         ],
       ),
     );
   }
 
-  PopupMenuItem<String> _buildPopupItem(String value, String text, IconData icon) {
+  PopupMenuItem<String> _buildPopupItem(
+      String value, String text, IconData icon) {
     final c = AppColors.of(context);
     final isSelected = _selectedSort == value;
     return PopupMenuItem<String>(
@@ -618,15 +630,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       ],
                     ),
                     Divider(height: 32, color: c.cardBorder),
-                    _buildDetailRow(PhosphorIcons.user(), 'Müşteri', entry.clientName),
+                    _buildDetailRow(
+                        PhosphorIcons.user(), 'Müşteri', entry.clientName),
                     if (entry.projectName != null &&
                         entry.projectName.toString().isNotEmpty)
-                      _buildDetailRow(
-                          PhosphorIcons.folderSimple(), 'Proje', entry.projectName),
-                    _buildDetailRow(PhosphorIcons.calendarBlank(), 'Tarih', entry.date),
-                    _buildDetailRow(PhosphorIcons.clock(), 'Saat', '${entry.startTime} - ${entry.endTime}'),
-                    _buildDetailRow(PhosphorIcons.timer(), 'Süre', '${entry.durationHours.toStringAsFixed(1)} saat'),
-                    _buildDetailRow(PhosphorIcons.briefcase(), 'Tür', entry.workType),
+                      _buildDetailRow(PhosphorIcons.folderSimple(), 'Proje',
+                          entry.projectName),
+                    _buildDetailRow(
+                        PhosphorIcons.calendarBlank(), 'Tarih', entry.date),
+                    _buildDetailRow(PhosphorIcons.clock(), 'Saat',
+                        '${entry.startTime} - ${entry.endTime}'),
+                    _buildDetailRow(PhosphorIcons.timer(), 'Süre',
+                        '${entry.durationHours.toStringAsFixed(1)} saat'),
+                    _buildDetailRow(
+                        PhosphorIcons.briefcase(), 'Tür', entry.workType),
                     if (entry.notes.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text(
@@ -645,7 +662,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           color: c.shimmer1.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(entry.notes, style: TextStyle(color: c.textMain)),
+                        child: Text(entry.notes,
+                            style: TextStyle(color: c.textMain)),
                       ),
                     ],
                     const SizedBox(height: 32),
@@ -657,7 +675,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                               Navigator.pop(context);
                               context.push('/home/add', extra: entry);
                             },
-                            child: Text('Düzenle', style: TextStyle(fontWeight: FontWeight.bold, color: c.onPrimary)),
+                            child: Text('Düzenle',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: c.onPrimary)),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -668,16 +689,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                 context: context,
                                 builder: (ctx) => AlertDialog(
                                   backgroundColor: c.navBg,
-                                  title: Text('Kaydı Sil', style: TextStyle(color: c.textMain)),
-                                  content: Text('Bu kaydı silmek istediğinize emin misiniz?', style: TextStyle(color: c.textMuted)),
+                                  title: Text('Kaydı Sil',
+                                      style: TextStyle(color: c.textMain)),
+                                  content: Text(
+                                      'Bu kaydı silmek istediğinize emin misiniz?',
+                                      style: TextStyle(color: c.textMuted)),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
-                                      child: Text('İptal', style: TextStyle(color: c.primary)),
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: Text('İptal',
+                                          style: TextStyle(color: c.primary)),
                                     ),
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx, true),
-                                      style: TextButton.styleFrom(foregroundColor: c.error),
+                                      style: TextButton.styleFrom(
+                                          foregroundColor: c.error),
                                       child: const Text('Sil'),
                                     ),
                                   ],
@@ -685,12 +712,17 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                               );
                               if (confirmed == true) {
                                 Navigator.pop(context);
-                                ref.read(entriesProvider.notifier).deleteEntry(entry.id);
+                                ref
+                                    .read(entriesProvider.notifier)
+                                    .deleteEntry(entry.id);
                                 CustomToast.show(context, 'Kayıt silindi');
                               }
                             },
                             color: c.error.withValues(alpha: 0.1),
-                            child: Text('Sil', style: TextStyle(color: c.error, fontWeight: FontWeight.bold)),
+                            child: Text('Sil',
+                                style: TextStyle(
+                                    color: c.error,
+                                    fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
@@ -714,10 +746,23 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         children: [
           Icon(icon, size: 20, color: c.primary),
           const SizedBox(width: 12),
-          Text('$label: ', style: TextStyle(color: c.textMuted, fontWeight: FontWeight.w500)),
-          Expanded(child: Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: c.textMain))),
+          Text('$label: ',
+              style:
+                  TextStyle(color: c.textMuted, fontWeight: FontWeight.w500)),
+          Expanded(
+              child: Text(value,
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: c.textMain))),
         ],
       ),
     );
   }
+}
+
+class _SortHelper {
+  final dynamic entry;
+  final DateTime parsedDate;
+  final String startTime;
+
+  _SortHelper(this.entry, this.parsedDate, this.startTime);
 }
