@@ -6,31 +6,21 @@ import '../models/payment.dart';
 import '../core/constants.dart';
 
 class SupabaseService {
-  final _db = Supabase.instance.client;
+  final SupabaseClient _db;
+
+  SupabaseService({SupabaseClient? client}) : _db = client ?? Supabase.instance.client;
 
   // ── KAYITLAR ──────────────────────────────────
 
   Future<void> upsertEntry(WorkEntry entry) async {
     try {
       await _db.from(AppConstants.entriesTable).upsert(entry.toMap());
-    } on PostgrestException catch (e) {
+    } on PostgrestException {
       // Eğer Supabase tablosunda client_color veya diğer sonradan eklenen sütunlar
       // yoksa, Bad Request (400) döner. Bu durumda eksik sütunu hariç tutarak deniyoruz.
-      if (e.message.contains('client_color')) {
-        final map = entry.toMap();
-        map.remove('client_color');
-        await _db.from(AppConstants.entriesTable).upsert(map);
-      } else {
-        // Hata türü client_color'dan kaynaklı olduğundan emin olamadığımız durumlar için
-        // güvenlik amaçlı map'i temizleyip bir daha denetiyoruz:
-        final map = entry.toMap();
-        map.remove('client_color');
-        try {
-          await _db.from(AppConstants.entriesTable).upsert(map);
-        } catch (_) {
-          rethrow;
-        }
-      }
+      final map = entry.toMap();
+      map.remove('client_color');
+      await _db.from(AppConstants.entriesTable).upsert(map);
     }
   }
 
@@ -39,22 +29,13 @@ class SupabaseService {
     final maps = entries.map((e) => e.toMap()).toList();
     try {
       await _db.from(AppConstants.entriesTable).upsert(maps);
-    } on PostgrestException catch (e) {
-      if (e.message.contains('client_color')) {
-        for (final map in maps) {
-          map.remove('client_color');
-        }
-        await _db.from(AppConstants.entriesTable).upsert(maps);
-      } else {
-        for (final map in maps) {
-          map.remove('client_color');
-        }
-        try {
-          await _db.from(AppConstants.entriesTable).upsert(maps);
-        } catch (_) {
-          rethrow;
-        }
+    } on PostgrestException {
+      // Eğer Supabase tablosunda client_color veya diğer sonradan eklenen sütunlar
+      // yoksa, Bad Request (400) döner. Bu durumda eksik sütunu hariç tutarak deniyoruz.
+      for (final map in maps) {
+        map.remove('client_color');
       }
+      await _db.from(AppConstants.entriesTable).upsert(maps);
     }
   }
 
