@@ -29,7 +29,9 @@ class LocalDBService {
         ),
       );
     } else {
-      final path = dbName == ':memory:' ? inMemoryDatabasePath : join(await getDatabasesPath(), dbName);
+      final path = dbName == ':memory:'
+          ? inMemoryDatabasePath
+          : join(await getDatabasesPath(), dbName);
       return await openDatabase(
         path,
         version: 10,
@@ -42,7 +44,8 @@ class LocalDBService {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       try {
-        await db.execute('ALTER TABLE work_entries ADD COLUMN client_color text not null default "#4A90D9"');
+        await db.execute(
+            'ALTER TABLE work_entries ADD COLUMN client_color text not null default "#4A90D9"');
       } catch (_) {}
     }
     if (oldVersion < 3) {
@@ -63,21 +66,26 @@ class LocalDBService {
         await db.execute('ALTER TABLE work_entries ADD COLUMN project_id text');
       } catch (_) {}
       try {
-        await db.execute('ALTER TABLE work_entries ADD COLUMN project_name text');
+        await db
+            .execute('ALTER TABLE work_entries ADD COLUMN project_name text');
       } catch (_) {}
     }
     if (oldVersion < 6) {
       try {
-        await db.execute("ALTER TABLE projects ADD COLUMN description text DEFAULT ''");
+        await db.execute(
+            "ALTER TABLE projects ADD COLUMN description text DEFAULT ''");
       } catch (_) {}
       try {
-        await db.execute("ALTER TABLE projects ADD COLUMN status text DEFAULT 'active'");
+        await db.execute(
+            "ALTER TABLE projects ADD COLUMN status text DEFAULT 'active'");
       } catch (_) {}
       try {
-        await db.execute("ALTER TABLE projects ADD COLUMN created_at text DEFAULT ''");
+        await db.execute(
+            "ALTER TABLE projects ADD COLUMN created_at text DEFAULT ''");
       } catch (_) {}
       try {
-        await db.execute("ALTER TABLE projects ADD COLUMN synced integer DEFAULT 0");
+        await db.execute(
+            "ALTER TABLE projects ADD COLUMN synced integer DEFAULT 0");
       } catch (_) {}
     }
     if (oldVersion < 7) {
@@ -98,13 +106,16 @@ class LocalDBService {
     }
     if (oldVersion < 8) {
       try {
-        await db.execute("ALTER TABLE work_entries ADD COLUMN billing_type text DEFAULT 'hourly'");
+        await db.execute(
+            "ALTER TABLE work_entries ADD COLUMN billing_type text DEFAULT 'hourly'");
       } catch (_) {}
       try {
-        await db.execute("ALTER TABLE work_entries ADD COLUMN hourly_rate real DEFAULT 0.0");
+        await db.execute(
+            "ALTER TABLE work_entries ADD COLUMN hourly_rate real DEFAULT 0.0");
       } catch (_) {}
       try {
-        await db.execute("ALTER TABLE work_entries ADD COLUMN total_price real DEFAULT 0.0");
+        await db.execute(
+            "ALTER TABLE work_entries ADD COLUMN total_price real DEFAULT 0.0");
       } catch (_) {}
       try {
         await db.execute('''
@@ -135,10 +146,13 @@ class LocalDBService {
       await _addColumn(db, 'payments', 'updated_at', "text DEFAULT ''");
       await _addColumn(db, 'payments', 'is_deleted', 'integer DEFAULT 0');
       // Performance: indexes for frequently filtered/sorted columns
-      await _createIndex(db, 'idx_work_entries_client_id', 'work_entries', 'client_id');
+      await _createIndex(
+          db, 'idx_work_entries_client_id', 'work_entries', 'client_id');
       await _createIndex(db, 'idx_work_entries_date', 'work_entries', 'date');
-      await _createIndex(db, 'idx_work_entries_synced', 'work_entries', 'synced');
-      await _createIndex(db, 'idx_work_entries_deleted', 'work_entries', 'is_deleted');
+      await _createIndex(
+          db, 'idx_work_entries_synced', 'work_entries', 'synced');
+      await _createIndex(
+          db, 'idx_work_entries_deleted', 'work_entries', 'is_deleted');
       await _createIndex(db, 'idx_payments_client_id', 'payments', 'client_id');
       await _createIndex(db, 'idx_payments_date', 'payments', 'date');
       await _createIndex(db, 'idx_payments_synced', 'payments', 'synced');
@@ -154,15 +168,18 @@ class LocalDBService {
     }
   }
 
-  Future<void> _addColumn(Database db, String table, String column, String type) async {
+  Future<void> _addColumn(
+      Database db, String table, String column, String type) async {
     try {
       await db.execute('ALTER TABLE $table ADD COLUMN $column $type');
     } catch (_) {}
   }
 
-  Future<void> _createIndex(Database db, String indexName, String table, String column) async {
+  Future<void> _createIndex(
+      Database db, String indexName, String table, String column) async {
     try {
-      await db.execute('CREATE INDEX IF NOT EXISTS $indexName ON $table ($column)');
+      await db
+          .execute('CREATE INDEX IF NOT EXISTS $indexName ON $table ($column)');
     } catch (_) {}
   }
 
@@ -231,17 +248,28 @@ class LocalDBService {
       )
     ''');
     // Performance indexes
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_client_id ON work_entries (client_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_date ON work_entries (date)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_synced ON work_entries (synced)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_work_entries_deleted ON work_entries (is_deleted)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments (client_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_date ON payments (date)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_synced ON payments (synced)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_deleted ON payments (is_deleted)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_projects_client_id ON projects (client_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_projects_synced ON projects (synced)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_projects_deleted ON projects (is_deleted)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_work_entries_client_id ON work_entries (client_id)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_work_entries_date ON work_entries (date)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_work_entries_synced ON work_entries (synced)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_work_entries_deleted ON work_entries (is_deleted)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments (client_id)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payments_date ON payments (date)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payments_synced ON payments (synced)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payments_deleted ON payments (is_deleted)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_projects_client_id ON projects (client_id)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_projects_synced ON projects (synced)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_projects_deleted ON projects (is_deleted)');
   }
 
   // ── KAYITLAR ──
@@ -260,6 +288,36 @@ class LocalDBService {
       for (final entry in entries) {
         batch.insert('work_entries', entry.toLocalMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  /// Batch-updates the `synced` flag for multiple entries in one transaction,
+  /// avoiding per-row UPDATE calls during sync.
+  Future<void> updateEntriesSyncBatch(List<String> ids, bool synced) async {
+    if (ids.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in ids) {
+        batch.update('work_entries', {'synced': synced ? 1 : 0},
+            where: 'id = ?', whereArgs: [id]);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  /// Batch-updates the `synced` flag for multiple payments in one transaction,
+  /// avoiding per-row UPDATE calls during sync.
+  Future<void> updatePaymentsSyncBatch(List<String> ids, bool synced) async {
+    if (ids.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in ids) {
+        batch.update('payments', {'synced': synced ? 1 : 0},
+            where: 'id = ?', whereArgs: [id]);
       }
       await batch.commit(noResult: true);
     });
@@ -290,8 +348,7 @@ class LocalDBService {
 
   Future<List<WorkEntry>> getUnsyncedEntries() async {
     final db = await database;
-    final rows = await db.query('work_entries',
-        where: 'synced = 0');
+    final rows = await db.query('work_entries', where: 'synced = 0');
     return rows.map(WorkEntry.fromMap).toList();
   }
 
@@ -314,16 +371,27 @@ class LocalDBService {
   /// Soft-deletes an entry so the deletion can propagate to remote on sync.
   Future<void> softDeleteEntry(String id) async {
     final db = await database;
-    await db.update('work_entries',
-        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
-        where: 'id = ?', whereArgs: [id]);
+    await db.update(
+        'work_entries',
+        {
+          'is_deleted': 1,
+          'synced': 0,
+          'updated_at': DateTime.now().toIso8601String()
+        },
+        where: 'id = ?',
+        whereArgs: [id]);
   }
 
   /// Soft-deletes all entries.
   Future<void> softDeleteAllEntries() async {
     final db = await database;
-    await db.update('work_entries',
-        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
+    await db.update(
+        'work_entries',
+        {
+          'is_deleted': 1,
+          'synced': 0,
+          'updated_at': DateTime.now().toIso8601String()
+        },
         where: 'is_deleted = 0');
   }
 
@@ -360,8 +428,8 @@ class LocalDBService {
 
   Future<List<Client>> getAllClients() async {
     final db = await database;
-    final rows = await db.query('clients',
-        where: 'is_deleted = 0', orderBy: 'name');
+    final rows =
+        await db.query('clients', where: 'is_deleted = 0', orderBy: 'name');
     return rows.map(Client.fromMap).toList();
   }
 
@@ -422,8 +490,8 @@ class LocalDBService {
 
   Future<List<Project>> getAllProjects() async {
     final db = await database;
-    final rows = await db.query('projects',
-        where: 'is_deleted = 0', orderBy: 'name');
+    final rows =
+        await db.query('projects', where: 'is_deleted = 0', orderBy: 'name');
     return rows.map(Project.fromMap).toList();
   }
 
@@ -449,9 +517,15 @@ class LocalDBService {
   /// Soft-deletes a project so the deletion can propagate to remote on sync.
   Future<void> softDeleteProject(String id) async {
     final db = await database;
-    await db.update('projects',
-        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
-        where: 'id = ?', whereArgs: [id]);
+    await db.update(
+        'projects',
+        {
+          'is_deleted': 1,
+          'synced': 0,
+          'updated_at': DateTime.now().toIso8601String()
+        },
+        where: 'id = ?',
+        whereArgs: [id]);
   }
 
   Future<void> deleteProject(String id) async {
@@ -540,16 +614,27 @@ class LocalDBService {
   /// Soft-deletes a payment so the deletion can propagate to remote on sync.
   Future<void> softDeletePayment(String id) async {
     final db = await database;
-    await db.update('payments',
-        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
-        where: 'id = ?', whereArgs: [id]);
+    await db.update(
+        'payments',
+        {
+          'is_deleted': 1,
+          'synced': 0,
+          'updated_at': DateTime.now().toIso8601String()
+        },
+        where: 'id = ?',
+        whereArgs: [id]);
   }
 
   /// Soft-deletes all payments.
   Future<void> softDeleteAllPayments() async {
     final db = await database;
-    await db.update('payments',
-        {'is_deleted': 1, 'synced': 0, 'updated_at': DateTime.now().toIso8601String()},
+    await db.update(
+        'payments',
+        {
+          'is_deleted': 1,
+          'synced': 0,
+          'updated_at': DateTime.now().toIso8601String()
+        },
         where: 'is_deleted = 0');
   }
 
@@ -567,7 +652,8 @@ class LocalDBService {
 
   Future<void> restoreBackupTransaction(
       List<Client> clients, List<WorkEntry> entries,
-      [List<Project> projects = const [], List<Payment> payments = const []]) async {
+      [List<Project> projects = const [],
+      List<Payment> payments = const []]) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete('work_entries');
