@@ -45,18 +45,21 @@ class SyncService {
       try {
         // Try a single bulk upsert network request
         await supabase.upsertEntries(unsynced);
-        for (final entry in unsynced) {
-          await localDB.updateEntrySync(entry.id, true);
-        }
+        await localDB.updateEntriesSyncBatch(
+            unsynced.map((e) => e.id).toList(), true);
       } catch (_) {
         // Fallback to individual upserts on failure to preserve fault tolerance (single-row error handling)
+        final successfulIds = <String>[];
         for (final entry in unsynced) {
           try {
             await supabase.upsertEntry(entry);
-            await localDB.updateEntrySync(entry.id, true);
+            successfulIds.add(entry.id);
           } catch (e) {
             // Tek satır başarısız olursa diğer satırları işlemeye devam et
           }
+        }
+        if (successfulIds.isNotEmpty) {
+          await localDB.updateEntriesSyncBatch(successfulIds, true);
         }
       }
     } catch (_) {
@@ -81,13 +84,17 @@ class SyncService {
             unsynced.map((p) => p.id).toList(), true);
       } catch (_) {
         // Fallback to individual upserts on failure
+        final successfulIds = <String>[];
         for (final project in unsynced) {
           try {
             await supabase.upsertProject(project);
-            await localDB.updateProject(project.copyWith(synced: true));
+            successfulIds.add(project.id);
           } catch (_) {
             // Tek proje başarısız olursa diğerlerini işlemeye devam et
           }
+        }
+        if (successfulIds.isNotEmpty) {
+          await localDB.updateProjectsSyncBatch(successfulIds, true);
         }
       }
     } catch (_) {
@@ -106,16 +113,19 @@ class SyncService {
 
       try {
         await supabase.upsertPayments(unsynced);
-        for (final payment in unsynced) {
-          await localDB.updatePaymentSync(payment.id, true);
-        }
+        await localDB.updatePaymentsSyncBatch(
+            unsynced.map((p) => p.id).toList(), true);
       } catch (_) {
         // Fallback to individual upserts
+        final successfulIds = <String>[];
         for (final payment in unsynced) {
           try {
             await supabase.upsertPayment(payment);
-            await localDB.updatePaymentSync(payment.id, true);
+            successfulIds.add(payment.id);
           } catch (_) {}
+        }
+        if (successfulIds.isNotEmpty) {
+          await localDB.updatePaymentsSyncBatch(successfulIds, true);
         }
       }
     } catch (_) {}
