@@ -108,6 +108,16 @@ class FakeLocalDBService extends Fake implements LocalDBService {
       projects[idx] = project;
     }
   }
+
+  @override
+  Future<void> updateProjectsSyncBatch(List<String> ids, bool synced) async {
+    for (final id in ids) {
+      final idx = projects.indexWhere((p) => p.id == id);
+      if (idx != -1) {
+        projects[idx] = projects[idx].copyWith(synced: synced);
+      }
+    }
+  }
 }
 
 class FakeSupabaseService extends Fake implements SupabaseService {
@@ -146,7 +156,9 @@ class FakeSupabaseService extends Fake implements SupabaseService {
   Future<List<Project>> getAllProjects() async => projects;
 
   @override
-  Future<void> upsertProjects(List<Project> projects) async {}
+  Future<void> upsertProjects(List<Project> projects) async {
+    if (failBulk) throw Exception('Bulk projects failed');
+  }
 
   @override
   Future<void> upsertProject(Project project) async {}
@@ -398,6 +410,30 @@ void main() {
       expect(supabase.upsertedInBulk, isEmpty);
       expect(supabase.upsertedIndividually, isEmpty);
       expect(localDB.updatedEntryIds, isEmpty);
+    });
+
+    test('Benchmark - syncPendingProjects fallback execution time', () async {
+      final localDB = FakeLocalDBService();
+      final supabase = FakeSupabaseService(failBulk: true);
+      final syncService = SyncService(localDB: localDB, supabase: supabase);
+
+      // Create 100 unsynced projects
+      for (int i = 0; i < 100; i++) {
+        localDB.projects.add(Project(
+          id: 'proj_$i',
+          clientId: 'client1',
+          name: 'Project $i',
+          description: 'Desc',
+          createdAt: '15.03.2026',
+          synced: false,
+        ));
+      }
+
+      final stopwatch = Stopwatch()..start();
+      await syncService.syncPendingProjects();
+      stopwatch.stop();
+
+      print('BENCHMARK_RESULT: syncPendingProjects fallback took ${stopwatch.elapsedMilliseconds} ms for 100 projects');
     });
   });
 }
