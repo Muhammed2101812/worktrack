@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
 import '../models/work_entry.dart';
 import '../models/client.dart';
+import '../core/utils.dart';
 
 class ExportService {
   static Future<bool> exportToExcel(
@@ -22,6 +23,10 @@ class ExportService {
         bytes: bytes,
       );
       if (path != null) {
+        if (!isSafePath(path, 'xlsx')) {
+          debugPrint('Excel export security error: Safe path validation failed for $path');
+          return false;
+        }
         if (!Platform.isAndroid && !Platform.isIOS) {
           final file = File(path);
           await file.writeAsBytes(bytes);
@@ -48,6 +53,10 @@ class ExportService {
         bytes: bytes,
       );
       if (path != null) {
+        if (!isSafePath(path, 'xlsx')) {
+          debugPrint('Sample Excel export security error: Safe path validation failed for $path');
+          return false;
+        }
         if (!Platform.isAndroid && !Platform.isIOS) {
           final file = File(path);
           await file.writeAsBytes(bytes);

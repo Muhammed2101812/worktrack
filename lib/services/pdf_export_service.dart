@@ -8,6 +8,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../models/client.dart';
 import '../models/work_entry.dart';
+import '../core/utils.dart';
 
 /// Generates a monthly work/earnings report as a PDF document.
 ///
@@ -36,6 +37,10 @@ class PdfExportService {
         bytes: bytes,
       );
       if (path != null) {
+        if (!isSafePath(path, 'pdf')) {
+          debugPrint('PDF export security error: Safe path validation failed for $path');
+          return false;
+        }
         if (!Platform.isAndroid && !Platform.isIOS) {
           final file = File(path);
           await file.writeAsBytes(bytes);

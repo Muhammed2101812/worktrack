@@ -1,3 +1,5 @@
+import 'package:path/path.dart' as p;
+
 String decodeHtmlEntities(String s) {
   if (s.isEmpty) return s;
   var decoded = s
@@ -46,4 +48,39 @@ int compareDisplayDates(String a, String b) {
   final sb = displayDateToSortable(b);
   if (sa != null && sb != null) return sa.compareTo(sb);
   return a.compareTo(b);
+}
+
+/// Validates a file path to prevent directory traversal attacks.
+///
+/// Ensures the path:
+/// 1. Is not empty or null.
+/// 2. Does not contain directory traversal sequences like '..' or '.'.
+/// 3. Ends with the expected case-insensitive extension.
+bool isSafePath(String? path, String expectedExtension) {
+  if (path == null || path.trim().isEmpty) return false;
+
+  // Detect any explicit directory traversal indicators (e.g. ".." or relative components)
+  if (path.contains('..') || path.contains('/./') || path.contains('\\.\\')) {
+    return false;
+  }
+
+  // Normalize path and verify it is free of relative segments
+  final normalized = p.normalize(path);
+  final segments = p.split(normalized);
+
+  if (segments.contains('..') || segments.contains('.')) {
+    return false;
+  }
+
+  // Verify normalized path does not have traversal sequences
+  if (normalized.contains('..') || normalized.contains('/./') || normalized.contains('\\.\\')) {
+    return false;
+  }
+
+  // Ensure path ends with the expected extension (case-insensitive)
+  if (!normalized.toLowerCase().endsWith('.${expectedExtension.toLowerCase()}')) {
+    return false;
+  }
+
+  return true;
 }
