@@ -265,6 +265,36 @@ class LocalDBService {
     });
   }
 
+  /// Batch-updates the `synced` flag for multiple work entries in one transaction,
+  /// avoiding per-row UPDATE calls during sync.
+  Future<void> updateEntriesSyncBatch(List<String> ids, bool synced) async {
+    if (ids.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in ids) {
+        batch.update('work_entries', {'synced': synced ? 1 : 0},
+            where: 'id = ?', whereArgs: [id]);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  /// Batch-updates the `synced` flag for multiple payments in one transaction,
+  /// avoiding per-row UPDATE calls during sync.
+  Future<void> updatePaymentsSyncBatch(List<String> ids, bool synced) async {
+    if (ids.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in ids) {
+        batch.update('payments', {'synced': synced ? 1 : 0},
+            where: 'id = ?', whereArgs: [id]);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<List<WorkEntry>> getAllEntries() async {
     final db = await database;
     // date is stored in display format "dd.MM.yyyy" which does not sort

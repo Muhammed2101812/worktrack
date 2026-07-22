@@ -54,6 +54,26 @@ class FakeLocalDBService extends Fake implements LocalDBService {
   Future<void> updatePaymentSync(String id, bool synced) async {}
 
   @override
+  Future<void> updatePaymentsSyncBatch(List<String> ids, bool synced) async {}
+
+  @override
+  Future<void> updateEntriesSyncBatch(List<String> ids, bool synced) async {
+    if (synced) {
+      updatedEntryIds.addAll(ids);
+    }
+  }
+
+  @override
+  Future<void> updateProjectsSyncBatch(List<String> ids, bool synced) async {
+    for (final id in ids) {
+      final idx = projects.indexWhere((p) => p.id == id);
+      if (idx != -1) {
+        projects[idx] = projects[idx].copyWith(synced: synced);
+      }
+    }
+  }
+
+  @override
   Future<void> clearClients() async {
     clearedClients = true;
     clients.clear();
