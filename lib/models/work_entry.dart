@@ -83,9 +83,6 @@ class WorkEntry {
     return diff / 60.0;
   }
 
-  /// Gross work duration (without subtracting break time).
-  static double _calcDuration(String start, String end) => _calcSpan(start, end);
-
   /// Break duration (also overnight-safe, though breaks rarely span midnight).
   static double _calcBreakDuration(String? breakStart, String? breakEnd) {
     if (breakStart == null || breakEnd == null) return 0.0;
