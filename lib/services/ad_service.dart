@@ -27,12 +27,39 @@ class AdService {
   int _shownToday = 0;
   DateTime _dayBucket = _today();
 
+  @visibleForTesting
+  static bool? isMobilePlatformOverride;
+
+  @visibleForTesting
+  Future<InitializationStatus> Function() mobileAdsInitializer =
+      MobileAds.instance.initialize;
+
+  @visibleForTesting
+  void Function({
+    required String adUnitId,
+    required AdRequest request,
+    required InterstitialAdLoadCallback adLoadCallback,
+  }) interstitialAdLoader = InterstitialAd.load;
+
+  @visibleForTesting
+  void resetForTesting() {
+    _initialized = false;
+    _interstitial = null;
+    _interstitialLoading = false;
+    _lastShown = null;
+    _shownToday = 0;
+    _dayBucket = _today();
+    isMobilePlatformOverride = null;
+    mobileAdsInitializer = MobileAds.instance.initialize;
+    interstitialAdLoader = InterstitialAd.load;
+  }
+
   /// Initialises the Mobile Ads SDK. Safe to call multiple times.
   Future<void> init() async {
     if (_initialized) return;
     if (!_isMobilePlatform) return;
     try {
-      await MobileAds.instance.initialize();
+      await mobileAdsInitializer();
       _initialized = true;
       _loadInterstitial();
     } catch (e) {
@@ -41,7 +68,7 @@ class AdService {
   }
 
   static bool get _isMobilePlatform =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      isMobilePlatformOverride ?? (!kIsWeb && (Platform.isAndroid || Platform.isIOS));
 
   static DateTime _today() {
     final n = DateTime.now();
@@ -80,7 +107,7 @@ class AdService {
   void _loadInterstitial() {
     if (!_isMobilePlatform || _interstitialLoading || _interstitial != null) return;
     _interstitialLoading = true;
-    InterstitialAd.load(
+    interstitialAdLoader(
       adUnitId: AppConstants.admobInterstitialUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
