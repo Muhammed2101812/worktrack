@@ -6,7 +6,9 @@ import '../models/payment.dart';
 import '../core/constants.dart';
 
 class SupabaseService {
-  final _db = Supabase.instance.client;
+  final SupabaseClient _db;
+
+  SupabaseService({SupabaseClient? client}) : _db = client ?? Supabase.instance.client;
 
   // ── KAYITLAR ──────────────────────────────────
 
@@ -21,15 +23,7 @@ class SupabaseService {
         map.remove('client_color');
         await _db.from(AppConstants.entriesTable).upsert(map);
       } else {
-        // Hata türü client_color'dan kaynaklı olduğundan emin olamadığımız durumlar için
-        // güvenlik amaçlı map'i temizleyip bir daha denetiyoruz:
-        final map = entry.toMap();
-        map.remove('client_color');
-        try {
-          await _db.from(AppConstants.entriesTable).upsert(map);
-        } catch (_) {
-          rethrow;
-        }
+        rethrow;
       }
     }
   }
@@ -46,14 +40,7 @@ class SupabaseService {
         }
         await _db.from(AppConstants.entriesTable).upsert(maps);
       } else {
-        for (final map in maps) {
-          map.remove('client_color');
-        }
-        try {
-          await _db.from(AppConstants.entriesTable).upsert(maps);
-        } catch (_) {
-          rethrow;
-        }
+        rethrow;
       }
     }
   }
