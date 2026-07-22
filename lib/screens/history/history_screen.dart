@@ -211,9 +211,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     if (_selectedMonth != null) {
       filteredEntries = filteredEntries.where((entry) {
         try {
-          final entryDate = DateFormat('dd.MM.yyyy').parse(entry.date);
-          return entryDate.year == _selectedMonth!.year &&
-              entryDate.month == _selectedMonth!.month;
+          final dateStr = entry.date;
+          int month, year;
+          if (dateStr.length == 10 && dateStr.codeUnitAt(2) == 46 && dateStr.codeUnitAt(5) == 46) {
+            month = int.parse(dateStr.substring(3, 5));
+            year = int.parse(dateStr.substring(6, 10));
+          } else {
+            final parts = dateStr.split('.');
+            if (parts.length == 3) {
+              month = int.parse(parts[1]);
+              year = int.parse(parts[2]);
+            } else {
+              return false;
+            }
+          }
+          return year == _selectedMonth!.year && month == _selectedMonth!.month;
         } catch (_) {
           // Malformed date — exclude entry from the month filter.
           return false;
@@ -426,13 +438,25 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final grouped = <DateTime, List>{};
     for (final entry in entries) {
       try {
-        final parts = entry.date.split('.');
-        if (parts.length == 3) {
-          final entryDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
-          final date = DateTime(entryDate.year, entryDate.month, entryDate.day);
-          grouped.putIfAbsent(date, () => []).add(entry);
+        final dateStr = entry.date;
+        int day, month, year;
+        if (dateStr.length == 10 && dateStr.codeUnitAt(2) == 46 && dateStr.codeUnitAt(5) == 46) {
+          day = int.parse(dateStr.substring(0, 2));
+          month = int.parse(dateStr.substring(3, 5));
+          year = int.parse(dateStr.substring(6, 10));
+        } else {
+          final parts = dateStr.split('.');
+          if (parts.length == 3) {
+            day = int.parse(parts[0]);
+            month = int.parse(parts[1]);
+            year = int.parse(parts[2]);
+          } else {
+            continue;
+          }
         }
-      } catch (e) {
+        final date = DateTime(year, month, day);
+        grouped.putIfAbsent(date, () => []).add(entry);
+      } catch (_) {
       }
     }
 
