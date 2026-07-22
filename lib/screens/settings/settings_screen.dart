@@ -911,8 +911,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _showResetDataDialog(BuildContext context) async {
-    final c = AppColors.of(context);
-    
     // First, show selection dialog
     final selectedOption = await showDialog<String>(
       context: context,
