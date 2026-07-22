@@ -25,14 +25,57 @@ class AdService {
   static const Duration _minInterval = Duration(minutes: 2);
   DateTime? _lastShown;
   int _shownToday = 0;
-  DateTime _dayBucket = _today();
+  late DateTime _dayBucket = _today();
+
+  @visibleForTesting
+  bool? isMobilePlatformOverride;
+
+  @visibleForTesting
+  Future<void> Function()? mobileAdsInitializer;
+
+  @visibleForTesting
+  Future<BannerAd?> Function()? bannerAdLoader;
+
+  @visibleForTesting
+  void Function({
+    required String adUnitId,
+    required AdRequest request,
+    required InterstitialAdLoadCallback adLoadCallback,
+  })? interstitialAdLoader;
+
+  @visibleForTesting
+  DateTime Function()? currentTimeOverride;
+
+  @visibleForTesting
+  void reset() {
+    isMobilePlatformOverride = null;
+    mobileAdsInitializer = null;
+    bannerAdLoader = null;
+    interstitialAdLoader = null;
+    currentTimeOverride = null;
+    _initialized = false;
+    _interstitial = null;
+    _interstitialLoading = false;
+    _lastShown = null;
+    _shownToday = 0;
+    _dayBucket = _today();
+  }
+
+  DateTime _getCurrentTime() {
+    final override = currentTimeOverride;
+    return override != null ? override() : DateTime.now();
+  }
 
   /// Initialises the Mobile Ads SDK. Safe to call multiple times.
   Future<void> init() async {
     if (_initialized) return;
     if (!_isMobilePlatform) return;
     try {
-      await MobileAds.instance.initialize();
+      if (mobileAdsInitializer != null) {
+        await mobileAdsInitializer!();
+      } else {
+        await MobileAds.instance.initialize();
+      }
       _initialized = true;
       _loadInterstitial();
     } catch (e) {
@@ -40,11 +83,12 @@ class AdService {
     }
   }
 
-  static bool get _isMobilePlatform =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  bool get _isMobilePlatform =>
+      isMobilePlatformOverride ?? (!kIsWeb && (Platform.isAndroid || Platform.isIOS));
 
-  static DateTime _today() {
-    final n = DateTime.now();
+  DateTime _today() {
+    final override = currentTimeOverride;
+    final n = override != null ? override() : DateTime.now();
     return DateTime(n.year, n.month, n.day);
   }
 
@@ -55,6 +99,9 @@ class AdService {
   Future<BannerAd?> buildBannerAd() async {
     if (!_isMobilePlatform) return null;
     if (!_initialized) await init();
+    if (bannerAdLoader != null) {
+      return bannerAdLoader!();
+    }
     final completer = BannerAd(
       adUnitId: AppConstants.admobBannerUnitId,
       size: AdSize.banner,
@@ -80,20 +127,37 @@ class AdService {
   void _loadInterstitial() {
     if (!_isMobilePlatform || _interstitialLoading || _interstitial != null) return;
     _interstitialLoading = true;
-    InterstitialAd.load(
-      adUnitId: AppConstants.admobInterstitialUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitial = ad;
-          _interstitialLoading = false;
-        },
-        onAdFailedToLoad: (err) {
-          _interstitialLoading = false;
-          debugPrint('Interstitial load failed: $err');
-        },
-      ),
-    );
+    if (interstitialAdLoader != null) {
+      interstitialAdLoader!(
+        adUnitId: AppConstants.admobInterstitialUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            _interstitial = ad;
+            _interstitialLoading = false;
+          },
+          onAdFailedToLoad: (err) {
+            _interstitialLoading = false;
+            debugPrint('Interstitial load failed: $err');
+          },
+        ),
+      );
+    } else {
+      InterstitialAd.load(
+        adUnitId: AppConstants.admobInterstitialUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            _interstitial = ad;
+            _interstitialLoading = false;
+          },
+          onAdFailedToLoad: (err) {
+            _interstitialLoading = false;
+            debugPrint('Interstitial load failed: $err');
+          },
+        ),
+      );
+    }
   }
 
   /// Shows an interstitial ad if one is ready and the cooldown/rate-limit
@@ -110,7 +174,8 @@ class AdService {
       _shownToday = 0;
     }
     if (_shownToday >= _maxPerDay) return;
-    if (_lastShown != null && DateTime.now().difference(_lastShown!) < _minInterval) return;
+    final now = _getCurrentTime();
+    if (_lastShown != null && now.difference(_lastShown!) < _minInterval) return;
 
     final ad = _interstitial;
     if (ad == null) {
@@ -129,7 +194,7 @@ class AdService {
       },
     );
     await ad.show();
-    _lastShown = DateTime.now();
+    _lastShown = _getCurrentTime();
     _shownToday++;
     _loadInterstitial();
   }
@@ -143,11 +208,15 @@ class AdBannerWidget extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<AdBannerWidget> createState() => _AdBannerWidgetState();
+
+  @visibleForTesting
+  static Widget Function(BannerAd ad)? adWidgetBuilder;
 }
 
 class _AdBannerWidgetState extends ConsumerState<AdBannerWidget> {
   BannerAd? _ad;
   bool _loaded = false;
+  StateController<bool>? _loadedNotifier;
 
   @override
   void initState() {
@@ -167,8 +236,12 @@ class _AdBannerWidgetState extends ConsumerState<AdBannerWidget> {
         if (mounted) {
           setState(() => _loaded = false);
         }
+        _loadedNotifier ??= ref.read(adBannerLoadedProvider.notifier);
+        final notifier = _loadedNotifier;
         Future.microtask(() {
-          if (mounted) ref.read(adBannerLoadedProvider.notifier).state = false;
+          if (notifier != null && notifier.mounted) {
+            notifier.state = false;
+          }
         });
       }
     }
@@ -184,8 +257,12 @@ class _AdBannerWidgetState extends ConsumerState<AdBannerWidget> {
     if (ad != null) {
       _ad = ad;
       setState(() => _loaded = true);
+      _loadedNotifier = ref.read(adBannerLoadedProvider.notifier);
+      final notifier = _loadedNotifier;
       Future.microtask(() {
-        if (mounted) ref.read(adBannerLoadedProvider.notifier).state = true;
+        if (notifier != null && notifier.mounted) {
+          notifier.state = true;
+        }
       });
     }
   }
@@ -193,9 +270,14 @@ class _AdBannerWidgetState extends ConsumerState<AdBannerWidget> {
   @override
   void dispose() {
     _ad?.dispose();
-    Future.microtask(() {
-      ref.read(adBannerLoadedProvider.notifier).state = false;
-    });
+    final notifier = _loadedNotifier;
+    if (notifier != null) {
+      Future.microtask(() {
+        if (notifier.mounted) {
+          notifier.state = false;
+        }
+      });
+    }
     super.dispose();
   }
 
@@ -204,10 +286,11 @@ class _AdBannerWidgetState extends ConsumerState<AdBannerWidget> {
     if (!widget.shouldShow || !_loaded || _ad == null) {
       return const SizedBox.shrink();
     }
+    final builder = AdBannerWidget.adWidgetBuilder;
     return SizedBox(
       width: double.infinity,
       height: _ad!.size.height.toDouble(),
-      child: AdWidget(ad: _ad!),
+      child: builder != null ? builder(_ad!) : AdWidget(ad: _ad!),
     );
   }
 }
