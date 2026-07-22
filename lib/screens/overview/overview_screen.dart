@@ -31,16 +31,11 @@ class OverviewScreen extends ConsumerWidget {
           data: (entries) => paymentsAsync.when(
             data: (payments) {
               // Aggregate metrics.
-              double totalEarned = 0;
-              double totalHours = 0;
-              for (final e in entries) {
-                totalEarned += e.effectivePrice;
-                totalHours += e.durationHours;
-              }
-              double totalReceived = 0;
-              for (final p in payments) {
-                totalReceived += p.amount;
-              }
+              final (totalEarned, totalHours) = entries.fold<(double, double)>(
+                (0.0, 0.0),
+                (acc, e) => (acc.$1 + e.effectivePrice, acc.$2 + e.durationHours),
+              );
+              final double totalReceived = payments.fold(0.0, (sum, p) => sum + p.amount);
               final remaining = totalEarned - totalReceived;
 
               return Center(
