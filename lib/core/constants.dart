@@ -47,18 +47,19 @@ class AppConstants {
   // ── Advertising (AdMob) ──────────────────────────────────────────────────
   //
   // These use Google's official test ad unit IDs by default so the app is
-  // fully functional during development. Override them at build time with
-  // production IDs:
-  //   flutter build appbundle \
-  //     --dart-define=ADMOB_APP_ID=ca-app-pub-... \
-  //     --dart-define=ADMOB_BANNER_ID=ca-app-pub-... \
-  //     --dart-define=ADMOB_INTERSTITIAL_ID=ca-app-pub-...
-  static const String admobAppId =
-      String.fromEnvironment('ADMOB_APP_ID', defaultValue: 'ca-app-pub-3940256099942544~3347511713');
-  static const String admobBannerUnitId =
-      String.fromEnvironment('ADMOB_BANNER_ID', defaultValue: 'ca-app-pub-3940256099942544/6300978111');
-  static const String admobInterstitialUnitId =
-      String.fromEnvironment('ADMOB_INTERSTITIAL_ID', defaultValue: 'ca-app-pub-3940256099942544/1033173712');
+  // fully functional during development. They are loaded from the bundled
+  // `.env` asset or via compile-time environment overrides.
+  static String get admobAppId =>
+      dotenv.maybeGet('ADMOB_APP_ID') ??
+      const String.fromEnvironment('ADMOB_APP_ID', defaultValue: 'ca-app-pub-3940256099942544~3347511713');
+
+  static String get admobBannerUnitId =>
+      dotenv.maybeGet('ADMOB_BANNER_ID') ??
+      const String.fromEnvironment('ADMOB_BANNER_ID', defaultValue: 'ca-app-pub-3940256099942544/6300978111');
+
+  static String get admobInterstitialUnitId =>
+      dotenv.maybeGet('ADMOB_INTERSTITIAL_ID') ??
+      const String.fromEnvironment('ADMOB_INTERSTITIAL_ID', defaultValue: 'ca-app-pub-3940256099942544/1033173712');
 
   // ── In-App Purchase ──────────────────────────────────────────────────────
   /// Product id for the one-time "remove ads" purchase. Must match the
