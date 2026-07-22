@@ -29,15 +29,9 @@ class FinanceSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
 
-    double totalEarned = 0.0;
-    for (final e in entries) {
-      totalEarned += e.effectivePrice;
-    }
+    final double totalEarned = entries.fold(0.0, (sum, e) => sum + e.effectivePrice);
 
-    double totalReceived = 0.0;
-    for (final p in payments) {
-      totalReceived += p.amount;
-    }
+    final double totalReceived = payments.fold(0.0, (sum, p) => sum + p.amount);
 
     final double remainingBalance = totalEarned - totalReceived;
 
